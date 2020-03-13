@@ -39,3 +39,80 @@ Sleep会立即重新调度主调线程，即使低优先级线程还处于饥饿
 
 //------------------切换到另一个线程-------------end-------------
 
+
+//------------------线程的执行时间-------------------------------
+   许多人在计算代码执行时间的方法是编写如下代码：
+
+ULONGLONG qwStartTime = GetTickCount64()；
+ULONGLONG qwElapsedTime = GetTickCount64()-qwStartTime;
+
+   这段代码有一个简单的前提：即代码的执行不会被中断。但是，在抢占式操作系统中，我们不可能知道线程什么时候会获得CPU时间。
+当线程失去CPU时间时，为线程执行的各种任务进行计时就更困难了。我们需要的是一个能够返回线程已获得的CPU时间量的函数。值得庆祝的是，
+在windows vista之前，就有一个函数能够返回这种信息了，即GetThreadTimes：
+
+/**
+ * @brief Get the Thread Times object
+ * 
+ * @param hThread 
+ * @param pftCreationTime 创建时间 用100ns为单位
+ * @param pftExitTime 退出时间 用100ns为单位。如果线程仍在运行，退出时间未定义
+ * @param pftKernelTime 内核时间 一个用来表示线程执行内核模式下的操作系统代码时所用的时间的绝对值，用100ns为单位
+ * @param pftUserTime 用户时间 一个用来表示线程执行应用代码所用时间的绝对值
+ * @return BOOL 
+ */
+BOOL GetThreadTimes(
+   HANDLE hThread,
+   PFILETIME pftCreationTime,
+   PFILETIME pftExitTime,
+   PFILETIME pftKernelTime,
+   PFILETIME pftUserTime
+);
+
+使用这个函数，便可以确定执行一个复杂算法所需的时间，具体代码如下：
+__int64 FIleTimeToQuadWord(PFILETIME pft) 
+{
+	return(Int64ShllMod32(pft->dwHighDateTime, 32)|pft->dwLowDateTime);
+}
+void PerformLongOperation() 
+{
+	PFILETIME ftKernelTimeStart, ftKernelTimeEnd;
+	PFILETIME ftUserTimeStart, ftUserTimeEnd;
+	PFILETIME ftDummy;
+	__int64 qwKernelTimeElapsed, qwUserTimeElapsed, qwTotalTimeElapsed;
+	// Get starting times. 
+   GetThreadTimes(GetCurrentThread(), &ftDummy, &ftDummy, 
+   &ftKernelTimeStart, &;ftKernelTimeStart); 
+   // Perform complex algorithm here. 
+   
+   // Get ending time. 
+   GetThreadTimes(GetCurrentThread(), &ftDummy, &ftDummy, 
+   &ftKernelTimeEnd, &;ftKernelTimeEnd); 
+   // Get the elapsed kernel and user times by converting the start and end times from FILETIMEs to quad words, 
+   // and then subtract the start times from the end times. 
+   qwKernelTimeElapsed = FileTimeToQuadWord(&;ftKernelTimeEnd) - FileTimeToQuadWord(&;ftKernelTimeStart); 
+
+   qwUTimeElapsed = FileTimeToQuadWord(&;ftUserTimeEnd) - FileTimeToQuadWord(&;ftUserTimeStart);
+
+   // Get total time duration by adding the kernel and user times. 
+   qwTotalTimeElapsed = qwKernelTimeElapsed + qwUserTimeElapsed; 
+
+   // The total wlapsed time is in qwTotalTimeElapsed. 
+}
+注意GetProcessTimes，这个函数类似与GetThreadTimes,可用于进程中的所有线程:
+/**
+ * @brief 适用于进程中的所有线程
+ * 
+ * @param hProcess 
+ * @param pftCreationTime 
+ * @param pftExitTime 
+ * @param pftKernelTime 
+ * @param pftUsertime 
+ * @return BOOL 
+ */
+BOOL GetProcessTimes(
+   HANDLE hProcess,
+   PFILETIME pftCreationTime,
+   PFILETIME pftExitTime,
+   PFILETIME pftKernelTime,
+   PFILETIME pftUsertime
+);
