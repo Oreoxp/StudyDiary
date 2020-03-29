@@ -147,3 +147,19 @@ BOOL GetThreadPriorityBoost(
     HANDLE hThread,
     BOOL bDisablePriorityBoost//输入bool值带回
 );
+
+四、为前台进程微调调度程序
+如果用户需要使用某个进程的窗口，这个进程就称为前台进程（foreground process），而所有其他的线程称为后台进程（background process）。
+Windows会为前台进程中的线程微调调度算法。系统给前台进程的线程分配比一般情况下更多的时间片。
+这种微调只在前台进程是normal优先级时才进行，如果处于其他优先级，则不会进行微调。
+
+五、调度I/O请求优先级
+
+低优先级的线程长时间I/O请求可能会挂起高优先级的线程。故从Windows Vista开始，线程可以在进行I/O请求时设置优先级了。
+
+我们可以通过调研SetThreadPriority并传入THREAD_MODE_BACKGROUND_BEGIN来告诉Windows，线程应该发送低优先级的I/O请求；
+我们可以通过调研SetThreadPriority并传入THREAD_MODE_BACKGROUND_END  来告诉Windows，线程应该发送normal优先级的I/O请求。
+
+我们可以通过调研SetPriorityClass并传入PROCESS_MODE_BACKGROUND_BEGIN来告诉Windows，该进程下的所有线程应该发送低优先级的I/O请求；
+我们可以通过调研SetPriorityClass并传入PROCESS_MODE_BACKGROUND_END  来告诉Windows，该进程下的所有线程应该发送normal优先级的I/O请求。
+
