@@ -15,7 +15,7 @@ clientSocket = socket(AF_INET, SOCK_DGRAM)
 # 值得注意的是，当创建套接字时，我们并没有指定客户套接字的端口号；
 # 相反，我们让操作系统为我们做这件事。既然客户进程的门已经创建，我们将要生成通过该门发送的报文。
 
-message = raw_input('Input lowercase sentence :')
+message = input('Input lowercase sentence :')
 # raw_input()是Python中的内置功能。当执行这条命令时，在客户上的用户将以单词“Input lowercase sentence:”进行提示，用户使用她的键盘来输入一行，
 # 这被放入变量message中。既然我们有了一个套接字和一条报文，我们将要通过该套接字向目的主机发送报文。
 
@@ -28,7 +28,7 @@ modifiedMessage,serverAddress = clientSocket.recvfrom(2048)
 # 变量serverAddress包含了服务器的IP地址和服务器的端口号。程序UDPClient实际上并不需要服务器的地址信息，因为它从起始就已经知道了该服务器地址；
 # 而这行Python代码仍然提供了服务器的地址。方法recvfrom也取缓存长度2048作为输入。（该缓存长度用于多种目的。）
 
-print modifiedMessage
+print(modifiedMessage)
 #这行在用户显示器上打印出modifiedMessage。它应当是变用户键入的原始行，现在只是变为大写的了。
 
 clientSocket.close()
