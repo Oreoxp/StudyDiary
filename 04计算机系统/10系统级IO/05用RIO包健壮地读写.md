@@ -30,10 +30,28 @@
 
 ​		假设我们要编写一个程序来计算文本文件中文本行的数量，该如何来实现呢？ 一种方法就是用 read 函数来一次一个字节地从文件传送到用户内存，检查每个字节来查找换行符。这个方法的缺点是效率不是很高，每读取文件中的一个字节都要求陷入内核。
 
-​		—种更好的方法是调用一个包装函数（rio_readlineb）,它从一个内部读 **缓冲区** 复制一个文本行，当缓冲区变空时，会自动地调用read重新填满缓冲区。对于既包含文本行也包含二 进制数据的文件(例如11. 5. 3节中描述的HTTP响应），我们也提供了一个ri〇_readn带缓冲 区的版本，叫做rio readnb，它从和rio_readlineb—样的读缓冲区中传送原始字节。
+​		—种更好的方法是调用一个包装函数（rio_readlineb）,它从一个内部读 **缓冲区** 复制一个文本行，当缓冲区变空时，会自动地调用 read 重新填满缓冲区。对于既包含文本行也包含二进制数据的文件(例如11. 5. 3节中描述的HTTP响应），我们也提供了一个 rio_readn 带缓冲区的版本，叫做 rio_readnb，它从和 rio_readlineb —样的读缓冲区中传送原始字节。
 
 ![05公式2](./markdownimage/05公式2.png)
 
-​		每打开一个描述符，都会调用一次rio_readinitb函数。它将描述符fd和地址rp 处的一个类型为rio_t的读缓冲区联系起来。
+​		每打开一个描述符，都会调用一次 rio_readinitb 函数。它将描述符 fd 和地址 rp 处的一个类型为 rio_t 的读缓冲区联系起来。
 
-​		rio_readlineb函数从文件rp读出下一个文本行（包括结尾的换行符），将它复制到 内存位置usrbuf，并且用NULL(零）字符来结束这个文本行。rio_readlineb函数最多 读maxlen-1个字节，余下的一个字符留给结尾的NUI丄字符。超过maxlen-1字节的文
+​		rio_readlineb 函数从文件 rp 读出下一个文本行（包括结尾的换行符），将它复制到内存位置usrbuf，并且用 NULL (零）字符来结束这个文本行。rio_readlineb 函数最多读 maxlen-1 个字节，余下的一个字符留给结尾的NULL 字符。超过 maxlen-1 字节的文本行被截断，并用一个 NULL 字符结束。
+
+​		rio_readnb 函数从文件 rp 最多读 n 个字节到内存位置 usrbuf 。对同一描述符，对 rio_readlineb 和rio_readnb 的调用可以任意交叉进行。然而，对这些带缓冲的函数的调用却不应和无缓冲的 rio_readn 函数交叉使用。
+
+​		在本书剩下的部分中将给出大量的 RIO 函数的示例。图10-5展示了如何使用 RIO 函数来一次一行地从标准输入复制一个文本文件到标准输出。
+
+![05一个文本文件到标准输出](./markdownimage/05一个文本文件到标准输出.png)
+
+​		图10-6展示了一个读缓冲区的格式，以及初始化它的 rio_readinitb 函数的代码。 rio_readinitb 函数创建了一个空的读缓冲区，并且将一个打开的文件描述符和这个缓冲区联系起来。
+
+![05一个类型为rio_t的读缓存区和初始化它的rio_readinit函数](./markdownimage/05一个类型为rio_t的读缓存区和初始化它的rio_readinit函数.png)
+
+​		RIO 读程序的核心是图10-7所示的 rio_read 函数。rio_read 函数是 Linux read 函数的带缓冲的版本。当调用rio_read 要求读 n 个字节时，读缓冲区内有 rp->rio_cnt 个未读字节。如果缓冲区为空，那么会通过调用 read 再填满它。这个 read 调用收到一个不足值并不是错误，只不过读缓冲区是填充了一部分。一旦缓冲区非空，rio_read 就从读缓冲区复制 n 和 rp->rio_cnt 中较小值个字节到用户缓冲区，并返回复制的字节数。
+
+![05内部的rio_read函数](./markdownimage/05内部的rio_read函数.png)
+
+​		对于一个应用程序，rio_read 函数和 Linux read 函数有同样的语义。在出错时，它返回值 -1，并且适当地设置 errno 。在 EOF 时，它返回值 0 。如果要求的字节数超过了读缓冲区内未读的字节的数量，它会返回一个不足值。两个函数的相似性使得很容易通过用 rio_read 代替 read 来创建不同类型的带缓冲的读函数。例如，用rio_read 代替 read，图10-8中的rio_readnb 函数和 rio_readn 有相同的结构。相似地，图10-8中的 rio_readlineb 程序最多调用 maxlen-1 次 rio_read 。每次调用都从读缓冲区返回一个字节，然后检查这个字节是否是结尾的换行符。
+
+![05rio_readlineb和rio_readnb](./markdownimage/05rio_readlineb和rio_readnb.png)
