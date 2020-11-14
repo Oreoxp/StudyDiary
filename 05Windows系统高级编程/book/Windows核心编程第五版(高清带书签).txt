@@ -94,7 +94,7 @@ Mark Russinovich (Windows Internals 怍考) Technical Fellow Microsoft Corporati
 •	%	.	S；.
 Jeffrey 的家人
 Jeffiey要向他的妻儿(Kristin和Aidan)表示感谢，感谢他们绵延不尽的爱和支持。 Christophe 的家人
-没有妻了• F丨orence的爱和支持，没有女儿Celia永不满足的好奇心，没有爱猫Candle和 Nougat时不时发出的咕噜声，Christophe叮能无法写就本书第5版。现在，我没有任何好 的借口可以逃避对你们的照顾！
+没有妻子 F丨orence的爱和支持，没有女儿Celia永不满足的好奇心，没有爱猫Candle和 Nougat时不时发出的咕噜声，Christophe叮能无法写就本书第5版。现在，我没有任何好 的借口可以逃避对你们的照顾！
 技术支持
 对于写就这样一本经典的图书，单凭个人的研究足不够的。我们要向Microsoft曾经帮助过 我们的员工表示诚挚的谢意。具体说来，我们要感谢ArunKishan,对于我们提出的怪问题 或者复杂问题，他总能迅速找到答案或者立即找到Windows开发团队中合适的人提供更详 细的解释。我们还要感谢 KinshumanKinshumann，Stephan Doll, Wedson Almeida Filho， Eric Li, Jean-Yves Poublan, Sandeep Ranade, Alan Chan, Ale Contend，Kang Su Gatlin, KaiHsu，Mehmetlyigun，Ken Jung，Pavel Lebedynskiy，Paul Sliwowicz 和 LandyWang〇 此外，还有负责解答Microsoft内部社区所贴M题和分享其渊博知识的其他人士，如 Raymond Chen, Sunggook Chue, Chris Corio, Larry Osterman, Richard Russell, Mark Russinovich，Mike Sheldon, Damien Watkins 和 Junfeng Zhang。最后要特别感谢 John “Bugslayer” Robbins和Kenny Kerr，他们对本书各章提供了出色的反馈意见。
 Microsoft Press 编辑团队
@@ -1304,7 +1304,7 @@ o
 1	OxFOOOOOOO	〇x?9999?7?	0x00000000
 2	0x00000000	(不可用）	(不可用）
 3	OxFOOOOlO	〇x9W?799	0x00000001
-为了使用对象句柄继承，下一步是由父进程生成了•进程。这是通过CreateProcess函数来完 成的，如下所示：
+为了使用对象句柄继承，下一步是由父进程生成子进程。这是通过CreateProcess函数来完 成的，如下所示：
 BOOL CreateProcess(
 PCTSTR pszApplicationName,
 PTSTR pszCommandLine,
@@ -1321,13 +1321,13 @@ PPROCESS_INFORMATION pProcessInformation);
 e
 pdows核心编程(第5版)
 除了复制句柄表的记录项，系统还会递增内核对象的使用计数，因为两个进程现在都在使 用这个对象。为r销毁内核对象，父进程和子进程要么都对这个对象调用CloseHandle， 要么都终止运行。子进程+—定先终止——仴父进程也不一定。事实上，父进程可以在 CreateProcess函数返回之后立即关闭它的内核对象句柄，子进程照样可以操纵这个对象。
-表3-3显示了子进程在被允许开始执行之前的句枘表。坷以看出，第一项和第二项没有初 始化，所以对了•进程来说无效的句柄，不吋以使用。但是，索引3标识了一个内核对象。 事实上,•它标识的是地址OxFOOOOOlO处的内核对象，与父进程句柄表中的对象一样。
+表3-3显示了子进程在被允许开始执行之前的句枘表。坷以看出，第一项和第二项没有初 始化，所以对子进程来说无效的句柄，不吋以使用。但是，索引3标识了一个内核对象。 事实上,•它标识的是地址OxFOOOOOlO处的内核对象，与父进程句柄表中的对象一样。
 表3-3继承了父进程的“可继承的句柄”之后，子进程的句柄表的样子
 索引	指向内核对象内存块的指针	访问掩码(包含标志位的一个DWORD)	标志
 1	0x00000000	<不可用）	(不可用>
 2	0x00000000	(不可用）	(不可用）
 3	OxFOOOOOlO		0x00000001
-第13章将I并到，内核对象的内容被保存在内核地址空间中——系统上运行的所有进程都共 亨这个空间。•对于32位系统，这是0x80000000到OxFFFFFFFF之间的内存空间。对于64 位系统，则是0x00000400’ 00000000到OxFFFFFFF’ FFFFFFFF之间的内存空间。访问掩 码与父进程中的一样，标志也是一样的。这意味着假如T进程用CreateProcess来生成它自 己的了•进程(其父进程的孙进程)并将blnheritHandles参数设为TRUE的前提下，孙进程也 会继承这个内核对象句柄。在孙进程的句枘表中，继承的对象句柄将具有相同的句柄值、 相同的访H掩码以及相冋的标志^内核对象的使用汁数将再次递增。
+第13章将I并到，内核对象的内容被保存在内核地址空间中——系统上运行的所有进程都共 亨这个空间。•对于32位系统，这是0x80000000到OxFFFFFFFF之间的内存空间。对于64 位系统，则是0x00000400’ 00000000到OxFFFFFFF’ FFFFFFFF之间的内存空间。访问掩 码与父进程中的一样，标志也是一样的。这意味着假如T进程用CreateProcess来生成它自 己的子进程(其父进程的孙进程)并将blnheritHandles参数设为TRUE的前提下，孙进程也 会继承这个内核对象句柄。在孙进程的句枘表中，继承的对象句柄将具有相同的句柄值、 相同的访H掩码以及相冋的标志^内核对象的使用汁数将再次递增。
 记住，对象句柄的继承只会在生成f进程的时候发生。假如父进程后来又创建了新的内核 对象，并同样将它们的句柄设为"J*继承的句枘。那么正在运行的子进程是不会继承这些新 句柄的。
 对象句柄继承还奋一个非常奇怪的特征：子进程并不知道自己继承了任何句柄。在子进程 时文档中，应指出当它从另一个进程生成时，希望获得对一个内核对象的访问权——只有 在这种情况F,内核对象的句柄继承才是軒用的。通常，父应用程序和子应用程序是由同 一家公司编写的：何是，假如一•家公"1能在文杓中说明子应用程序希望继承哪些对象句枘， 那么另一家公4就nj■以据此来编写一个子应用程汴。
 到H前为止，为JT使子进程得到它想要的一个内核对象的句柄值，最常见的方式是将句柄 值作为命令行参数传给子进程。子进程的初始化代码将解祈命令行(通常是调用jtscanfls)， 并提取句枘值。子进程获得句枘值之后，就会拥有和父进程一样的内核对象访问权限。注 意，句枘继承之所以能够实现，唯一的原因就是“共享的内核对象”的句柄值在父进程和 子进程中是完全一样的。这正足父进程能将句柄值作为命令行参数来传递的原因。
@@ -1336,7 +1336,7 @@ pdows核心编程(第5版)
 个技术是让父进程等待子进程完成初始化(利用第9章讨论的WaitForlnputld丨e函数)；然 后，父进程可以将一条消息发送或发布到由子进程中的一个线程创建的一个窗口。
 另一种方式娃让父进程向其环境块添加一个环境变量。变量的名称应该是子进程知道的一 个名称，而变M的值应该是准备被了 •进程继承的那个内核对象的句柄值。然后，当父进程 生成子进程的时候，这个子进程会继承父进程的环境变量，所以能轻松调用 GetEnvironmentVariable来获得这个继承到的内核对象的句柄值。如果子进程还要生成 另一个子进程，这种方式就非常不错，因为环境变量是可以反复继承的。Microsoft知识 库的一篇文章(N址为http://support.microsoft.eom/kb/l90351)描述了子进程继承父控制台 的特例'
 3.3.2改变句柄的标志
-有时吋能遇到这样一种情况：父进程创建了一个内核对象，得到了一个可继承的句柄，然 后生成了两个了•进程。但是，父进程只希望其中的一个了•进程继承内核对象句柄。换言之, 我们冇时可能想控制哪些子进程能继承内核对象句柄。吋以调$ SetHandlelnformation函 数来改变内核对象句枘的继承标忐。如下所示：	k
+有时吋能遇到这样一种情况：父进程创建了一个内核对象，得到了一个可继承的句柄，然 后生成了两个子进程。但是，父进程只希望其中的一个子进程继承内核对象句柄。换言之, 我们冇时可能想控制哪些子进程能继承内核对象句柄。吋以调$ SetHandlelnformation函 数来改变内核对象句枘的继承标忐。如下所示：	k
 B00L SetHandlelnformation(
 HANDLE hObject,
 DWORD d祕ask,
@@ -5175,7 +5175,7 @@ CloseHandle(chBEGINTHRBADEX(NULL, 0, StoppingThread, NULL, 0, &dwThreadiD));
 // This button can't be pushed twice Button^.Enable (hWndCtl, FALSE);
 >
 break;
-不要忘记，当我们从另一个线程以阻塞方式对用户界面的内容进行同步时，同样面临着死 锁的危险。比如同步对共享资源的访问就是阻塞方式的一个例了•。下面几节提供了一些窍 门和技巧，可以帮助避免死锁情况的发生。
+不要忘记，当我们从另一个线程以阻塞方式对用户界面的内容进行同步时，同样面临着死 锁的危险。比如同步对共享资源的访问就是阻塞方式的一个例子。下面几节提供了一些窍 门和技巧，可以帮助避免死锁情况的发生。
 CUD
 最后注意一点，字符串足通过帮助函数AddText来添加到列表框中的，它利用了新的安全 版的字符串函1
 void AddText(HWND hWndLB, PCTSTR pszFormat, ...) {
@@ -6088,7 +6088,7 @@ WaitForSingleObject(hEventMoreWorkToBeDone, INFINITE)；
 WaitForSingleObject(hEventWorkerThreadDone)；
 PulseEvent(hEventMoreWorkToBeDone);
 工作线程的那段代码写得非常糟糕，这是因为它不能可靠地丄作。当工作线程调用SetEvent 之后，另一个线程可能会立即被唤醒并调用PulseEvent。这样丄作线程的运行权会被抢占， 它没有机会从SetEvent调用中返回，也就不可能调用WaitForSing丨eObject 了。其结果就 是丄作线程会错过hEventMoreWorkToBeDone事件触发的时机。
-如果我们用Signs*丨ObjectAndWak来改写工作线程的代码，如下面所示，那么代码将能够 KT靠地工作，这娃因为触发和等待操作是通过原了•方式来执行的：
+如果我们用Signs*丨ObjectAndWak来改写工作线程的代码，如下面所示，那么代码将能够 KT靠地工作，这娃因为触发和等待操作是通过原子方式来执行的：
 // Perform some work. ... Signa10bjectAndWait{hEventWorkerThreadDone, hEventMoreWorkToBeDone, INFINITE, FALSE);
 // Do more work. ..•
 当一个非工作线程被唤醒的时候，它Pj•以百分之百地确信工作线程正在等待 hEventMoreWorkToBeDone事件，因此当脉冲事件被触发时，工作线程一定能够看到。
@@ -9563,7 +9563,7 @@ Ox08OFFOOO	栈顶：己调拨的页面
 〇ws核心编程(第5版)
 图164错误报告
 为了避免这种情况，应用程序可以调用SetThreadStackGuarante函数，借此来抛出前文所 提到的EXCEPTOU_STACK_OVER FLOW异常。该函数可以确保在Windows错误报告服 务接管并终止进程之前，地址空间中还有指定数景的内存可供使用，这使得应用程序能够 处理栈溢出异常并恢复运行。
-重要提示 当线程访问最后一个防护页面时，系统会抛出EXCEPTION_STACK_ OVERFLOW异常。如果线程捕获了该异常并继续执行，那么系统将不会在 同一个线程中再次抛出EXCEPTION_STACK_OVERFLOW异常，这是因 为后面再也没有防护页面了•如果希望在同一线程中继续收到 EXCEPTION_STACK_OVERFLOW异常，那么应用程序必须重置防护页 面。这很容易办到，只需调用C运行库函数(在malloc.h中 定义)。
+重要提示 当线程访问最后一个防护页面时，系统会抛出EXCEPTION_STACK_ OVERFLOW异常。如果线程捕获了该异常并继续执行，那么系统将不会在 同一个线程中再次抛出EXCEPTION_STACK_OVERFLOW异常，这是因 为后面再也没有防护页面子如果希望在同一线程中继续收到 EXCEPTION_STACK_OVERFLOW异常，那么应用程序必须重置防护页 面。这很容易办到，只需调用C运行库函数(在malloc.h中 定义)。
 现在让我们来看看为什么系统始终不给栈地址空间区域最底部的页面调拨物理存储器。这 样做的目的是为了保护进程使用的其他数据，使它们不会因为意外的内存写越界而遭到破 坏。我们知道，地址空间区域的地址0X07FFF000处(位于0x08000000下方的一个页面)可 能己经调拨了物理存储器。如果地址为0x08000000的页面也调拨了物理存储器，那么系统 就无法捕捉到线程对栈外区域的访问。如果栈的增长越过了所预订的区域，那么线程就会 覆盖进程地址空间中的其他数据——像这种类型的缺陷是很难找到的。
 另一种很难找到的缺陷是找下溢(stack underflow)。为了理解什么是找下溢，让我们看下面 的代码：
 int WINAPI WinMain (HINSTANCE hlnstExe* HINSTANCE,
@@ -12296,7 +12296,7 @@ Bound to SHELL32.dll [4549BDB4] Thu Nov 02 10:43:16 2006 Bound to ADVAPI32.dll [
 £有时将数据与一个对象的实例关联起来是帮助的。比如，窗口附加字节(window extrabytes) 通过使用SetWindowWord和SetWindowLong函数来将数据与一个指定的窗口关联起来。
 我们可以使用线程局部存储区(Thread Local Storage，后面简称为TLS)来将数据与一个正在
 执行的指定线程关联起来。例如，我们可以将创建线程的时间与线程关联起来，然后当线 程终止的时候，我们就可以确定线程运行的时间长度。
-C/C++运行库使用了 TLS。由于C/C++运行库是在多线程应用程序出现的许多年之前设计 的，因此运行库中的大多数函数是为单线程应用程序设计的。_tCStok_s函数就是一个绝佳 的例了•。当应用程序第一次调用_t«t〇k_s的时候，该函数会将传入的字符串地址保存在它 自己的静态变量中。当我们后来再调用_tcSt〇k_s并传入NULL的时候，该函数会去引用保 存下来的字符串地址。
+C/C++运行库使用了 TLS。由于C/C++运行库是在多线程应用程序出现的许多年之前设计 的，因此运行库中的大多数函数是为单线程应用程序设计的。_tCStok_s函数就是一个绝佳 的例子。当应用程序第一次调用_t«t〇k_s的时候，该函数会将传入的字符串地址保存在它 自己的静态变量中。当我们后来再调用_tcSt〇k_s并传入NULL的时候，该函数会去引用保 存下来的字符串地址。
 在多线程环境中，一个线程ii了能会调用_tcstok_s，然后在它再次调用该函数之前，另一个 函数■能也会调用_tcst〇k_s。在这种情况下，第二个线程会导致_tcStok_Sffi新的字符串地 址来覆盖它的静态i量，而第一个线程对此却一无所知。第一个线程以后再调用_tcstok_s 的时候，用的是第二个线程的字符串，从而引起各种各样的难以查获和修复的缺陷。
 为了解决这个问题，C/C++运行库使用了 TLS。C++运行库会为每个线程分配独立的字符串 指针，专供_tcstok_s函数使用。同样享受这一特殊待遇的其他C/C++运行库函数还包括 asctime 和 1 gmtime。
 如果应用程序高度依赖全局变M或静态变量，那么TLS可以成为我们的救生符。好在开发 人员都倾向于最大限度地减少对此类变量的使用，并更多地依赖于自动变量(找上的变蛩) 和通过函数参数传入的数据。这是件好事，因为栈上的变量始终都是与某个特定的线程相 关联的。
@@ -12554,7 +12554,7 @@ DIPS会为每个图标保存一个位置。比如我们因为要玩游戏而需�
 GetFirstChild(FindWindow(TEXT("ProgMan"), NULL)))；
 这段代码先査找一个类别(class)为ProgMan的窗口。即使程序管理器(Program Manager)应 用程序没有运行，Windows外壳仍然会创建一个类别为ProgMan的窗口，其目的是为了向
 WS核心编程(第5版)
-后兼容那些为老版本Windows设计的应用程序。这个ProgMan窗口有且只有一个类别为 SHELLDLL_DefView的子窗口。这个了•窗口同样有且只冇一个子窗口，子窗口的类别为 SysListView32。这个SysListView32窗口就是桌面的ListView控件窗口。（顺便说一句， 我是通过Spy++来获得所冇这些信息的。）
+后兼容那些为老版本Windows设计的应用程序。这个ProgMan窗口有且只有一个类别为 SHELLDLL_DefView的子窗口。这个子窗口同样有且只冇一个子窗口，子窗口的类别为 SysListView32。这个SysListView32窗口就是桌面的ListView控件窗口。（顺便说一句， 我是通过Spy++来获得所冇这些信息的。）
 一旦有了 ListView的窗口句柄，就可以通过调用GetWindowThreadProcessld来确定创建
 该窗口的线程的标识符。然后把线程标识符传给SetDIPSHook函数(在DIPSLib.cpp内实 现)。SetDIPSHook会给这个线程安装一个WH_GETMESSAGE挂钩，并调用下面的函数 来强制唤醒Windows资源管理器线程。
 PostThreadMessage{dwThreadld, WM—NULL, 0, 01;
@@ -14151,7 +14151,7 @@ W^ssl
 问题是except块执行完毕后，程序执行从哪里开始继续呢？稍微开动一下脑筋，我们就可 以想到几种可能。
 第一种町能是从导致异常的那条CPU指令之后的第一条指令开始执行。具体到函数 Funcmeister2,就是从给dwTemp加10的那条语句幵始继续。这看起来合情合理，仴是实 际上，对大部分的应用程序来说，一旦一条指令运行失败，之后也就难以正确运行了。
 虽然函数Funcmeister2的代码能正常往下继续执行，但是它不能代表普遍情况。大部分情 况下，CPU指令只有在它们之前那条导致异常的指令返M—个合法值才能成功运行。比如， 我们可能在某个函数里先调用内存分配指令，然后之后一系列的运算都是在操控那块内存。 显然，一旦内存分配失败，所有后继指令都会失败，程序也会不停地抛出异常。
-再举一个例了•说明为什么不能从失败指令之后继续执行^假设我们将函数Funcmeister2中 那条产生异常的C语言代码替换成下面这个语句：
+再举一个例子说明为什么不能从失败指令之后继续执行^假设我们将函数Funcmeister2中 那条产生异常的C语言代码替换成下面这个语句：
 malloc(5 / dwTemp)；
 编译器会为上面这句代码牛成相应CPU指令来执行除法运算，并将除法运算的结果置于栈 上，最后凋用函数maHoc。如果除法运算失败，代码显然不能往下继续正确地执行。系统 必须在栈顶放置一些数据，否则，栈就被破坏了。
 幸运的是，如果一个语句抛出异常，Microsoft并没有提供一种从那条语句之后幵始执行的 可能。这个决定让我们远离了前面所讨论的这些麻烦。
@@ -14271,7 +14271,7 @@ ReleaseSemaphore(g_hSem, 1, NULL)；
 异常处理程序与软件异常
 FuncORenl 中的 finally 块。
 当系统执行FuncORenl的finally代码块时，我们可以清楚地看到SEH所起到的作用： FuncORenl的finally块释放了信号量，使得另一个等待这个信号量的线程得以继续运行。 如果我们不在finally块中包含调用ReleaseSemaphore的语句，信号量就永远不会被释放。
-当这个fmally块中的代码执行完毕后，系统继续在调用栈中向上查找需要被执行的finally 块。这个例了•己经没有需要执行的finally块了，于是系统在找到能够对异常进行处理的 try/except块时，停止查找，至此全局展开结束，系统执行except代码块。
+当这个fmally块中的代码执行完毕后，系统继续在调用栈中向上查找需要被执行的finally 块。这个例子己经没有需要执行的finally块了，于是系统在找到能够对异常进行处理的 try/except块时，停止查找，至此全局展开结束，系统执行except代码块。
 这就是结构化异常的工作机制。我们代码的执行与系统的控制有很大关联，使得SEH很难 理解。代码执行控制流不再是从头到尾，系统根据自己的意图决定代码每一部分的执行顺 序。系统的执行顺序虽然复杂，但仍然是可推断的。而且在图24-1和图24_2这两个流程 图的帮助下，我们应该有信心理解和使用SEH。
 为了更好地理解执行的顺序，让我们从另一个稍微不同的角度来看看发生了什么。当异常 过滤程序返回EXCEPTION_EXECUTE_HANDLER时，等于在告诉操作系统，当前线程 指令指针应该指向except块中的指令。然而，实际上当前指令指针指向的是try块中的指 令。在第23章，我们知道当一个线程离开try-fimilly结构的try块部分，系统需要确保finally 块中的代码得到执行。当异常发生时，系统用来确保这条规则成立的机制就是全局展开。
 说明从Windows Vista开始，如果一个异常发生在try/finally块中，并在其上层又没有 try/except块（同时过滤程序返回EXEPTION_EXCUTE_HANDLER),进程就会
@@ -14353,7 +14353,7 @@ return(EXCEPTION_CONTINUE_EXECUTION);
 return(EXCEPTION_EXECUTE_HANDLER);
 }
 当FunclinRooservelt2开始执行时，调用FuncAtude2，并以NULL作为参数值。因此当
-FinicAtudd执行时，将抛出异常。和前面所讨论的一样，系统计算与最近执行的try块匹 配的好常过滤程序。在这个例了•中，FunclinRoosevdt2中的try块是最近执行的，于是系 统调用OHFiUer2来计算异常过滤程序——尽管异常发生在函数FimCAUide2里。
+FinicAtudd执行时，将抛出异常。和前面所讨论的一样，系统计算与最近执行的try块匹 配的好常过滤程序。在这个例子中，FunclinRoosevdt2中的try块是最近执行的，于是系 统调用OHFiUer2来计算异常过滤程序——尽管异常发生在函数FimCAUide2里。
 下而加入另一个try_e:xcept块使这个例子有趣：
 TCHAR g_szBuffer[100]; void FunclinRoosevelt3() {
 TCHAR *pchBuffer = NULL；-—try {
