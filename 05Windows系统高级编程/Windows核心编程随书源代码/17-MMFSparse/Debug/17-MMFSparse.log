@@ -1,0 +1,3 @@
+﻿  MMFSparse.cpp
+MMFSparse.obj : warning LNK4075: 忽略“/EDITANDCONTINUE”(由于“/SAFESEH”规范)
+  17-MMFSparse.vcxproj -> D:\GitHub\StudyDiary\05Windows系统高级编程\Windows核心编程随书源代码\Debug\17-MMFSparse.exe

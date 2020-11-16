@@ -1,0 +1,5 @@
+﻿  DelayLoadApp.cpp
+d:\github\studydiary\05windows系统高级编程\windows核心编程随书源代码\20-delayloadapp\delayloadapp.cpp(213): error C2373: “__pfnDliNotifyHook2”: 重定义；不同的类型修饰符
+  c:\program files (x86)\microsoft visual studio\2017\professional\vc\tools\msvc\14.15.26726\include\delayimp.h(134): note: 参见“__pfnDliNotifyHook2”的声明
+d:\github\studydiary\05windows系统高级编程\windows核心编程随书源代码\20-delayloadapp\delayloadapp.cpp(214): error C2373: “__pfnDliFailureHook2”: 重定义；不同的类型修饰符
+  c:\program files (x86)\microsoft visual studio\2017\professional\vc\tools\msvc\14.15.26726\include\delayimp.h(141): note: 参见“__pfnDliFailureHook2”的声明
