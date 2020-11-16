@@ -1317,26 +1317,26 @@ PCTSTR pszCurrentDirectory,
 LPSTARTUPINFO pStartupInfo,
 PPROCESS_INFORMATION pProcessInformation);
 我们将在第4章洋细讨论这个函数，现在请注意blnheritHandles参数。通常情况下，在生 成一个进程时，我们要将该参数设为FALSE。这个值向系统表明：我们不希望子进程继承 父进程句柄表中的“可继承的句柄”。
-相反，如果向这个参数传递TRUE, P进程就会继承父进程的“可继承的句柄”的值。传 递TRUE时，操作系统会创建新的子进程，但不允许子进程立即执行它的代码。当然，系 统会为子进程创建一个新的、空0的进程句柄表——就像它为任何一个新进程所做的那样。 但是，山于我们传给CreateProcess函数的blnheritHandles参数的值是TRUE，所以系统 还会多做一件事情：它会遍历父进程的句柄表，对它的每一个记录项进行检査。凡是包含 一个有效的“可继承的句枘”的项，都会被完整地复制到子进程的句柄表。在子进程的句 柄表中，复制项的位S与它在父进程句柄表中的位置是完全一样的。这是非常重要的一个 设计，因为它意味着：在父进程和子进程中，对一个内核对象进行标识的句柄值是完全一 样的。
+相反，如果向这个参数传递TRUE, P进程就会继承父进程的“可继承的句柄”的值。传 递TRUE时，操作系统会创建新的子进程，但不允许子进程立即执行它的代码。当然，系 统会为子进程创建一个新的、空0的进程句柄表——就像它为任何一个新进程所做的那样。 但是，山于我们传给CreateProcess函数的blnheritHandles参数的值是TRUE，所以系统 还会多做一件事情：它会遍历父进程的句柄表，对它的每一个记录项进行检査。凡是包含 一个有效的“可继承的句柄”的项，都会被完整地复制到子进程的句柄表。在子进程的句 柄表中，复制项的位S与它在父进程句柄表中的位置是完全一样的。这是非常重要的一个 设计，因为它意味着：在父进程和子进程中，对一个内核对象进行标识的句柄值是完全一 样的。
 e
 pdows核心编程(第5版)
 除了复制句柄表的记录项，系统还会递增内核对象的使用计数，因为两个进程现在都在使 用这个对象。为r销毁内核对象，父进程和子进程要么都对这个对象调用CloseHandle， 要么都终止运行。子进程+—定先终止——仴父进程也不一定。事实上，父进程可以在 CreateProcess函数返回之后立即关闭它的内核对象句柄，子进程照样可以操纵这个对象。
-表3-3显示了子进程在被允许开始执行之前的句枘表。坷以看出，第一项和第二项没有初 始化，所以对子进程来说无效的句柄，不吋以使用。但是，索引3标识了一个内核对象。 事实上,•它标识的是地址OxFOOOOOlO处的内核对象，与父进程句柄表中的对象一样。
+表3-3显示了子进程在被允许开始执行之前的句柄表。坷以看出，第一项和第二项没有初 始化，所以对子进程来说无效的句柄，不吋以使用。但是，索引3标识了一个内核对象。 事实上,•它标识的是地址OxFOOOOOlO处的内核对象，与父进程句柄表中的对象一样。
 表3-3继承了父进程的“可继承的句柄”之后，子进程的句柄表的样子
 索引	指向内核对象内存块的指针	访问掩码(包含标志位的一个DWORD)	标志
 1	0x00000000	<不可用）	(不可用>
 2	0x00000000	(不可用）	(不可用）
 3	OxFOOOOOlO		0x00000001
-第13章将I并到，内核对象的内容被保存在内核地址空间中——系统上运行的所有进程都共 亨这个空间。•对于32位系统，这是0x80000000到OxFFFFFFFF之间的内存空间。对于64 位系统，则是0x00000400’ 00000000到OxFFFFFFF’ FFFFFFFF之间的内存空间。访问掩 码与父进程中的一样，标志也是一样的。这意味着假如T进程用CreateProcess来生成它自 己的子进程(其父进程的孙进程)并将blnheritHandles参数设为TRUE的前提下，孙进程也 会继承这个内核对象句柄。在孙进程的句枘表中，继承的对象句柄将具有相同的句柄值、 相同的访H掩码以及相冋的标志^内核对象的使用汁数将再次递增。
-记住，对象句柄的继承只会在生成f进程的时候发生。假如父进程后来又创建了新的内核 对象，并同样将它们的句柄设为"J*继承的句枘。那么正在运行的子进程是不会继承这些新 句柄的。
-对象句柄继承还奋一个非常奇怪的特征：子进程并不知道自己继承了任何句柄。在子进程 时文档中，应指出当它从另一个进程生成时，希望获得对一个内核对象的访问权——只有 在这种情况F,内核对象的句柄继承才是軒用的。通常，父应用程序和子应用程序是由同 一家公司编写的：何是，假如一•家公"1能在文杓中说明子应用程序希望继承哪些对象句枘， 那么另一家公4就nj■以据此来编写一个子应用程汴。
-到H前为止，为JT使子进程得到它想要的一个内核对象的句柄值，最常见的方式是将句柄 值作为命令行参数传给子进程。子进程的初始化代码将解祈命令行(通常是调用jtscanfls)， 并提取句枘值。子进程获得句枘值之后，就会拥有和父进程一样的内核对象访问权限。注 意，句枘继承之所以能够实现，唯一的原因就是“共享的内核对象”的句柄值在父进程和 子进程中是完全一样的。这正足父进程能将句柄值作为命令行参数来传递的原因。
+第13章将I并到，内核对象的内容被保存在内核地址空间中——系统上运行的所有进程都共 亨这个空间。•对于32位系统，这是0x80000000到OxFFFFFFFF之间的内存空间。对于64 位系统，则是0x00000400’ 00000000到OxFFFFFFF’ FFFFFFFF之间的内存空间。访问掩 码与父进程中的一样，标志也是一样的。这意味着假如T进程用CreateProcess来生成它自 己的子进程(其父进程的孙进程)并将blnheritHandles参数设为TRUE的前提下，孙进程也 会继承这个内核对象句柄。在孙进程的句柄表中，继承的对象句柄将具有相同的句柄值、 相同的访H掩码以及相冋的标志^内核对象的使用汁数将再次递增。
+记住，对象句柄的继承只会在生成f进程的时候发生。假如父进程后来又创建了新的内核 对象，并同样将它们的句柄设为"J*继承的句柄。那么正在运行的子进程是不会继承这些新 句柄的。
+对象句柄继承还奋一个非常奇怪的特征：子进程并不知道自己继承了任何句柄。在子进程 时文档中，应指出当它从另一个进程生成时，希望获得对一个内核对象的访问权——只有 在这种情况F,内核对象的句柄继承才是軒用的。通常，父应用程序和子应用程序是由同 一家公司编写的：何是，假如一•家公"1能在文杓中说明子应用程序希望继承哪些对象句柄， 那么另一家公4就nj■以据此来编写一个子应用程汴。
+到H前为止，为JT使子进程得到它想要的一个内核对象的句柄值，最常见的方式是将句柄 值作为命令行参数传给子进程。子进程的初始化代码将解祈命令行(通常是调用jtscanfls)， 并提取句柄值。子进程获得句柄值之后，就会拥有和父进程一样的内核对象访问权限。注 意，句柄继承之所以能够实现，唯一的原因就是“共享的内核对象”的句柄值在父进程和 子进程中是完全一样的。这正足父进程能将句柄值作为命令行参数来传递的原因。
 当然，也可以使用其他进程间通信技术将继承的内核对象句柄值从父进程传入子进程。一
 第3章内核对象
 个技术是让父进程等待子进程完成初始化(利用第9章讨论的WaitForlnputld丨e函数)；然 后，父进程可以将一条消息发送或发布到由子进程中的一个线程创建的一个窗口。
 另一种方式娃让父进程向其环境块添加一个环境变量。变量的名称应该是子进程知道的一 个名称，而变M的值应该是准备被子进程继承的那个内核对象的句柄值。然后，当父进程 生成子进程的时候，这个子进程会继承父进程的环境变量，所以能轻松调用 GetEnvironmentVariable来获得这个继承到的内核对象的句柄值。如果子进程还要生成 另一个子进程，这种方式就非常不错，因为环境变量是可以反复继承的。Microsoft知识 库的一篇文章(N址为http://support.microsoft.eom/kb/l90351)描述了子进程继承父控制台 的特例'
 3.3.2改变句柄的标志
-有时吋能遇到这样一种情况：父进程创建了一个内核对象，得到了一个可继承的句柄，然 后生成了两个子进程。但是，父进程只希望其中的一个子进程继承内核对象句柄。换言之, 我们冇时可能想控制哪些子进程能继承内核对象句柄。吋以调$ SetHandlelnformation函 数来改变内核对象句枘的继承标忐。如下所示：	k
+有时吋能遇到这样一种情况：父进程创建了一个内核对象，得到了一个可继承的句柄，然 后生成了两个子进程。但是，父进程只希望其中的一个子进程继承内核对象句柄。换言之, 我们冇时可能想控制哪些子进程能继承内核对象句柄。吋以调$ SetHandlelnformation函 数来改变内核对象句柄的继承标忐。如下所示：	k
 B00L SetHandlelnformation(
 HANDLE hObject,
 DWORD d祕ask,
@@ -1345,7 +1345,7 @@ DWORD dwFlags)；
 #define HANDLE_FLAG_INHERIT	0x00000001
 #define HANDLE_FLAG_PROTECT_FR0M_CLOSE	0x00000002
 C^>
-如果想把每个对象的标志一次性史改完毕，》丨以对这两个标志执行一次按位或运算。 SetHand丨elnformation函数的第二•个参数dwF丨ags指出希望把标志设为什么。例如，要打 开一个内核对象句枘的继承标志，可以像下面这样写：
+如果想把每个对象的标志一次性史改完毕，》丨以对这两个标志执行一次按位或运算。 SetHand丨elnformation函数的第二•个参数dwF丨ags指出希望把标志设为什么。例如，要打 开一个内核对象句柄的继承标志，可以像下面这样写：
 SetHandlelnformation(hObj, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
 要关闭这个标志，吋以像下面这样写：
 SetHandleInformation{hObj, HANDLE_FLAG_INHERIT, 0)；
@@ -1405,7 +1405,7 @@ jndows核心编程(第5版)
 HANDLE hMutexProcessB = CreateMutex(NULL, FALSE, TEXT{"JeffMutex"))；
 当进程B调用CreateMutex时，系统首先会查看是否存在一个名为“JeffMutex”的内核对 象。由于确实存在这样的一个对象，所以内核接着检查对象的类型。由于试图创建一个互 斥暈对象，而名为“JeffMutex”的对象也是一个互斥量对象，所以系统接着执行一次安全 检查，验证调用者是否拥有对该对象的完全访问权限。如果答案是肯定的，系统就会在进 程B的句柄表中查找一个空白id录项，并将其初始化为指向现有的内核对象。如果对象的 类型不匹紀，或调用者被拒绝访问，CreateMutex就会失败(返回NULL)。
 说明用于创建内核对象的函数(比如CreateSemaphore)总是返回具有完全访问权限的句 柄.如果想限制一个句柄的访问权限，可以使用这些函数的扩展版本(有一个ex后 级)，它们接受一个额外的DWORD dwDesiredAccess参数。例如，可以在调用 CreateSemaphoreEx 时使用或不使用 SEMAPHOREJVIODIFY_STATE，从而允许 或禁止对一个信号量句柄调用Re丨easeSemaphor匕请阅读Windows SDK文档，了 解与每种内核对象的权限细节，网址是http://msdn2.microsoft.com/en-us/library/ ms686670.aspx。
-进程B凋用成功之后，不会实际地创建一个互斥量对象。相反，会为进程B 分配一个新的句枘值(当然，和所冇句柄值一样，这是一个相对于该进程的句柄值)，它标 I只了内核中的一个现有的互斥M对象。当然，由于在进程B的句柄表中，用一个新的记录 项来引用了这个对象，所以这个互斥量对象的使用计数会被递增。在进程A和进程B都关 闭这个对象的句柄之前，该对象是不会销毁的。注意，两个进程中的句柄值极有可能是不 同的值。这没有什么关系。进程A用它自己的句柄值来引用那个互斥贵对象，进程B也用 它自己的句柄值来引用同一个互斥童对象。
+进程B凋用成功之后，不会实际地创建一个互斥量对象。相反，会为进程B 分配一个新的句柄值(当然，和所冇句柄值一样，这是一个相对于该进程的句柄值)，它标 I只了内核中的一个现有的互斥M对象。当然，由于在进程B的句柄表中，用一个新的记录 项来引用了这个对象，所以这个互斥量对象的使用计数会被递增。在进程A和进程B都关 闭这个对象的句柄之前，该对象是不会销毁的。注意，两个进程中的句柄值极有可能是不 同的值。这没有什么关系。进程A用它自己的句柄值来引用那个互斥贵对象，进程B也用 它自己的句柄值来引用同一个互斥童对象。
 说明通过名称来实现内核对象共享时，务必关注一点：进程B调用CreateMutex时，它 会向函数传递安全属性信息和第二个参数•如果已经存在一个指定名称的对象，这 些参数就会被忽略'
 事实上，完全可以在调用了 Create*之后，马上调用一个GetLastError，判断自己刚 才是真的创建了一个新的内核对象，还是仅仅是打开了一个现有的：
 HANDLE hMutex = CreateMutex<&sa, FALSE, TEXT ("JeffObj">); it (GetLastError{) == ERROR_ALREADY_EXISTS) {
@@ -1629,7 +1629,7 @@ HANDLE hNamespace,
 DWORD dwFlags};
 如果我们已经创建了命名空间，而且+希望它在关闭后仍然町见，应该将 PRIVATE_NAMESPACE_FLAG_DESTROY作为第二个参数传给上述函数，反之则传入
 0。边界将在以下两种情况下关闭：进程终止运行或者调用De丨eteBoundaryDescriptor，并
-将边界伪句枘作为其唯一的参数传给它。如果还冇内核对象正在使用，命名空间一定不能 关闭。如果在内部还冇内核对象时关闭一个命名空间，其他人就可以在同一个边界中，在 重新创建的一个相同的命名空间中，并在其中创建一个同名的内核对象，使DoS攻击再次 成为可能。
+将边界伪句柄作为其唯一的参数传给它。如果还冇内核对象正在使用，命名空间一定不能 关闭。如果在内部还冇内核对象时关闭一个命名空间，其他人就可以在同一个边界中，在 重新创建的一个相同的命名空间中，并在其中创建一个同名的内核对象，使DoS攻击再次 成为可能。
 总之，专冇命名空间相当于可供我们在其中创建内核对象的一个目朵。和其他目录一样， 专有命名空间也冇一个和它欠联的安全描述符，这个描述符是在调用 CreatePrivateNamespace的时候设罝的。但是，和文件系统的目录不同的是，这个命名空 间是没有父H氽的，也没存名称——我们将“边界描述符”作为对这个边界进行引用的一 个名称来使用。正是由于这个原因，所以在Sysintema丨s的Process Explorer中，对于“前 缀以一个专有命名空间为基础”的内核对象，它们显示的是“…\”前缀，而不是我们预期 的前缀前缀隐藏要保密的信息，能更好地防范潜在的黑 客。我们为专冇命名空间指定的名称是一个别名，只在进程内吋见。其他进程(甚至是同一 个进程)可以打开同一个专冇命名空间，并为它指定一个不同的别名。
 创建普通M录时，需要对父H录执执行一次访问检S，确定是否能在其中创建一个子目录。 类似地，为了创建命名空间，要执行一次边界测试——在当前线程的令牌(token)中，必须 包含作为边界一部分的所有SID。
 3.3.6复制对象句柄
@@ -1642,14 +1642,14 @@ DWORD dwDesiredAccess, BOOL blnheritHandle, DWORD dwOptions);
 第3章内核对象
 调用DupHcateHand丨e时，它的第一个参数和第三个参数(hSourceProcessHandle和 hTargetProcessHand丨e)是内核对象句柄。这两个句柄本身必须相对于调用DuplicateHandle
 函数的那个进程。此外，这两个参数标识的必须是进程内核对象：如果我们传递的句柄指 向的是其他类型的内核对象，函数调用就会失败。我们将在第4章洋细讨论进程内核对象。 就H前来说，我们只需知道一旦启动一个新的进程，系统就会创建一个进程内核对象。
-第二个参数hSourceHandle是指向任何类型的内核对象的一个句柄。但是，它的句柄值一 定不能与调用DuplicateHandle函数的那个进程相关。相反，该句柄必须与 hSoiirceProcessHand丨e句枘所标识的那个进程相关。函数会将源进程中的句柄信息复制到 hTargetProcessHanle所标识进程的句柄表中。第四个参数是phTargetHandle，它是一个 HANDLE变量的地址，用来接收复制得到的HANDLE值。
+第二个参数hSourceHandle是指向任何类型的内核对象的一个句柄。但是，它的句柄值一 定不能与调用DuplicateHandle函数的那个进程相关。相反，该句柄必须与 hSoiirceProcessHand丨e句柄所标识的那个进程相关。函数会将源进程中的句柄信息复制到 hTargetProcessHanle所标识进程的句柄表中。第四个参数是phTargetHandle，它是一个 HANDLE变量的地址，用来接收复制得到的HANDLE值。
 DupHcateHand丨e的最后三个参数用于指定这个内核对象在目标进程中所对应的句柄表项， 应该使用何种访问掩码和继承标志。dwOptions参数可以为0(零)或者以下两个标志的任意 组合：DUPLICATE_SAME_ACCESS 和 DUPLlCATE_CLOSE_SOURCE。
 如果指定DUPL丨CATE_SAME_ACCESS标志，将向Dup丨icateHandle函数表明我们希望
-目标句枘拥有与源进程的句柄一样的访问掩码。使用这个标志后，DupHcateHand丨e函数会 忽略它的dwDesiredAccess参数。
+目标句柄拥有与源进程的句柄一样的访问掩码。使用这个标志后，DupHcateHand丨e函数会 忽略它的dwDesiredAccess参数。
 如果指定DUPLICATE_CLOSE_SOURCE标志，会关闭源进程中的句柄。利用这个标志，
 —个进程可以轻松地将一个内核对象传给另一个进程。如果使用了这个标志，内核对象的 使用计数不会受到影响。
-我将用一个例子来演示DuplicateHandle函数的丄作方式。在这个例子中，进程S是源进 程，它拥有对一个内核对象的访问权：进程T是0标进程，它将获得对这个内核对象访问 权。进程C则是一个催化剂(catalyst)进程，它执行对DuplicateHandle的调用。在本例中， 我是出于演示函数工作方式的0的才将句枘值K接写到代码中。在实际应用中，应该将句 柄值放到变景中，再将变M作为参数传铪函数。
-进程C的句柄表(参见表3-4)包含两个句枘值，即1和2。句柄值1标识了进程S的进程内 核对象，而句柄值2标识进程T的进程内核对象。
+我将用一个例子来演示DuplicateHandle函数的丄作方式。在这个例子中，进程S是源进 程，它拥有对一个内核对象的访问权：进程T是0标进程，它将获得对这个内核对象访问 权。进程C则是一个催化剂(catalyst)进程，它执行对DuplicateHandle的调用。在本例中， 我是出于演示函数工作方式的0的才将句柄值K接写到代码中。在实际应用中，应该将句 柄值放到变景中，再将变M作为参数传铪函数。
+进程C的句柄表(参见表3-4)包含两个句柄值，即1和2。句柄值1标识了进程S的进程内 核对象，而句柄值2标识进程T的进程内核对象。
 表3«4进程C的句柄表
 索引	指向内核对象内存块的指针	访问掩码(包含标志位的一个DWORD}	标志
 ]	0xF0000000(与进程S对应的内核对象）	〇x9999?*>99	0x00000000
@@ -1676,7 +1676,7 @@ DuplicateHandled, 2, 2, &hObj, 0# TRUE, DUPLICATE_SAME_ACCESS);
 使用DuplicateHandle函数(来复制内核对象句柄)所遇到的问题和继承(内核对象句柄)时同 样：R标进程不知逍它现在能访问一个新的内核对象。所以，进程C必须以某种方式来通 知进程T，告诉它现在可以访问一个内核对象了，而且必须使用某种形式的进程间通信机 制，将hObj中的句柄值传给进程T。显然，使用命令行参数或者更改进程T的环境变量是 行不通的，因为进程己经肩动并开始运行了。我们必须使用窗口消息或者其他进程间通信 (IPC)机制。
 (62-63)
 3章内核对象
-刚才介绍的是DupHcateHandle最常见的用法。可以看出，它是一个非常灵活的函数。+ 过，在涉及三个不同的进程时，它其实是很少使用的(可能是由于进程C不知道进程S使用 的一个对象的句枘值)。通常，在只涉及两个进程的时候，才会凋用DiiplicateHandle函数。 来设想下面这个情景：一个进程能访问另一个进程也想访问的一个对象：或者说，一个进 程想把一个内核对象的访问权授予另一个进程。例如，假定进程S能访问一个内核对象， 并希望进程T也能访问这个对象，那么可以像下面这样凋用DupHcateHandle函数：
+刚才介绍的是DupHcateHandle最常见的用法。可以看出，它是一个非常灵活的函数。+ 过，在涉及三个不同的进程时，它其实是很少使用的(可能是由于进程C不知道进程S使用 的一个对象的句柄值)。通常，在只涉及两个进程的时候，才会凋用DiiplicateHandle函数。 来设想下面这个情景：一个进程能访问另一个进程也想访问的一个对象：或者说，一个进 程想把一个内核对象的访问权授予另一个进程。例如，假定进程S能访问一个内核对象， 并希望进程T也能访问这个对象，那么可以像下面这样凋用DupHcateHandle函数：
 // All of the following code is executed by Process S.
 // Create a mutex object accessible by Process S.
 HANDLE hObjlnProcessS = CreateMutex(NULL, FALSE, NULL);
@@ -1690,10 +1690,10 @@ CloseHandle(hProcessT)?
 • • •
 // When Process S no longer needs to use the mutex, it should close it.
 CloseHandle(hObjInProcessS);
-调用GetCurrentProcess会返回一个伪句柄，该句柄始终标识主调进程——本例是进程S。 一旦DupUcateHand丨e函数返回，hObjlnProcessT就是一个相对于进程T的句枘，它标识 的对象就由“进程S中的代码引用的hObjlnProcessS”所标识的对象。在Process S中，永 远不要执行以下代码：
+调用GetCurrentProcess会返回一个伪句柄，该句柄始终标识主调进程——本例是进程S。 一旦DupUcateHand丨e函数返回，hObjlnProcessT就是一个相对于进程T的句柄，它标识 的对象就由“进程S中的代码引用的hObjlnProcessS”所标识的对象。在Process S中，永 远不要执行以下代码：
 II Process S should never attempt to close the duplicated handle.
 CloseHandle(hObjlnProcessT)；
-如果进程S执行了上述代码，CloseHandle函数调用可能会失败，也丨丨了能不会失败。仴 CloseHandle函数调用成功与否并不重要。重要的是:假如进程S碰巧能用与hObjlnProcessT 相同的句枘值访问一个内核对象，1:述函数调用就会成功。换言之，这个调用可能会错误 地关闭一个内核对象；下次进程S试图访问这个内核对象时，肯定会造成应用程序运行失 常(这还只是好听的一种说法)。
+如果进程S执行了上述代码，CloseHandle函数调用可能会失败，也丨丨了能不会失败。仴 CloseHandle函数调用成功与否并不重要。重要的是:假如进程S碰巧能用与hObjlnProcessT 相同的句柄值访问一个内核对象，1:述函数调用就会成功。换言之，这个调用可能会错误 地关闭一个内核对象；下次进程S试图访问这个内核对象时，肯定会造成应用程序运行失 常(这还只是好听的一种说法)。
 还可以通过另一种方式来使用DuplicateHandle:假设一个进程拥有对一个文件映射对象的 读写权限。在程序中的某个位置，我们要调用一个函数，并希望它对文件映射对象进行只 读访问。为了使应用程序变得更健壮，可以使用DuplicateHand丨e为现有的对象创建一个 新句柄，并确保这个新句柄只有只读权限。然后，把这个只读句柄传给函数。采取这种方 式，函数中的代码绝对不会对文件映射对象执行意外的写入操作。以下代码对此进行了 演示：
 int WINAPI _tWinMain(HINSTANCE hlnstExe, HINSTANCE,
 LPTSTR szCmdLine, int nCmdShow) {
@@ -3057,7 +3057,7 @@ I	■	-- *一T二 1
 dows核心编程(第5版)
 注意，这个UI限制只是单向的。也就是说，作业外部的进程可以看到作业内部的进程所 创建的用户对象。例如，假如我在一个作业内部运行记事本程序，在一个作业外部运行 Spy++程序，那么Spy++是可以看到记事本程序的窗口的，即使记事本程序所在的那个 作业指定了 J〇B_OBJECT_UILlMIT_HANDLES标志。另外，如果Spy++在它自己的 作业中，那么也可以看到记事本程序的窗口，除非作业己经指定了 JOB_OBJECT_UILlMIT_HANDLES 标志。
 要为作业中的进程创建一个真正安全的沙箱，对UI句柄进行限制是十分强大的一个能力。 不过，有时仍然需要让作业内部的一个进程同作业外部的一个进程通信。
-为了做到这一点，一个简单的办法是使用窗口消息。但是，如果作业中的进程不能访问U1 句枘，那么作业内部的进程就不能向作业外部的进程创建的一个窗口发送或发布窗口消息。 幸运的是，可以用另一个函数来解决这个问题，如下所示：
+为了做到这一点，一个简单的办法是使用窗口消息。但是，如果作业中的进程不能访问U1 句柄，那么作业内部的进程就不能向作业外部的进程创建的一个窗口发送或发布窗口消息。 幸运的是，可以用另一个函数来解决这个问题，如下所示：
 BOOL UserHandleGrantAccess(
 HANDLE hUserObj,
 HANDLE hJob,
@@ -3416,7 +3416,7 @@ Jndows核心编程(第5版)
 析构函数小会被调用，数据不会回写到磁盘……正如我在本章开始就解释的一样，当应用 程序的入口点函数返N时，C/C+运行库的启动代码将调用ExitProcess。因此，如果应用程 序中并发运行着多个线程，需要在主线程返回之甜，明确处理好每个线程的终止过程。否 则，其他所冇正在运行的线程都会在毫无预瞀的前提下突然“死亡”。
 6.5.5线程终止运行时
 线程终止运行时，会发生下面这些事情。
-•	线程拥有的所冇用户对象句枘会被释放。在Windows中，大多数对象都是由包含了
+•	线程拥有的所冇用户对象句柄会被释放。在Windows中，大多数对象都是由包含了
 “创建这些对象的线程”的进程拥有的。但一个线程有两个用户对象：窗口(window) 和挂钩(hook)。一个线程终止运行时，系统会动销毁巾线程创建或安装的任何窗 口，并卸载由线程创建或安装的任何挂钩。其他对象只有在拥有线程的进程终止时 才被销毁。
 • 线程的退出代码从Sl’ILL_ACTIVE变成传给ExitThread或TerminateThread的
 代码。
@@ -3735,7 +3735,7 @@ GetThreadTimes(GetCurrentThread(),
 DWORD GetCurrentProcessId(); DWORD GetCurrentThreadld();
 这两个函数通常都不如返回伪句柄的那些函数有用，但在个别情况下，它们更方便。
 将伪句柄转换为真正的句柄
-有时或许需要一个真正的线程句柄，时不是一个伪句柄。所谓“真正的句柄”，指的是能 明确、无歧义地标识一个线程的句枘。来仔细分析下丨W的代码：
+有时或许需要一个真正的线程句柄，时不是一个伪句柄。所谓“真正的句柄”，指的是能 明确、无歧义地标识一个线程的句柄。来仔细分析下丨W的代码：
 DWORD WINAPI ParentThread(PVOID pvParam) {
 HANDLE hThreadParent = GetCurrentThread();
 CreateThread(NULL, 0, ChildThread, (PVOID) hThreadParent, 0, NULL)；
@@ -3747,8 +3747,8 @@ GetThreadTimes(hThreadParent,
 &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime);
 // Function continues...
 >
-能看出这个代码段的问题吗？其意图是让父线程向子线程传递—个可以标识父线程的句 柄。但是，父线程传递的是一个伪句枘，而小是一个真正的句柄。子线程开始执行时，它 把这个伪句枘传给GetThreadTimes函数，这将导致予线程得到的是它自己的CPU计时数 据，而不是父线程的。之所以会发生这种情况，是因为线程的伪句柄是一个指向当前线程 的句柄；换言之，指向的是发出函数调用的那个线稈。
-为了修止这段代码，必须将伪句枘转换为一个真正的句柄。DupHcateHandle函数(详见第3 章的讨论)》1以执行这个转换：
+能看出这个代码段的问题吗？其意图是让父线程向子线程传递—个可以标识父线程的句 柄。但是，父线程传递的是一个伪句柄，而小是一个真正的句柄。子线程开始执行时，它 把这个伪句柄传给GetThreadTimes函数，这将导致予线程得到的是它自己的CPU计时数 据，而不是父线程的。之所以会发生这种情况，是因为线程的伪句柄是一个指向当前线程 的句柄；换言之，指向的是发出函数调用的那个线稈。
+为了修止这段代码，必须将伪句柄转换为一个真正的句柄。DupHcateHandle函数(详见第3 章的讨论)》1以执行这个转换：
 BOOL DuplicateHandle(
 HANDLE hSourceProcess,
 HANDLE hSource,
@@ -3783,7 +3783,7 @@ tCreacionTime, tExitTime, &ftKernelTime, &ftUserTime);
 CloseHandle(hThreadParent)；
 // Function continues...
 >
-现在，当父线程执行时，它会把标i只父线程的冇歧义的伪句柄转换为一个新的、真正的句 柄，后者明确、无歧义地标识了父线程。然后，它将这个真正的句柄传给CreateThread。 当子线程开始执行时，其pvPamm参数就会包含这个真正的线程句枘&在调用任何函数时， 只要传入这个句柄，影响的就将是父线程，而非子线程。
+现在，当父线程执行时，它会把标i只父线程的冇歧义的伪句柄转换为一个新的、真正的句 柄，后者明确、无歧义地标识了父线程。然后，它将这个真正的句柄传给CreateThread。 当子线程开始执行时，其pvPamm参数就会包含这个真正的线程句柄&在调用任何函数时， 只要传入这个句柄，影响的就将是父线程，而非子线程。
 因为DupHcateHandle递增f指定内核对象的使用计数，所以在用完复制的对象句柄后， 冇必要把白标句柄传给CloseHaiuHe，以递减对象的使用计数。前面的代码体现了这一点。 调用GetThreadTimes之后，f线程紧接着调用CloseHandle来递减父线程对象的使用汁 数。在这段代码中，我假设了线程不会W这个句柄调用其他任何函数。如果还要在调用其 他函数时传入父线柷的句柄，那么只冇在子线程完全不需要此句柄的时候，才能调用 CloseHandle。
 还要强调一点，DuplicateHandle函数"I用于把进程的伪句柄转换为真正的进程句柄，如下 所示：
 HANDLE hProcess；
@@ -4238,7 +4238,7 @@ emPn 秦
 I
 当线程M幵始创建时，它的线程优先级总是设置为normal。我一宵很奇怪,CreateThread函 数没有为调用者提供设置新线程相对优先级的办法。为了设置和获取线程的相对优先级， 必须调用以下这些函数：
 这个函数将hProcess表示的优先级修改为参数fdwPriorlty所指定的值。fdwPriority参数
-可以是表7-5中的任何一个标识符。因为该函数有一个参数是进程句枘，所以只要冇它的 句柄和足够的访问权限，我们就可以改变系统中的任何进程的优先级。
+可以是表7-5中的任何一个标识符。因为该函数有一个参数是进程句柄，所以只要冇它的 句柄和足够的访问权限，我们就可以改变系统中的任何进程的优先级。
 CHD
 IIIII1II
 dows核心编程(第5版)
@@ -6021,7 +6021,7 @@ WaitForSingleObject和WaitForMuUip丨eObjects是在进行线程同步时最为�
 足，Windows还提供了这两个函数的一些变种。如果读者己经理解/WaitForSingleObject 和WaUForMultipleObjects，那么再去理解这些函数是如何工作的就根本不成问题。本节 我们将简要介绍一下这些函数中的一部分。
 9.8.1异步设备I/O
 异步设备I/〇(asynchronous device I/O)允许线程开始读取操作或写入操作，但不必等待读取 操作或写入操作完成。我们将在第10章对此进行史详细的介绍。例如，如果线程：要把一 个大文件载入到内存中，那么线程可以告诉系统把文件载入到内存。然后，当系统在载入 文件的时候，线程可以忙着执行其他任务一■创违窗口，初始化数据结构，等等。当初始 化究成之后，线程可以将自己挂起，等系统通知它文件己经载入完毕。
-设备对象是可同步的内核对象，这意味着我们吋以调用WaitForSingleObject,并传入文件 句枘、奩接字、通信端口，等等。当系统执行异步丨/〇的时候，设备对象处于未触发状态。 一 11操作完成，系统会将对象变成触发状态，这样线程就知道操作d经完成了。这时，线 稈就nj■以继续执行。
+设备对象是可同步的内核对象，这意味着我们吋以调用WaitForSingleObject,并传入文件 句柄、奩接字、通信端口，等等。当系统执行异步丨/〇的时候，设备对象处于未触发状态。 一 11操作完成，系统会将对象变成触发状态，这样线程就知道操作d经完成了。这时，线 稈就nj■以继续执行。
 9.8.2	WaitForlnputldle 函数
 线程可以调用WaitForlnputld丨e函数来将自己挂起：
 DWORD WaitForlnputldlet HANDLE hProcess,
@@ -8552,7 +8552,7 @@ BOOL GetProcessMemorylnfo(
 HANDLE hProcess,
 PPROCESS_MEMORY_COUNTERS ppmc,
 DWORD cbSize);
-hProcess是我们感兴趣的进程的句柄，该句柄必须A备PROCESSJJUERY_ INFORMATION和PROCESS_VM_READ访M权限。对当前正在执行的进程来说， GetCurrentProcess会返回一个满足此条件的伪句枘。参数ppmc指向一个 PPROCESS_MEMORY_COUNTERS结构，该结构的大小通过参数cbSize来指定。如果 GetProcessMemorylnfo返回TRUE，那么下面的结构会包含与指定进程有关的详细信息：
+hProcess是我们感兴趣的进程的句柄，该句柄必须A备PROCESSJJUERY_ INFORMATION和PROCESS_VM_READ访M权限。对当前正在执行的进程来说， GetCurrentProcess会返回一个满足此条件的伪句柄。参数ppmc指向一个 PPROCESS_MEMORY_COUNTERS结构，该结构的大小通过参数cbSize来指定。如果 GetProcessMemorylnfo返回TRUE，那么下面的结构会包含与指定进程有关的详细信息：
 typedef Struct _PROCESS_MEMORY_COUNTERS_EX {
 DWORD cb;
 DWORD Page Fault Coun t；
@@ -10945,7 +10945,7 @@ PVOID HeapAll〇c{
 HANDLE hHeap,
 DWORD fdwFlags,
 SIZE_T dwBytes);
-第1个参数hHeap是一个堆的句枘，表示要从哪个堆中分配内存。参数dwBytes表示要从 堆中分配多少个字节。中间的参数fdwHags用来指定一些标志，这些标志会对分配产生影 响。0 前，系统只支持 3 个标志：HEAP_ZERO_MEMORY，HEAP_GENERATE_ EXCEPTIONS 和 HEAP_NO_SERIALIZE。
+第1个参数hHeap是一个堆的句柄，表示要从哪个堆中分配内存。参数dwBytes表示要从 堆中分配多少个字节。中间的参数fdwHags用来指定一些标志，这些标志会对分配产生影 响。0 前，系统只支持 3 个标志：HEAP_ZERO_MEMORY，HEAP_GENERATE_ EXCEPTIONS 和 HEAP_NO_SERIALIZE。
 HEAP_ZERO_MEMORY标志的0的非常明显。它会让HeapAlloc在返回之前把内存块的 内容都清零。第2个标志HEAP_GENERATEJEXCEPT10NS用来告诉系统，如果堆中没 有足够的内存来满足内存分配请求，HeapAHoc就应该抛出异常6在调用HeapCreate来创 建堆的时候，也可以使用HEAP_GENERATE_EXCEPTIONS标志，这告诉系统在无法分 配内存块的时候抛出异常。如果在调用HeapCreate的时候指定了这个标志，在调用 HeapAlloc的时候就不需要再指定了。另一方面，我们可能希望在创建堆的时候不使用这 个标志。在这种情况下，在调用HeapAHoc的时候指定这个标志就只会影响到当前这次调 用，而不会影响到所有其他对HeapAUoc函数的调用。
 如果HeapAHoc调用失败并抛出异常，那么抛出的异常将是表18-1中列出的两个异常之一。
 dows核;|>编程(第5版)
@@ -11047,7 +11047,7 @@ if (s_uNumAllocsInHeap 0) {
 // Set the heap handle to NULL so chat the new operator // will know to create a new heap if a new CSomeClass // object is created. s_hHeap = NULL;
 }
 }
-重载delete操作符的成员函数只有一个参数，即要释放的对象的地址。函数所做的第一件 事情就是调用HeapFree，传入堆句枘和要释放的对象的地址。如果对象被成功释放，则 s_uNumAUocsInHeap会递减，以表示堆中的CSomeC丨ass对象又少了一个。接着函数会检 査s_uNumAHocsInHeapT是否为0。如果为0，函数将调用HeapDestroy并传入堆句柄。 如果堆被成功地销毁，代码将把sJiHeap设为NULL。这一步极其重要，因为程序在以后 仍然有可能会分配另一个CSomeClass对象。当这种情况发生的时候，new操作符会检査 s_hHeap并决定是应该使用已有的堆还是应该创建一个新的堆。
+重载delete操作符的成员函数只有一个参数，即要释放的对象的地址。函数所做的第一件 事情就是调用HeapFree，传入堆句柄和要释放的对象的地址。如果对象被成功释放，则 s_uNumAUocsInHeap会递减，以表示堆中的CSomeC丨ass对象又少了一个。接着函数会检 査s_uNumAHocsInHeapT是否为0。如果为0，函数将调用HeapDestroy并传入堆句柄。 如果堆被成功地销毁，代码将把sJiHeap设为NULL。这一步极其重要，因为程序在以后 仍然有可能会分配另一个CSomeClass对象。当这种情况发生的时候，new操作符会检査 s_hHeap并决定是应该使用已有的堆还是应该创建一个新的堆。
 这个例子展示了使用多个堆的方便机制。我们可以非常容易地将它用在其他的类中。但还 需要考虑继承的情况。如果以CSomeClass为基类派生一个新类，那么新类将继承 CSomeC丨ass的new和delete操作符。这个新类同时还会继承CSomeC丨ass的堆，这意味着 在调用派生类的new操作符时，会和CSomeClass —样，从同一个堆中分配内存。取决于 实际情况，这可能是我们希望的，但也可能不是我们希望的。如果对象的大小相差非常大， 那么可能会在堆中造成严重的碎片。此外，正如在本章前面的18.2.1节“对组件进行保护” 和18.2.2节“更有效的内存管理”所述，这也可能会使追踪代码中的缺陷变得更加困难。
 如果想在派生类中使用一个单独的堆，把CSomeClass类中的代码复制一份即可。说得再 具体一点，就是增加一组8_1|11€8卩和$_1|1^11111戍1丨〇〇811|11680变量，把new和de丨ete操作符
 的代码复制过去。在编译的时候，编译器会发现派生类也重载了 new和delete操作符，这 样它就会调用派生类的操作符，而不会调用基类的操作符。
@@ -14780,7 +14780,7 @@ instance of Visual Studio 2005
 〇 Set the currency selected debugger as the default. QManualy choose the debugging engines.
 Do you want to (Mug using the selected debugger?
 当然，我们也可以改变这个注册表项的值，让它直接指向一个调试器。WerFault.exe会给 调试器传入两个参数。第一个参数是要调试的进程的ID。第二个参数是继承过来的事件句 柄，它指向由WerSvc服务创建的处于未触发状态的手动重置事件(第6步)。注意，问题进 程也在等待WerSvc返回的ALPC通知。第三方厂商实现的调试器也必须能够识别_p和^ 这两个开关，它们分别代表进程ID和事件句柄。
-WerFaultexe先将进程1D和货件句枘合并到一个字符串里，然后通过CreateProcess启动
+WerFaultexe先将进程1D和货件句柄合并到一个字符串里，然后通过CreateProcess启动
 S核心编程(第5版)
 调试器，并将blnheritHandles参数设成TRUE，允许调试器进程可以继承事件对象的句柄。 此时，调试器进程启动并査看命令行参数，如果_P开关存在，调试器拿到进程ID并通过 DebugActiveProcess将自己附着到对应进程上：
 BOOL DebugActiveProcess(DWORD dwProcessID)；
@@ -15428,7 +15428,7 @@ WER_DUMP_TYPE dumpType,
 PWER_EXCEPTION—INFORMATION pei,
 PWER_DUMP_CUSTOM_OPTIONS pEXimpCustomOpt ions,
 DWORD dwFlags);
-参数hRejiort表示需要放进小型转储文件的报告句柄。参数hProcess表示产生转储文件的 进程句枘。这个句柄必须在创建时陚予STANDARD_RIGHTS_READ和 PROCESS_QUERYJNFORMAT丨ON权限。一般来说，我们需要传入的句柄应该从 GetCurrentProcess得到，它返回的句柄具有全部进程权限。
+参数hRejiort表示需要放进小型转储文件的报告句柄。参数hProcess表示产生转储文件的 进程句柄。这个句柄必须在创建时陚予STANDARD_RIGHTS_READ和 PROCESS_QUERYJNFORMAT丨ON权限。一般来说，我们需要传入的句柄应该从 GetCurrentProcess得到，它返回的句柄具有全部进程权限。
 参数hThread表示线程句柄(处十hProcess指向的进程内)。WerReportAddDump使用它
 来访问线程的函数调用栈。当使用事后调试时，调试器使用这个函数凋用栈来帮我们定位 到导致异常的指令。除了保存函数调用栈，WerReportAddDump还需要知道一些额外异常 信息。我们必须通过参数pExceptionParam来传入它们，如下面的代码所示：
 WER_EXCEPTION一INFORMATION wei;
@@ -15438,7 +15438,7 @@ wei.pExceptionPointers = pExceptionlnfo； // pExceptionlnfo is valid
 我们可以给dwFlags参数传递0或者WER_DUMP_NOHEAP_ONQUEUE。一般来说，小型 转储包含了堆数据。何是 WER_DUMP_NOHEAP_ONQUEUE 标志让 WerReportAddDump
 忽略堆数据。因为报告中不再包含堆信息，这个标志冇助丨:节省磁盘空间。
 26.4.4将任意文件放入报告：WerReportAddFile
-hReport表示我们要放入文件的报告句枘，放入的文件名称ttipwzniename指出。同时， 我们可以给参数addFIleType传入表26-9所列值中的其中一个。
+hReport表示我们要放入文件的报告句柄，放入的文件名称ttipwzniename指出。同时， 我们可以给参数addFIleType传入表26-9所列值中的其中一个。
 小要泥淸 WerFileTypeMicrodump，WerFileTypeMinidump 和 WerFileTypeHeapdump。
 当报告要上传到Microsoft的服务器时，系统会建立一个比较复杂的通信，本地机器需要响 应服务器关于哪些文件需要发送的清求。在某些情况下，服务器需要转储文件，而本地存 储则依赖这三个标志来考虑在WerReportAddDump函数之外生成的自定义转储。关于上 传错误报告的通信协议，洋见Windows Qua丨ity网站。参数dwFHeF丨ags和函数 WerRegisterFHe的同名参数具有相同的含义。因此表264所展示的标志和它们的含义也 适用。
 ndows核心编程(第5版)
