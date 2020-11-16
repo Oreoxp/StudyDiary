@@ -1,0 +1,5 @@
+﻿  VMQuery.cpp
+  VMMap.cpp
+  正在生成代码...
+VMMap.obj : warning LNK4075: 忽略“/EDITANDCONTINUE”(由于“/SAFESEH”规范)
+  14-VMMap.vcxproj -> D:\GitHub\StudyDiary\05Windows系统高级编程\Windows核心编程随书源代码\Debug\14-VMMap.exe

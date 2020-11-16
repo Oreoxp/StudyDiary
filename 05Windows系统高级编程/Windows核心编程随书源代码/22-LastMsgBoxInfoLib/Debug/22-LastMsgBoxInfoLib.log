@@ -1,0 +1,8 @@
+﻿  LastMsgBoxInfoLib.cpp
+  APIHook.cpp
+c:\program files (x86)\windows kits\8.1\include\um\imagehlp.h(1873): warning C4091: “typedef ”: 没有声明变量时忽略“<unnamed-enum-hdBase>”的左侧
+c:\program files (x86)\windows kits\8.1\include\um\imagehlp.h(3519): warning C4091: “typedef ”: 没有声明变量时忽略“<unnamed-enum-sfImage>”的左侧
+  正在生成代码...
+APIHook.obj : warning LNK4075: 忽略“/EDITANDCONTINUE”(由于“/SAFESEH”规范)
+    正在创建库 D:\GitHub\StudyDiary\05Windows系统高级编程\Windows核心编程随书源代码\Debug\22-LastMsgBoxInfoLib.lib 和对象 D:\GitHub\StudyDiary\05Windows系统高级编程\Windows核心编程随书源代码\Debug\22-LastMsgBoxInfoLib.exp
+  22-LastMsgBoxInfoLib.vcxproj -> D:\GitHub\StudyDiary\05Windows系统高级编程\Windows核心编程随书源代码\Debug\22-LastMsgBoxInfoLib.dll
