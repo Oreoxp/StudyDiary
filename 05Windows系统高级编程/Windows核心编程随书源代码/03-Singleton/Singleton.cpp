@@ -20,15 +20,15 @@ Notices: Copyright (c) 2008 Jeffrey Richter & Christophe Nasarre
 // Main dialog
 HWND     g_hDlg;
 
-// Mutex, boundary and namespace used to detect previous running instance
+// 用于检测先前正在运行的实例的互斥量，边界和namespace
 HANDLE   g_hSingleton = NULL;
 HANDLE   g_hBoundary = NULL;
 HANDLE   g_hNamespace = NULL;
 
-// Keep track whether or not the namespace was created or open for clean-up
+// 跟踪名称空间是否已创建或已打开以进行清理
 BOOL     g_bNamespaceOpened = FALSE;
 
-// Names of boundary and private namespace
+// 边界和命名空间的名字
 PCTSTR   g_szBoundary = TEXT("3-Boundary");
 PCTSTR   g_szNamespace = TEXT("3-Namespace");
 
@@ -39,7 +39,7 @@ PCTSTR   g_szNamespace = TEXT("3-Namespace");
 ///////////////////////////////////////////////////////////////////////////////
 
 
-// Adds a string to the "Details" edit control
+// 将字符串添加到“详细信息”编辑控件
 void AddText(PCTSTR pszFormat, ...) {
 
    va_list argList;
@@ -64,8 +64,8 @@ void Dlg_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
    switch (id) {
       case IDOK:
       case IDCANCEL:
-         // User has clicked on the Exit button
-         // or dismissed the dialog with ESCAPE
+         //用户单击了“退出”按钮
+         //或使用ESCAPE关闭该对话框
          EndDialog(hwnd, id);
          break;
    }
@@ -77,10 +77,10 @@ void Dlg_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
 
 void CheckInstances() {
 
-   // Create the boundary descriptor
+   //创建边界描述符
    g_hBoundary = CreateBoundaryDescriptor(g_szBoundary, 0);
 
-   // Create a SID corresponding to the Local Administrator group
+   //创建与本地管理员组相对应的SID
    BYTE localAdminSID[SECURITY_MAX_SID_SIZE];
    PSID pLocalAdminSID = &localAdminSID;
    DWORD cbSID = sizeof(localAdminSID);
@@ -92,16 +92,14 @@ void CheckInstances() {
       return;
    }
    
-   // Associate the Local Admin SID to the boundary descriptor
-   // --> only applications running under an administrator user
-   //     will be able to access the kernel objects in the same namespace
+   // 将Local Admin SID与边界描述符关联--->只有在管理员用户下运行的应用程序才能访问同一名称空间中的内核对象
    if (!AddSIDToBoundaryDescriptor(&g_hBoundary, pLocalAdminSID)) {
       AddText(TEXT("AddSIDToBoundaryDescriptor failed: %u\r\n"), 
          GetLastError());
       return;
    }
 
-   // Create the namespace for Local Administrators only
+   //仅为本地管理员创建名称空间
    SECURITY_ATTRIBUTES sa;
    sa.nLength = sizeof(sa);
    sa.bInheritHandle = FALSE;
@@ -115,23 +113,21 @@ void CheckInstances() {
    g_hNamespace = 
       CreatePrivateNamespace(&sa, g_hBoundary, g_szNamespace);
 
-   // Don't forget to release memory for the security descriptor
+   //不要忘记为安全描述符释放内存
    LocalFree(sa.lpSecurityDescriptor);
 
 
-   // Check the private namespace creation result
+   //检查私有名称空间创建结果
    DWORD dwLastError = GetLastError();
    if (g_hNamespace == NULL) {
-      // Nothing to do if access is denied
-      // --> this code must run under a Local Administrator account
+      //如果访问被拒绝，则无需执行任何操作->此代码必须在本地管理员帐户下运行
       if (dwLastError == ERROR_ACCESS_DENIED) {
          AddText(TEXT("Access denied when creating the namespace.\r\n"));
          AddText(TEXT("   You must be running as Administrator.\r\n\r\n"));
          return;
       } else { 
          if (dwLastError == ERROR_ALREADY_EXISTS) {
-         // If another instance has already created the namespace, 
-         // we need to open it instead. 
+         //如果另一个实例已经创建了命名空间，则需要打开它。
             AddText(TEXT("CreatePrivateNamespace failed: %u\r\n"), dwLastError);
             g_hNamespace = OpenPrivateNamespace(g_hBoundary, g_szNamespace);
             if (g_hNamespace == NULL) {
@@ -150,19 +146,18 @@ void CheckInstances() {
       }
    }
    
-   // Try to create the mutex object with a name 
-   // based on the private namespace 
+   //尝试使用基于私有名称空间的名称创建互斥对象
    TCHAR szMutexName[64];
    StringCchPrintf(szMutexName, _countof(szMutexName), TEXT("%s\\%s"), 
       g_szNamespace, TEXT("Singleton"));
 
    g_hSingleton = CreateMutex(NULL, FALSE, szMutexName);
    if (GetLastError() == ERROR_ALREADY_EXISTS) {
-      // There is already an instance of this Singleton object
+      //已经有该Singleton对象的实例
       AddText(TEXT("Another instance of Singleton is running:\r\n"));
       AddText(TEXT("--> Impossible to access application features.\r\n"));
    } else  {
-      // First time the Singleton object is created
+      // 第一次创建Singleton对象
       AddText(TEXT("First instance of Singleton:\r\n"));
       AddText(TEXT("--> Access application features now.\r\n"));
    }
@@ -176,10 +171,10 @@ BOOL Dlg_OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam) {
 
    chSETDLGICONS(hwnd, IDI_SINGLETON);
 
-   // Keep track of the main dialog window handle
+   // 跟踪主对话框窗口句柄
    g_hDlg = hwnd;
 
-   // Check whether another instance is already running
+   // 检查另一个实例是否已经在运行
    CheckInstances();
       
    return(TRUE);
@@ -214,7 +209,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
    // Show main window 
    DialogBox(hInstance, MAKEINTRESOURCE(IDD_SINGLETON), NULL, Dlg_Proc);
 
-   // Don't forget to clean up and release kernel resources
+   // 不要忘记清理和释放内核资源
    if (g_hSingleton != NULL) {
       CloseHandle(g_hSingleton);
    }
