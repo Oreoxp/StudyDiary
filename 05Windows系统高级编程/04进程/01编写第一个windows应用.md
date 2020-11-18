@@ -265,3 +265,247 @@ XYZ=Work
 第二个注册表项包含应用于当前登录用户的所有环境变量的列表：
 
 ​		`HKEY_CURRENT_USER\Environment`
+
+​		用户可以添加、删除或更改所有这些变量，具体做法是从Control Panel(控制面板)中选择 System(系统)，然后单击Advanced System Settins(高级系统设置)链接，然后单击Enviroment Variable(环境变量)按钮。
+
+​		应用程序还可以使用各种注册表函数来修改这些注册表项。不过，为了使改动对所有应用程序生效，用户必须注销并重新登录。有的应用程序 ( 比如资源管理器、任务管理器和控制面板 ) 可以在其主窗口接收到**WM_SETTINGCHANGE**消息时，用新的注册表项来更新它们的环境块。例如，假如更新了注册表项，并希望应用程序立即更新它们的环境块，可以进行如下调用：
+
+`SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM) TEXT("Environment"));`
+
+​		通常，子进程会继承一组环境变量，这些环境变量和父进程的环境变量相同。不过，父进程可以控制哪些环境变量允许子进程继承，详情参见后文对CreateProcess函数的讨论。这 里所说的 “ 继承 ” 是指子进程获得父进程的环境块的一个副本，这个副本是子进程专用的。
+
+​		换言之，子进程和父进程并不共享同一个环境块。这意味着子进程可以在自己的环境块中添加、删除或修改变最，但这些改动不会影响到父进程的环境块.
+
+​		应用程序经常利用环境变量让用户精细地调整其行为。用户创建一个环境变量并进行初始化。然后，当用户调用应用程序时，应用程序在环境块中査找变量。如果找到变量，就会解析变量的值，并调整其自己的行为。
+
+​		环境块的问题是，用户不容易设置或理解它们。用户需要正确拼写变量名称，而且还必须知道变量值的确切格式。另一方面，绝大多数图形应用程序都允许用户使用对话框来调整应用程序的行为。这个办法对用户来说要友好得多。
+
+​		如果仍然想使用环境变量，有几个函数可供我们的应用程序调用。可以使用 **GetEnvironmentVariable**函数来判断一个环境变量是否存在；如果存在，它的值又是什么。如下所示：
+
+```C
+DWORD GetEnvironmentVariable(
+	PCTSTR pszName,
+	PTSTR pszValue,
+	DWORD cchValue
+);
+```
+
+​		调用**GetEnvironmentVariable**时，**pszName**指向预期的变量名称，**pszValue**指向保存变量值的缓冲区，而**cchValue**指出缓冲区大小 ( 用字符数来表示 ) 。如果在环境中找到变董名， **GetEnvironmentVariable**函数将返回复制到缓冲区的字符数；如果在环境中没有找到变量名，就返回 0。然而，由于我们不知道需要多少个字符来保存一个环境变量的值，所以 **GetEnvironmentVariable**允许我们向**cchValue**参数的值传入0,此时它会返回所需字符的数量，其中包括末尾的NULL字符。以下代码演示了如何安全地使用这个函数：
+
+```c
+void PrintBnvironmentVariable(PCTSTR pszVariableNeune) {
+	PTSTR pszValue = NULL;
+    
+	// Get the size of the buffer that is recjuired to store the value 
+    DWORD dwResult = GetEnvironmentVariable(pszVariableName, pszValue, 0);
+    
+	if (dwResult != 0) {
+		// Allocate the buffer to store the environment variable value 
+        DWORD size = dwResult * sizeof(TCHAR); 
+        pszValue = (PTSTR)roalloc(size);
+		GetEnvironmentVariable(pszVariableName, pszValue, size);
+		_tprintf(TEXT("%s=%s\n"), pszVariableName, pszValue); 
+        free(pszValue);
+	} else {
+		_tprintf(TEXT("'%s'=<unknown value>\n");
+    }
+}
+```
+
+​		在许多字符串的内部，都包含了 “ 可替换字符串 “ 。例如，在注册表的某个地方发现了下面这个字符串：
+
+`%USERPROFILE%\Documents`
+
+​		两个百分号(％)之间的这部分内容就是一个 “ 可替换字符串 ” 。在这种情况下，环境变量 **USERPROFILE** 的值应该放在这里。在我的机器上，**USERPROFILE**环境变量的值如下:
+
+`C:\Users\xinpei`
+
+​		所以，执行字符串替换之后，生成的扩展字符串是：
+
+`C：\Users\xinpei\Documents`
+
+​		由于这种形式的字符串替换非常常见，所以Windows专门提供了**ExpandEnvironmentStrings**函数，如下所示：
+
+```c
+DWORD ExpandEnvironmentStrings(
+	PTCSTR pszSrc,
+	PTSTR pszDst,
+	DWORD chSize
+);
+```
+
+​		调用这个函数时，**pszSrc**参数是包含“可替换环境变量字符串”的一个字符串的地址。**pszDst** 参数是用于接收扩展字符串的一个缓冲区的地址，而**chSize**参数是这个缓冲区的最大大小 (用字符数来表示)。返回值是保存扩展字符串所需的缓冲区的大小(用字符数来表示)。如果 **chSize**参数小于此值，％%变量就不会扩展，而是被替换为空字符串。所以，通常要调用两次 **ExpandEnvironmentStrings** 函数，如下所示：
+
+```C
+DWORD chValue = ExpandEnvironmentStrings (TEXT(" PATH=' %PATH%' "), NULL, 0);
+PTSTR pszBuffer = new TCHAH[chValue]；
+    
+chValue * ExpandEnvironmentStrings{TEXT("PATHs'%PATH%'"), pszBuffer, chValue);
+_tprintf(TEXT("%s\r\n"), pszBuffer);
+delete[] pszBuffer;
+```
+
+​		最后，可以使用**SetEnvironmentVariable**函数添加一个变量，删除一个变贵，或者修改一 个变量的值《
+
+```c
+BOOL SetEnvironmentVariable(
+	PCTSTR pszName,
+	PCTSTR pszValue
+);
+```
+
+​		此函数将**pszName**所标识的一个变量设为**pszValue**参数所标识的值。如果已经有一个具有指定名称的变量，**SetEnvironmentVariable**函数就会修改它的值。如果指定的变量不存在，就添加这个变量。如果**pszVahie**为**NULL**,则从环境块中删除该变量。
+
+应该始终使用这些函数来操纵进程的环境块。
+
+
+
+### 5.进程的关联性
+
+​		通常，进程中的线程可以在主机的任何 CPU 上执行。然而，也可以强迫线程在可用 CPU 的一个子集上运行，这称为“处理器关联性”（processor affinity),详情将在第7章讨论。 子进程继承了其父进程的关联性。
+
+
+
+
+
+### 6.进程的错误模式
+
+​		与每个进程都关联了一组标志，这些标志的作用是让系统知道进程如何响应严重错误，包括磁盘介质错误、未处理的异常、文件査找错误以及数据对齐错误等。进程可以调用 **SetErrorMode** 函数来告诉系统如何处理这些错误：
+
+```c
+UINT SetErrorMode(UINT fuErrorMode);
+```
+
+fuErrorMode参数是表4-3列出的标志按位或的结果。
+
+![01SeterrorMode的标志](./markdownimage/01SeterrorMode的标志.png)
+
+​		默认情况下，子进程会继承父进程的错误模式标志。换言之，如果一个进程己经打开了 **SEM_NOGPFAULTERRORBOX**标志，并生成了一个子进程，则子进程也会打开这个标 志。不过，子进程自己并不知道这一点，而且在编写它时，或许根本没有考虑到要处理 GP 错误。如果一个 GP 错误发生在子进程的一个线程中，则子进程可能在不通知用户的情况下终止。父进程可以阻止子进程继承其错误模式，方法是在调用**CreateProcess**时指定 **CREATE_DEFAULT_ERROR_MODE** 标志(我们将在本章稍后讨论 CreateProcess)。
+
+
+
+
+
+### 7.进程当前所在的驱动器和目录
+
+​		如果不提供完整的路径名，各种Windows函数会在当前驱动器的当前目录査找文件和目录。 例如，如果进程中的一个线程调用**CreateFile**来打开一个文件(未指定完整路径名)，系统 将在当前驱动器和目录査找该文件。
+
+​		系统在内部跟踪记录着一个进程的当前驱动器和目录。由于这种信息是以进程为单位来维护的，所以假如进程中的一个线程更改了当前驱动器或目录，那么对于该进程中的所有线程来说，此信息被更改了。
+
+​		一个线程可以调用以下两个函数来获取和设置其所在进程的当前驱动器和目录：
+
+```c
+DWORD GetCurrentDirectory(
+	DWORD cchCurDir,
+	PTSTR pszCurDir
+);
+
+BCX5L SetCurrentDirectory(PCTSTR pS2CurDir);
+```
+
+​		如果提供的缓冲区不够大，**GetCurrentDirectory**将返回保存此文件夹所需要的字符数 ( 包括末尾的 ' \0 ’ 字符 )，而且不会向缓冲区复制任何内容。在此情况下，可以将缓冲区设为 NULL。如果调用成功，就会返回字符串的长度(字符数)。在这种情况下返回的长度并不包括末尾的 ' \0 ’ 。
+
+——————————————————————————————————————————————————**说明**	WinDef.h文件中被定义为260的常量**MAX_PATH**是目录名称或文件名称的最大字符数。所以在调用**GetCurrentDirectory**的时候，向该函数传递由**MAX_PATH**个 TCHAR 类型的元素构成的一个缓冲区是非常安全的。——————————————————————————————————————————————————
+
+
+
+### 8.进程的当前目录
+
+​		系统跟踪记录着进程的当前驱动器和目录，但它没有记录每个驱动器的当前目录。不过， 利用操作系统提供的支持，可以处理多个驱动器的当前目录。这个支持是通过进程的环境字符串来提供的。例如，一个进程可以有如下所示的两个环境变量：
+
+`=C:=C:\UCility\Bin `
+
+`=D：=D:\Program Files`
+
+​		上述变量指出进程在 C 驱动器的当前目录为 \UCility\Bin 在 D 驱动器的当前目录为 \Program Files。
+
+​		如果调用一个函数，并且传入的路径名限定的是当前驱动器以外的驱动器，系统会在进程的环境块中査找与指定驱动器号 ( 也称盘符 ) 关联的变量。如果找到与指定驱动器号关联的变量，系统就将变量的值作为当前目录使用。如果变量没有找到，系统就假定指定驱动器的当前目录是它的根目录。
+
+​		例如，假定进程的当前目录为 C:\Utility\Bin，而且我们调用**CreateFile**来打开 D:ReadMe.Txt , 那么系统就会査找环境变量 **=D:**。
+
+​		由于 **=D:** 变量是存在的，所以系统将尝试从 D:\Program Files 目录打开 ReadMe.Txt 文件。
+​		如果 **=D:** 变量不存在，系统就会试着从 D 盘的根目录打开 ReadMe.Txt文件。
+
+Windows 的文件函数从来不会添加或更改驱动器号环境变量——它们只是读取这种变量。
+
+——————————————————————————————————————————————————**说明**	可以使用 C 运行库函数 _chdir 而不是Windows的**SetCurrentDirectory**函数来更改当前目录。 _chdir 函数在内部调用**SetCurrentDirectory**，但也 _chdir  还会调用 **SetEnvironmentVariable** 来添加或修改环境变量，从而使不同驱动器的当前目录得以保留。——————————————————————————————————————————————————
+
+​		如果一个父进程创建了一个希望传给子进程的环境块，子进程的环境块就不会自动继承父进程的当前目录。相反，子进程的当前目录默认为每个驱动器的根目录。如果希望子进程继承父进程的当前目录，父进程就必须在生成子进程之前，创建这些驱动器号环境变量， 并把它们添加到环境块中。父进程可以通过调用**GetFullPathName**来获得它的当前目录：
+
+```c
+DWORD GetFullPathName(
+	PCTSTR pszFile,
+	DWORD cchPath,
+	PTSTR pszPath,
+	PTSTR *ppszFilePart
+);
+```
+
+例如，要想获得 C 驱动器的当前目录，可以像下面这样调用 **GetFullPathName**:
+
+```c
+TCHAR szCurDir[MAX_PATH];
+
+DWORD cchLength = GetFullPathName(TEXT("C:"), MAX_PATH, szCurDir, NULL);
+```
+
+其结果就是，驱动器号环境变量通常必须放在环境块的开始处。
+
+
+
+
+
+
+
+### 9.系统版本
+
+​		很多时候，应用程序需要判断用户所运行的Windows系统的版本。例如，应用程序也许会调用**CreateFileTransacted**之类的函数，以利用Windows的事务处理式(transacted)文件系统功能。但是，只有Windows Vista完整实现了这些函数。
+
+​		在很长的时间里，Windows 应用程序编程接口(Application Programming Interface，API)—直在提供一个**GetVersion**函数：
+
+```C
+DWORD GetVersion();
+```
+
+​		这个函数具有悠久的历史。它最初是为 16 位 Windows 系统设计的。其思路非常简单，在 高位字 ( high word ) 中返回MS-DOS版本号，在低位字(low word)中返回Windows版本号。 在每个字中，高位字节(highbyte)代表主版本号，低位字节(lowbyte)代表次版本号。
+
+​		遗憾的是，写代码的程序员犯了一个小错误，造成 Windows 版本号的顺序颠倒了，即主版本号跑到了低位字节，次版本号跑到了高位字节。由于许多程序员己经开始使用这个函数, 所以Microsoft被迫保留这个函数的错误形式，并修改相应文档以指明这个错误。
+
+​		鉴于围绕着**GetVersion**而产生的一些困惑，Microsoft添加了一个新的函数**GetVersionEx**,如下所示：
+
+```c
+BOOL GetVersionEx(POSVERSIONINFOEX pVersionlnformation)；
+```
+
+这个函数要求我们在自己的应用程序中分配一个**OSVERSIONINFOEX**结构，并把此结构的地址传给**GetVersionEx**。**OSVERSIONINFOEX**结构如下所示：
+
+```c
+typedef struct {
+	DWORD dwOSVersionlnfoSize;
+	DWORD dwMajorVersion；
+	DWORD dwMinorVersion；
+	DWORD dwBuildNumber；
+	DWORD dwPlatformld;
+	TCHAR szCSDVersion[128];
+	WORD wServicePackMajor;
+	WORD wServicePackMinor;
+	WORD wSuiteMask;
+	BYTE wProductType;
+	BYTE wReserved;
+} OSVERSIONINFOEX, * POSVERSIONINFOEX;
+```
+
+​		OSVERSIONINFOEX结构从Windows 2000开始就一直存在。Windows系统的其他版 本使用的是较老的 OSVERSIONINFO 结构，后者没有 wServicePackMajor, wSuiteMask， wProductType 和 wReservedMembers 成员。
+
+​		注意，此结构为系统版本号的每一个组成部分都提供了不同的成员。这样做是避免程序员过于麻烦地去提取低位字、高位字、低位字节和高位字节，使应用程序更容易将希望的版 本号与主机系统的版本号进行对比。表4-4描述了 OSVERSIONINFOEX结构的成员。
+
+​		为了进一步简化编程，Windows Vista还提供了 **VerifyVersionInfo** 函数，它能比较主机系统的版本和应用程序要求的版本，如下所示：
+
+```c
+BOOL VerifyVersionInfo(
+    POSVERSIONINFOEX pVersionlnformation,
+    DWORD dwTypeMask,
+    DWORDLONG dwlConditionMask
+);
+```
+
