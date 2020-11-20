@@ -146,3 +146,110 @@ CreateProcess (TEXT("C: \\WINDOWS\\SYSTEM32\\NOTEPAD.EXE") ,szPath, .. .);
 ​        **fdwCreate**参数还允许我们指定一个优先级类 ( priority class ) 。不过，这样做没有多大必要， 而且对于大多数应用程序，都不应该这样做——系统会为新进程分配一个默认的优先级类。 表4-5展示了可能的优先级类。
 
 ![02fdwCreate参数设置的优先级类](./markdownimage/02fdwCreate参数设置的优先级类.png)
+
+​		这些优先级类决定了相对于其他进程的线程，这个进程中的线程的调度方式，详情参见7.9 节“从抽象角度看优先级”。
+
+
+
+
+
+### 4.pvEnvironment 参数
+
+​		**pvEnvironment**参数指向一块内存，其中包含新进程要使用的环境字符串。大多数时候， 为这个参数传入的值都是**NULL**，这将导致子进程继承其父进程使用的一组环境字符串。 另外，还可以使用**GetEnvironmentStrings**函数：
+
+`PVOID GetEnvironmentScrings();`
+
+​		此函数获取主调进程正在使用的环境字符串数据块的地址。可以将这个函数返回的地址用作**CreateProcess**函数的**pvEnvironment**参数的值。如果为**pvEnvironment**参数传入**NULL**值，**CreateProcess**函数就会这样做。不再需要这块内存的时候，应该调用 **FreeEnvironmentStrings** 函数来释放它：
+
+`BOOL FreeEnvironmentStrings(PTSTR pS2EnvironmentBlock);`
+
+
+
+### 5.pszCurDir 参数
+
+​		**pszCtirDir**参数允许父进程设置子进程的当前驱动器和目录。如果这个参数为**NULL**,则新进程的工作目录与生成新进程的应用程序一样。如果这个参数不为**NULL**，侧**pszCurDir** 必须指向一个用 0 为终止符的字符串，其中包含我们想要的工作驱动器和目录。<u>注意，必须在路径中指定一个驱动器号。</u>
+
+
+
+
+
+### 6.psiStartlnfo 参数
+
+​		**psiStartlnfo** 参数指向一个 **STARTUPINFO** 结构或 **STARTUPINFOEX** 结构:
+
+```c
+typedef struct _STARTUPINFO { 
+    DWORD cb;
+    PSTR IpReserved;
+    PSTR lpDesktop;
+    PSTR lpTitle;
+    DWORD dwX;
+    DWORD dwY;
+    DWORD dwXSize;
+    DWORD dwYSize;
+    DWORD dwXCountChars;
+    DWORD dwYCountChars;
+    DWORD dwFillACtribute;
+    DWORD dwFlags;
+    WORD wShowWindow;
+    WORD cbReserved2;
+    PBYTE lpReserved2;
+    HANDLE hStdlnput;
+    HANDLE hStdOutput;
+    HANDLE hStdError;
+} STARTUPINFO, *LPSTARTUPINFO;
+
+typedef struct _STARTUPINFOEX {
+	STARTUPINFO Startuplnfo；
+	struct _PROC_THREAD_ATTRIBUTE_LIST *lpAttributeList;
+} STARTUPINFOEX, *LPSTARTUPINFOEX;
+```
+
+​		Windows在创建新进程的时候使用这个结构的成员。大多数应用程序都希望生成的应用程序只是使用默认值。最起码要将此结构中的所有成员初始化为 0 , 并将 cb 成员设为此结构的大小，如下所示：
+
+```c
+STARTUPINFO si = { sizeof(si) };
+CreateProcess(..., &si, ...);
+```
+
+​		如果没有把结构的内容清零，则成员将包含主调线程的桟上的垃圾数据。把这种垃圾数据传给**CreateProcess**，会造成新进程有时能创建，有时则不能，具体取决于垃圾数据的内容。 因此，必须将这个结构中的未使用的成员清零，确保**CreateProcess**始终都能正常地工作。 这是很容易犯的一个错误，许多开发人员都忘记了做这个工作。
+
+​		现在，如果想初始化此结构中的某些成员，只需在调用**CreateProcess**之前完成这些初始化即可。我们将依次讨论每一个成员。一些成员仅在子应用程序创建了一个重叠窗口时才有意义；另一些成员仅在子应用程序执行CUI输入和输出时才有意义。
+
+
+
+
+
+### 7.ppiProdnfo 参数
+
+​		**ppiProcInfo**参数指向一个**PROCESS_INFORMATION**结构（由我们负责分配）， **CreateProcess**函数在返回之前，会初始化这个结构的成员。该结构如下所示：
+
+```c
+typedef struct _PROCESS_INFORMATION {
+    HANDLE hProcess;
+    HANDLE hThread;
+    DWORD dwProcessId;
+    DWORD dwThreadld;
+} PHOCESS_INFORMATION;
+```
+
+​		如前所述，创建一个新的进程，会导致系统创建一个进程内核对象和一个线程内核对象。 在创建时，系统会为每个对象指定一个初始的使用计数 1 。然后，就在**CreateProcess**返回之前，它会使用完全访问权限来打开进程对象和线程对象，并将各自的与进程相关联的句柄放入 **PROCESS_INFORMATION** 结构的 **hProcess** 和 **hThread** 成员中。当 **CreateProcess**在内部打开这些对象时，每个对象的使用计数就变为 2 。
+
+​		这意味着系统要想释放进程对象，进程必须终止 ( 使用计数递减 1 )，而且父进程必须调用 **CloseeHandle** ( 使用计数再次递减 1 , 变成 0 ) 。类似地，要想释放线程对象，线程必须终止, 而且父进程必须关闭到线程对象的句柄 ( 要想进一步了解如何释放线程对象，请参见4.4节 “子进程”）。
+
+​		创建一个进程内核对象时，系统会为此对象分配一个独一无二的标识符，系统中没有别的进程内核对象会有相同的 ID 编号。这同样适用于线程内核对象。创建一个线程内核对象时, 此对象会被分配一个独一无二的、系统级别的 ID 编号。进程 ID 和线程 ID 分享同一个号码池。这意味着线程和进程不可能有相同的 ID 。此外，一个对象分配到的 ID 绝对不会是 0 。 注意，Windows 任务管理器将进程 ID 0 与 “ System Idle Process ”（系统空闲进程 ) 关联。但是，实际上并没有 System Idle Process 这样的东西。任务管理器创建这个虚构进程的目的是将其作为 Idle 线程的占位符；在没有别的线程正在运行时，系统就运行这个 Idle 进程。System Idle Process 中的线程数量始终等于计算机的 CPU 的数量。所以，它始终代表未被真实进程使用的 CPU 使用率。
+
+​		**CreateProcess**返回之前，它会将这些ID填充到**PROCESS_INFORMATION**结构的
+
+​		**dwProcessld**和**dwThreadld**成员中。ID 使我们很容易识别系统中的进程和线程。ID 主要由工具程序 ( 比如任务管理器 ) 使用，用于提高生产力的应用程序很少用到它。因此，大多数应用程序都会忽略 ID 。
+
+​		如果应用程序要使用 ID 来跟踪进程和线程，那么必须注意这一点：进程和线程 ID 会被系统立即重用。例如，假定在创建一个进程之后，系统初始化了一个进程对象，并将 ID 值 124 分配给它。如果再创建一个新的进程对象，系统不会将同一个 ID 编号分配给它。怛是， 如果第一个进程对象已经释放，系统就可以将124分配给下一个创建的进程对象。请务必 牢记这一点，以免自己的代码引用不正确的进程或线程对象。进程ID很容易获得，也很容 易保存。但就像前面所说的那样，我们刚刚保存好一个ID,与它对应的进程就可能己被释 放了。所以，系统在创建下一个新进程的时候，会将这个ID分配给它。一旦我们使用保存 的进程ID，操纵的就是新进程，而不是原先那个进程。
+
+​		可以使用**GetCurrentProcessId**来得到当前进程的ID,使用**GetCurrentTbreadld**来获得当前正在运行的线程的ID。另外，还可以使用**GetProcessId**来获得与指定句柄对应的一个 进程的ID，使用**GetThreadW**来获得与指定句柄对应的一个线程的ID。最后，根据一个线程句柄，我们可以调用**GetProcessIdOfThread**来获得其所在进程的ID.
+
+​		个别情况下，我们的应用程序可能想确定它的父进程。但是，首先应该知道的是，只有在 一个子进程生成的那一瞬间，才存在一个父-子关系。到子进程开始执行代码之前的那一刻， Windows就已经不认为存在任何父•子关系了。**ToolHelp**函数允许进程通过 **PROCESSENTRY32**结构査询其父进程。在此结构内部有一个**th32ParentProcesslD**成员， MSDN文档声称，此结构内部的**th32ParentProcessID**成员能返回父进程的ID。
+
+​		系统确实会记住每个进程的父进程的ID，但由于ID会被立即重用，所以等我们获得父进 程的ID的时候，那个ID标识的可能已经是系统中运行的一个完全不同的进程。我们的父 进程也许已经终止了。如果应用程序需要与它的“创建者”通信，最好不要使用ID。应该 定义一个更持久的通信机制，比如内核对象、窗口句柄等。
+
+​		要保证一个进程或线程 ID 不被重用，唯一的办法就是保证进程或线程对象不被销毁。为此, 在创建了一个新进程或线程之后，不关闭到这些对象的句柄即可。等到应用程序不再使用 ID 的时候，再调用 CloseHandle 来释放内核对象。但是，一旦调用了 CloseHandle , 再使用或依赖进程 ID 就不安全了。这一点务必牢记。对于子进程，除非父进程复制了自己的进 程或线程对象句柄，并允许子进程继承这些句柄(参见3.3.5节)，否则它无法确保父进程的 进程ID或线程ID的有效性。
+
