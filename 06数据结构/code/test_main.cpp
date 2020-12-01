@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "XVector/XVector.cpp"
+#include "XList/XList.h"
 
 using namespace std;
 
