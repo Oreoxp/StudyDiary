@@ -19,9 +19,6 @@ class XList{
 
     class iterator;
     class const_iterator;
-
-private:
-
     
 public:
     explicit XList();

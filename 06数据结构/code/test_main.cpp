@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "XVector/XVector.cpp"
-#include "XList/XList.h"
+#include "XList/XList.cc"
 
 using namespace std;
 
