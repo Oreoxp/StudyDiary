@@ -1,23 +1,26 @@
-#include <stdio.h>
+#ifndef LIST_H
+#define LIST_H
+
 #include <stdlib.h>
-#include <stdexcept>
-#include <iostream>
 
-using namespace std;
 template <typename Object>
-class XList
+class List
 {
-private:
-struct Node{
-    Object data;
-    Node   *prev;
-    Node   *next;
+  private:    
+    // The basic doubly linked list node.
+    // Nested inside of List, can be public
+    // because the Node is itself private
+    struct Node
+    {
+        Object  data;
+        Node   *prev;
+        Node   *next;
 
-    Node(const Object & d = Object(), Node *p = NULL, Node *n = NULL)
+        Node( const Object & d = Object( ), Node * p = NULL, Node * n = NULL )
           : data( d ), prev( p ), next( n ) { }
-};
+    };
 
-public:
+  public:
     class const_iterator
     {
       public:
@@ -64,7 +67,7 @@ public:
         bool operator!= ( const const_iterator & rhs ) const
           { return !( *this == rhs ); }
 
-      public:
+      protected:
         Node *current;
 
         // Protected helper in const_iterator that returns the object
@@ -78,7 +81,7 @@ public:
         const_iterator( Node *p ) :  current( p )
           { }
         
-        friend class XList<Object>;
+        friend class List<Object>;
     };
 
     class iterator : public const_iterator
@@ -135,46 +138,134 @@ public:
         iterator( Node *p ) : const_iterator( p )
           { }
 
-        friend class XList<Object>;
+        friend class List<Object>;
     };
 
-public:
-    explicit XList();
-    XList(const XList & rhs);
-    virtual ~XList();
+  public:
+    List( )
+      { init( ); }
 
-    void printfAll();
-    const XList & operator=(const XList & rhs);
+    ~List( )
+    {
+        clear( );
+        delete head;
+        delete tail;
+    }
 
-    iterator begin();
-    const_iterator begin()const;
-    iterator end();
-    const_iterator end()const;
+    List( const List & rhs )
+    {
+        init( );
+        *this = rhs;
+    }
 
-    int size() const;
-    bool empty() const;
-    void clear() const;
+    const List & operator= ( const List & rhs )
+    {
+        if( this == &rhs )
+            return *this;
+        clear( );
+        for( const_iterator itr = rhs.begin( ); itr != rhs.end( ); ++itr )
+            push_back( *itr );
+        return *this;
+    }
 
-    Object & front();
-    const Object & front()const;
-    Object & back();
-    const Object & back()const;
+    // Return iterator representing beginning of list.
+    // Mutator version is first, then accessor version.
+    iterator begin( )
+      { return iterator( head->next ); }
 
-    void push_front(const Object & x);
-    void push_back(const Object & x);
-    void pop_front();
-    void pop_back();
+    const_iterator begin( ) const
+      { return const_iterator( head->next ); }
 
-    iterator insert(iterator itr, const Object & x);
+    // Return iterator representing endmarker of list.
+    // Mutator version is first, then accessor version.
+    iterator end( )
+      { return iterator( tail ); }
 
-    iterator erase(iterator itr);
+    const_iterator end( ) const
+      { return const_iterator( tail ); }
 
-    iterator erase(iterator start, iterator end);
+    // Return number of elements currently in the list.
+    int size( ) const
+      { return theSize; }
 
-private:
-    int  theSize;
+    // Return true if the list is empty, false otherwise.
+    bool empty( ) const
+      { return size( ) == 0; }
+
+    void clear( )
+    {
+        while( !empty( ) )
+            pop_front( );
+    }
+ 
+    // front, back, push_front, push_back, pop_front, and pop_back
+    // are the basic double-ended queue operations.
+    Object & front( )
+      { return *begin( ); }
+
+    const Object & front( ) const
+      { return *begin( ); }
+
+    Object & back( )
+      { return *--end( ); }
+
+    const Object & back( ) const
+      { return *--end( ); }
+
+    void push_front( const Object & x )
+      { insert( begin( ), x ); }
+
+    void push_back( const Object & x )
+      { insert( end( ), x ); }
+
+    void pop_front( )
+      { erase( begin( ) ); }
+
+    void pop_back( )
+      { erase( --end( ) ); }
+
+    // Insert x before itr.
+    iterator insert( iterator itr, const Object & x )
+    {
+        Node *p = itr.current;
+        theSize++;
+        return iterator( p->prev = p->prev->next = new Node( x, p->prev, p ) );
+    }
+
+    // Erase item at itr.
+    iterator erase( iterator itr )
+    {
+        Node *p = itr.current;
+        iterator retVal( p->next );
+        p->prev->next = p->next;
+        p->next->prev = p->prev;
+        delete p;
+        theSize--;
+
+        return retVal;
+    }
+
+    iterator erase( iterator start, iterator end )
+    {
+        for( iterator itr = start; itr != end; )
+            itr = erase( itr );
+
+        return end;
+    }
+
+  private:
+    int   theSize;
     Node *head;
     Node *tail;
 
-    void init();
+    void init( )
+    {
+        theSize = 0;
+        head = new Node;
+        tail = new Node;
+        head->next = tail;
+        tail->prev = head;
+    }
 };
+
+#endif
