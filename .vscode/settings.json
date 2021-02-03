@@ -34,6 +34,13 @@
         "xmemory": "cpp",
         "xmemory0": "cpp",
         "xstddef": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "xhash": "cpp",
+        "xtree": "cpp"
     }
 }
