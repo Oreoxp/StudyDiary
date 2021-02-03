@@ -56,7 +56,7 @@ typename Object::iterator begin(){
 }
 
 template <typename Object>
-typename Object::const_iterator begin(){
+typename::XList<Object>::const_iterator XList<Object>::begin()const {
     return const_iterator(head->next);
 }
 
