@@ -143,7 +143,8 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  
+  return ~(~x & ~y) & ~(x & y);
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -153,7 +154,7 @@ int bitXor(int x, int y) {
  */
 int tmin(void) {
 
-  return 2;
+  return 1 << 31;
 
 }
 //2
@@ -165,7 +166,7 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  return x == ~(1<<31);
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,7 +177,8 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  	//return !(0xAAAAAAAA ^ (x & 0XAAAAAAAA));
+	return !((x & 0xAAAAAAAA) ^ 0xAAAAAAAA);
 }
 /* 
  * negate - return -x 
@@ -186,7 +188,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 //3
 /* 
@@ -199,7 +201,7 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+	return x>=0x30 && x <=0x39;
 }
 /* 
  * conditional - same as x ? y : z 
@@ -209,7 +211,8 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+   int val = ~(!!x) + 1;
+  return (val & y) | (~val & z);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -219,19 +222,23 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  
+	int val1 = (x >> 31) + (y >> 31);
+  int val2 = !((y + (~x) + 1) >> 31);
+  int val3 = x >> 31 & 1;
+  return (val1 & val3) | ((~val1) & val2);
 }
 //4
 /* 
  * logicalNeg - implement the ! operator, using all of 
  *              the legal operators except !
- *   Examples: logicalNeg(3) = 0, logicalNeg(0) = 1
+ *   Examples: logicalNeg(3) = 0, logicalN0eg(0) = 1
  *   Legal ops: ~ & ^ | + << >>
  *   Max ops: 12
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+    return ((x | (~x + 1)) >> 31) + 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -246,7 +253,24 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+        int val1 = !(x ^ 0);
+	int val2 = !(x ^ (~0));
+  	int val3 = ~(~(val1 | val2) + 1);
+  	int bit_16, bit_8, bit_4, bit_2, bit_1;
+	int sum;
+	int op = x ^ (x >> 31);
+	bit_16 = (!!(op >> 16)) << 4;
+	op = op >> bit_16;
+	bit_8 = (!!(op >> 8)) << 3;
+	op = op >> bit_8;
+	bit_4 = (!!(op >> 4)) << 2;
+	op = op >> bit_4;
+	bit_2 = (!!(op >> 2)) << 1;
+	op = op >> bit_2;
+	bit_1 = (!!(op >> 1));
+	op = op >> bit_1;
+	sum = 2 + bit_16 + bit_8 + bit_4 + bit_2 + bit_1;
+  return val1 | val2 | (val3 & sum);
 }
 //float
 /* 
