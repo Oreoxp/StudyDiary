@@ -11,18 +11,20 @@
 typedef unsigned long int u_int64_t;
 
 
-typedef struct 
-{
+typedef struct {
     bool valid;
     u_int64_t tag;
     int count;
-}line;
+}cache_line;
 
-typedef struct 
-{
+typedef struct {
+    cache_line *lines;
+}cache_set;
+
+typedef struct {
     int s;
     int E;//line count
-    line *lines;
+    cache_set *sets;
 }cache;
 
 typedef struct {
@@ -39,39 +41,66 @@ void initResult(result* myresult, int hit_count , int mis_count , int evi_count)
     printf("initResult : result = { %d , %d , %d }\n", myresult->hitCount,myresult->misCount,myresult->eviCount);
 }
 
-void initCache(cache *inCache, int s, int E)
-{
-    inCache->E = E;
+void initCache(cache *inCache, int s, int E) {
+    printf("initCache\n");
     inCache->s = s;
-    int numb = 1 << s;
-    numb = numb*E;
-    inCache->lines = calloc(numb, sizeof(line)); //根据s，E可以访问到数组任意位置，E为列，2^s为行
-    printf("initCache : cache = { E = %d , s = %d , line count = %d }\n",inCache->E , inCache->s ,numb);
+    inCache->E = E;
 }
 
-void realseMemory(cache *inCache)
-{
-    int num = inCache->E * inCache->s;
-    printf("realseMemory: %d",num);
-    free(inCache->lines);
+void initSet(cache *inCache, int E) {
+    printf("initSet\n");
+    int S = 1 << inCache->s;
+    if ((inCache->sets = calloc(S, sizeof(cache_set))) == NULL) {
+        printf("initSet : set init error");
+    }
+    for (size_t i = 0; i < S; i++) {
+        if ((inCache->sets[i].lines = calloc(E, sizeof(cache_line))) == NULL) {
+            printf("initSet : line init error");
+        }
+    }
+}
+
+void printSet(cache *inCache){
+    int S = 2;//1 << inCache->s;
+
+    printf("*********printf all Set**************\n");
+    for (size_t i = 0; i < S; i++) {
+        printf("set %ld :\n[\n",i);
+        cache_set c_set = inCache->sets[i];
+        for (size_t j = 0; j < inCache->E; j++) {
+            printf("line[%ld]  : valid = %d, tag = %lu \n",j,c_set.lines[j].valid,c_set.lines[j].tag);
+        }
+        printf("]\n");
+    }
+    
+    printf("*********printf over*****************\n");
+}
+
+void realseMemory(cache *inCache) {
+    //int num = inCache->E * inCache->s;
+    //printf("realseMemory: %d",num);
+    free(inCache->sets->lines);
+    free(inCache->sets);
     free(inCache);
 }
 
-void missHit(int sSetIndex, u_int64_t tBit,cache *inCache,result *inResult)
-{
-    line *leastLine = &inCache->lines[sSetIndex];
-    line *pLine = NULL;
+void missHit(int sSetIndex, u_int64_t tBit,cache *inCache,result *inResult) {
+    cache_set *find_set = &inCache->sets[sSetIndex];
+    cache_line *find_set_last_line = &find_set->lines[0];
+    cache_line *pLine = NULL;
+
     int minCount = 0;
+    //printSet(inCache);
     for (int i = 0; i < inCache->E; i++) {
 
-        printf("check lines : sSetIndex = %d , tBit = %ld \n" ,sSetIndex ,tBit);
+        //printf("check lines : sSetIndex = %d , tBit = %ld \n" ,sSetIndex ,tBit);
         
-        pLine = &inCache->lines[sSetIndex+i];
+        pLine = &find_set->lines[i];
 
         // true && t = t
-        if (pLine->valid && pLine->tag == tBit)
+        if (pLine->valid == true && pLine->tag == tBit)
         {
-            printf("hit\n");
+            printf("hit\n}\n\n\n");
             ++pLine->count;
             ++inResult->hitCount;
             return;
@@ -80,7 +109,7 @@ void missHit(int sSetIndex, u_int64_t tBit,cache *inCache,result *inResult)
         // false
         if (pLine->valid == false)
         {
-            printf("miss\n");
+            printf("miss\n}\n\n\n");
             pLine->valid = true;
             pLine->tag = tBit;
             ++pLine->count;
@@ -89,14 +118,15 @@ void missHit(int sSetIndex, u_int64_t tBit,cache *inCache,result *inResult)
         }
         
         // true
-        leastLine = minCount >= pLine->count ? pLine : leastLine;
+        find_set_last_line = minCount >= pLine->count ? pLine : find_set_last_line;
         minCount = minCount >= pLine->count ? pLine->count : minCount;
         
     }
 
-    printf("replace\n");
-    leastLine->tag = tBit;
-    ++leastLine->count;
+    printf("replace\n}\n\n\n");
+    find_set_last_line->tag = tBit;
+    ++find_set_last_line->count;
+    //printSet(inCache);
     ++inResult->misCount;
     ++inResult->eviCount;
     return;
@@ -109,48 +139,44 @@ void readAndTest(int b,FILE *pFile, cache *inCache,result* inResult) {
     u_int64_t sSetIndex;
     u_int64_t tBit;
 
-    char contiueFlag;
     char identifier;
     u_int64_t address;
     int size;
  
-    while (fscanf(pFile, "%c %c %lx,%d", &contiueFlag, &identifier, &address, &size) > 1)
+    while (fscanf(pFile, " %c %lx,%d[^\n]", &identifier, &address, &size) != -1)
     {
-        printf("read file : %c %lx,%d \n" , identifier, address, size);
+        //printf("{\nread file : %c %lx,%d \n" , identifier, address, size);
 
-        if (contiueFlag == 'I')
+        if (identifier == 'I')
             continue;
         sSetIndex = (address >> b) & sBitMask;
         tBit = (address >> b) >> s;
-        sSetIndex = inCache->E * sSetIndex;
-        switch (identifier)
-        {
-
+        //sSetIndex = inCache->E * sSetIndex;
+        switch (identifier) {
         case 'M':
-            printf("operator : M %lx,%d\n",address,size);
+            printf("operator : M %lx,%d  ",address,size);
             missHit(sSetIndex, tBit, inCache, inResult);
             missHit(sSetIndex, tBit, inCache, inResult);
             break;
         case 'L':
-            printf("operator : L %lx,%d\n",address,size);
+            printf("operator : L %lx,%d  ",address,size);
             missHit(sSetIndex, tBit, inCache, inResult);
             break;
         case 'S':
-            printf("operator : S %lx,%d\n",address,size);
+            printf("operator : S %lx,%d  ",address,size);
             missHit(sSetIndex, tBit, inCache, inResult);
             break;
         default:
             break;
         }
     }
-
-
 }
 
 int main(int argc, char **argv) {
     int opt, s, E, b;
     FILE *pFile;
 
+    //read con
     while (-1 != (opt = getopt(argc, argv, "hvs:E:b:t:"))) {
         switch (opt) {
         case 'h':
@@ -184,6 +210,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    //open file
     if (pFile == NULL) {
         printf("open file :open file faide!\n");
         // return 0;
@@ -193,10 +220,19 @@ int main(int argc, char **argv) {
 
     cache *myCache = calloc(1, sizeof(cache));
     result myResult;
+
+    //init
+    printf("*************************** init start ***************************\n");
     initResult(&myResult ,0,0,0);
     initCache(myCache, s, E);
+    initSet(myCache,E);
+    printf("*************************** init over ***************************\n");
+
+    //read file and run
     readAndTest(b, pFile, myCache,&myResult);
     printf("hitCount:%d,misCount:%d,eviCount:%d\n",myResult.hitCount,myResult.misCount,myResult.eviCount);
+
+    //realse
     realseMemory(myCache);
 
     if (pFile != NULL)
