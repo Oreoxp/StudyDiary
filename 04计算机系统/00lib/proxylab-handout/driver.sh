@@ -240,6 +240,7 @@ do
 
     # Fetch using the proxy
     echo "   Fetching ./tiny/${file} into ${PROXY_DIR} using the proxy"
+    echo " xp::::download_proxy $PROXY_DIR ${file} "http://localhost:${tiny_port}/${file}" "http://localhost:${proxy_port}""
     download_proxy $PROXY_DIR ${file} "http://localhost:${tiny_port}/${file}" "http://localhost:${proxy_port}"
 
     # Fetch directly from Tiny
