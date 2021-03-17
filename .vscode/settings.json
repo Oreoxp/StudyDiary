@@ -41,6 +41,22 @@
         "unordered_map": "cpp",
         "vector": "cpp",
         "xhash": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "algorithm": "c",
+        "atomic": "c",
+        "bit": "c",
+        "cctype": "c",
+        "clocale": "c",
+        "compare": "c",
+        "concepts": "c",
+        "ctime": "c",
+        "fstream": "c",
+        "functional": "c",
+        "iterator": "c",
+        "queue": "c",
+        "string": "c",
+        "tuple": "c"
     }
 }
