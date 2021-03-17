@@ -131,17 +131,18 @@ void XVector<Object>::push_back(const Object & x){
     if (object_siez_ == object_capacity_)
         reServe( 2 * object_capacity_ + 1 );
     object_[object_siez_++] = x;
+    std::cout << "XVector : push_back over size = : " << object_siez_<< std::endl;
 }
 
 template <typename Object>
 void XVector<Object>::pop_back(){
-    std::cout << "XVector : pop_back : " << std::endl;
     object_siez_--;
+    std::cout << "XVector : pop_back : size =" << object_siez_ << std::endl;
 }
 
 template <typename Object>
 const Object & XVector<Object>::back() const{
-    std::cout << "XVector : back : " << std::endl;
+    //std::cout << "XVector : back :  size =" << object_siez_ << std::endl;
     return object_[object_siez_ - 1 ];
 }
 
