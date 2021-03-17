@@ -34,14 +34,14 @@ int main(){
         nodeB->right = nodeE;
         nodeC->left = nodeF;
         
-        cout  << "--------root--------" << root<< endl;
+        cout  << "--------root---------" << root<< endl;
         cout  << "--------nodeB--------" << nodeB<< endl;
         cout  << "--------nodeC--------" << nodeC<< endl;
         cout  << "--------nodeD--------" << nodeD<< endl;
         cout  << "--------nodeE--------" << nodeE<< endl;
         cout  << "--------nodeF--------" << nodeF<< endl;
 
-    cout  << "start oper ~~~~~!" << endl;
+        std::cout  << "start oper ~~~~~!" << std::endl;
 
         int height = hight(root);
         std::cout  << "height: " << height << std::endl;
@@ -49,14 +49,26 @@ int main(){
         int size = msize(root);
         std::cout  << "size: " << size << std::endl;
 
-        std::cout  << "--------preOrder--------" << std::endl;
-        preOrder(root);
+        //std::cout  << "--------preOrder--------" << std::endl;
+        //preOrder(root);
 
-        std::cout  << "--------midOrder--------" << std::endl;
-        midOrder(root);
+        //std::cout  << "--------midOrder--------" << std::endl;
+        //midOrder(root);
+        //std::cout  << "--------midOrderEx--------" << std::endl;
+        //midOrderEx(root);
 
-        std::cout  << "--------postOrder-------" << std::endl;
-        postOrder(root);
+        //std::cout  << "--------postOrder-------" << std::endl;
+        //postOrder(root);
+
+        
+        std::cout  << "--------leveOrder--------" << std::endl;
+        leveOrder(root);
+
+
+        int arr[10] = {0};
+
+        arr[0] = (int)( rand() % 20 - 10 );
+
     
     cout  << "bye main ~~~~~!" << endl;
     return 0;
