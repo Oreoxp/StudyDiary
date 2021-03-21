@@ -3,7 +3,8 @@
 //#include "XVector/XVector.cpp"
 //#include "XList/XList.h"
 //#include "XList/XList.cc"
-#include "Xtree/XBinTree.h"
+//#include "Xtree/XBinTree.h"
+#include "Xtree/XAVLTree.h"
 
 using namespace std;
 
@@ -34,7 +35,7 @@ int main(){
         nodeB->right = nodeE;
         nodeC->left = nodeF;
         
-        cout  << "--------root---------" << root<< endl;
+        /*cout  << "--------root---------" << root<< endl;
         cout  << "--------nodeB--------" << nodeB<< endl;
         cout  << "--------nodeC--------" << nodeC<< endl;
         cout  << "--------nodeD--------" << nodeD<< endl;
@@ -63,12 +64,7 @@ int main(){
         
         std::cout  << "--------leveOrder--------" << std::endl;
         leveOrder(root);
-
-
-        int arr[10] = {0};
-
-        arr[0] = (int)( rand() % 20 - 10 );
-
+*/
     
     cout  << "bye main ~~~~~!" << endl;
     return 0;
