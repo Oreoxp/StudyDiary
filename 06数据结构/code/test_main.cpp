@@ -67,17 +67,37 @@ int main(){
         leveOrder(root);
 */
     
-    MaxHeap mh = Create(10);
+    MaxHeap mh = Create(30);
+
+
     insert(mh, 58);
     insert(mh, 25);
     insert(mh, 44);
     insert(mh, 18);
     insert(mh, 10);
     insert(mh, 31);
+    insert(mh, 110);
+    insert(mh, 24);
+    insert(mh, 48);
+    insert(mh, 55);
+    insert(mh, 53);
+    insert(mh, 59);
+    insert(mh, 66);
+    insert(mh, 77);
+    insert(mh, 88);
     showMaxHead(mh);
-    
+    deleteMax(mh);
+    showMaxHead(mh);
 
 
     cout  << "bye main ~~~~~!" << endl;
+
+    /*int x;
+    while (getchar()!=48)
+    {
+        scanf("%d",&x);
+        printf("%d",x);
+    }*/
+    
     return 0;
 }
