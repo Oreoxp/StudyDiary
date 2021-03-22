@@ -4,7 +4,8 @@
 //#include "XList/XList.h"
 //#include "XList/XList.cc"
 //#include "Xtree/XBinTree.h"
-#include "Xtree/XAVLTree.h"
+//#include "Xtree/XAVLTree.h"
+#include "Xtree/XHeap.h"
 
 using namespace std;
 
@@ -21,7 +22,7 @@ int main(){
         xv.push_back(i); 
     }
 
-    xv.printfAll();*/
+    xv.printfAll();
         BinNode<string>* root = new BinNode<string>("A");
 
         BinNode<string>* nodeB = new BinNode<string>("B");
@@ -34,7 +35,7 @@ int main(){
         nodeB->left = nodeD;
         nodeB->right = nodeE;
         nodeC->left = nodeF;
-        
+        */
         /*cout  << "--------root---------" << root<< endl;
         cout  << "--------nodeB--------" << nodeB<< endl;
         cout  << "--------nodeC--------" << nodeC<< endl;
@@ -66,6 +67,17 @@ int main(){
         leveOrder(root);
 */
     
+    MaxHeap mh = Create(10);
+    insert(mh, 58);
+    insert(mh, 25);
+    insert(mh, 44);
+    insert(mh, 18);
+    insert(mh, 10);
+    insert(mh, 31);
+    showMaxHead(mh);
+    
+
+
     cout  << "bye main ~~~~~!" << endl;
     return 0;
 }
