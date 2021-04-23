@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <vector>    
-#include<Windows.h>
+//#include<Windows.h>
 
 using namespace std;
 
@@ -18,14 +18,10 @@ void instertionSortEx(vector<int> &nums){
     }
 }
 
-
-
-
-
 void instertionSort(vector<int> &nums){
-    DWORD start_time = GetTickCount(); 
+    int start_time = clock(); 
     instertionSortEx(nums);
-    DWORD end_time = GetTickCount();
-    cout << "instertionSort  耗时：" << (end_time - start_time) << "ms" << endl;
+    int end_time = clock();
+    cout << "instertionSort     耗时：" << (end_time - start_time) << " ms" << endl;
 }
 
