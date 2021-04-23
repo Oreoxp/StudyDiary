@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <vector>    
-#include<Windows.h>
+//#include<Windows.h>
 
 using namespace std;
 
 
 void merge(vector<int>& nums,int p,int q, int r){
     vector<int> L(nums.begin()+p,nums.begin()+q);
-    vector<int> R(nums.begin()+q,nums.begin()+r);
+    vector<int> R(nums.begin()+q+1,nums.begin()+r);
     int size = L.size()+R.size();
     int li = 0;
     int ri = 0;
@@ -28,17 +28,9 @@ void merge(vector<int>& nums,int p,int q, int r){
             nums[i] = R[ri];
             ri += 1;
         }else {
-            cout << "zhong :[";
-            for(auto item:nums)
-                cout<<","<<item;
-            cout <<"]"<<endl;
             return;
         }
     }
-    cout << "zhong :[";
-    for(auto item:nums)
-        cout<<","<<item;
-    cout <<"]"<< p <<","<< q <<","<< r << endl;
 }
 
 void mergeSortEx(vector<int>& nums,int p,int r){
@@ -54,8 +46,9 @@ void mergeSortEx(vector<int>& nums,int p,int r){
 
 
 void mergeSort(vector<int> &nums){
-    DWORD start_time = GetTickCount(); 
+    int start_time = clock(); 
     mergeSortEx(nums, 0, nums.size());
-    DWORD end_time = GetTickCount();
-    cout << "mergeSort  耗时：" << (end_time - start_time) << "ms" << endl;
+    int end_time = clock(); 
+    cout << "mergeSort          耗时：" << (end_time - start_time) << " ms" << endl;
+
 }
