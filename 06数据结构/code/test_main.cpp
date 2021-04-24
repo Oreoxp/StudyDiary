@@ -9,11 +9,12 @@
 #include "sort/insertionSort.h"
 #include "sort/mergeSort.h"
 #include "sort/quickSort.h"
+#include "sort/heapSort.h"
 
-//插入排序
-//归并排序
-//快速排序（随机）
-//堆排序
+//插入排序✅
+//归并排序✅
+//快速排序（随机）✅
+//堆排序✅
 //桶排序
 //计数排序
 //基数排序
@@ -168,6 +169,7 @@ int main(){
 	vector<int> nums1{ 45,13,45,15,34,14,87,35,1 };
 	vector<int> nums2{ 45,13,45,15,34,14,87,35,1 };
 	vector<int> nums3{ 45,13,45,15,34,14,87,35,1 };
+	vector<int> nums4{ 45,13,45,15,34,14,87,35,1 };
     cout << "qian :["; 
     for(auto item:nums1)
         cout<<","<<item;
@@ -175,8 +177,9 @@ int main(){
     cout << endl; 
 
     mergeSort(nums1);
-    instertionSort(numsss1);
-    quickSort(numsss2);
+    instertionSort(nums2);
+    quickSort(nums3);
+    heapSort(nums4);
 
 
     cout << "mergeSort :[";
@@ -185,12 +188,19 @@ int main(){
     cout <<"]"<<endl;
 
     cout << "instertionSort :[";
-    for(auto item:numsss1)
+    for(auto item:nums2)
         cout<<","<<item;
     cout <<"]"<<endl;
 
     cout << "quickSort :[";
-    for(auto item:numsss2)
+    for(auto item:nums3)
+        cout<<","<<item;
+    cout <<"]"<<endl;
+    cout << "bye main ~~~~~!" << endl;
+
+
+    cout << "heapSort :[";
+    for(auto item:nums4)
         cout<<","<<item;
     cout <<"]"<<endl;
     cout << "bye main ~~~~~!" << endl;
