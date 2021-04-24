@@ -19,7 +19,7 @@ struct HNode {
 typedef Heap MaxHeap;//最大堆
 typedef Heap MinHeap;//最小堆
 
-#define MAX_DATA 999999
+#define MAX_DATA INT_MAX
 
 MaxHeap Create(int maxsize) {
     MaxHeap head = (MaxHeap)malloc(sizeof(MaxHeap));
