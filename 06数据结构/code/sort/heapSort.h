@@ -42,5 +42,5 @@ void heapSort(vector<int> &nums){
     int start_time = clock(); 
     heapSortEx(nums);
     int end_time = clock();
-    cout << "heapSort          耗时：" << (end_time - start_time) << " ms" << endl;
+    cout << "heapSort           耗时：" << (end_time - start_time) << " ms" << endl;
 }

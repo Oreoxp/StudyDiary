@@ -10,6 +10,7 @@
 #include "sort/mergeSort.h"
 #include "sort/quickSort.h"
 #include "sort/heapSort.h"
+#include "sort/countingSort.h"
 
 //插入排序✅
 //归并排序✅
@@ -170,6 +171,7 @@ int main(){
 	vector<int> nums2{ 45,13,45,15,34,14,87,35,1 };
 	vector<int> nums3{ 45,13,45,15,34,14,87,35,1 };
 	vector<int> nums4{ 45,13,45,15,34,14,87,35,1 };
+	vector<int> nums5{ 45,13,45,15,34,14,87,35,1 };
     cout << "qian :["; 
     for(auto item:nums1)
         cout<<","<<item;
@@ -180,6 +182,7 @@ int main(){
     instertionSort(nums2);
     quickSort(nums3);
     heapSort(nums4);
+    auto csort = countingSort(nums5, 87);
 
 
     cout << "mergeSort :[";
@@ -196,13 +199,22 @@ int main(){
     for(auto item:nums3)
         cout<<","<<item;
     cout <<"]"<<endl;
-    cout << "bye main ~~~~~!" << endl;
 
 
     cout << "heapSort :[";
     for(auto item:nums4)
         cout<<","<<item;
     cout <<"]"<<endl;
+
+
+    cout << "countingSort :[";
+    for(auto item:csort)
+        cout<<","<<item;
+    cout <<"]"<<endl;
+
+
+
+    
     cout << "bye main ~~~~~!" << endl;
 
     /*int x;
