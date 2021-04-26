@@ -12,13 +12,13 @@
 #include "sort/heapSort.h"
 #include "sort/countingSort.h"
 
-//插入排序✅
-//归并排序✅
-//快速排序（随机）✅
-//堆排序✅
-//桶排序
-//计数排序
+//插入排序        ✅
+//归并排序        ✅
+//快速排序（随机）  ✅
+//堆排序          ✅
+//计数排序        ✅
 //基数排序
+//桶排序
 using namespace std;
 
 int main(){
