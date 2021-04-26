@@ -11,6 +11,7 @@
 #include "sort/quickSort.h"
 #include "sort/heapSort.h"
 #include "sort/countingSort.h"
+#include "sort/randomizeSelect.h"
 
 //插入排序        ✅
 //归并排序        ✅
@@ -19,6 +20,8 @@
 //计数排序        ✅
 //基数排序
 //桶排序
+
+//顺序选择        ✅
 using namespace std;
 
 int main(){
@@ -172,6 +175,7 @@ int main(){
 	vector<int> nums3{ 45,13,45,15,34,14,87,35,1 };
 	vector<int> nums4{ 45,13,45,15,34,14,87,35,1 };
 	vector<int> nums5{ 45,13,45,15,34,14,87,35,1 };
+	vector<int> nums6{ 45,13,45,15,34,14,87,35,1 };
     cout << "qian :["; 
     for(auto item:nums1)
         cout<<","<<item;
@@ -182,6 +186,7 @@ int main(){
     instertionSort(nums2);
     quickSort(nums3);
     heapSort(nums4);
+    randomizedSelect(nums6, 5);
     auto csort = countingSort(nums5, 87);
 
 
