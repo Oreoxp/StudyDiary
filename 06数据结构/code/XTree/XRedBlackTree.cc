@@ -196,6 +196,110 @@ void RB_Insert(RBTree T, RBNode* x, RBTree rbnil) {
     RB_Insert_Fixup(T, x, rbnil);
 }
 
+void RB_Transplant(RBTree T, RBTree u, RBTree v, RBTree rbnil) {
+    if(u->parant == rbnil){
+        auto root = Find_Root(T, rbnil);
+        root = v;
+    }else if(u == u->parant->left) {
+        u->parant->left = v;
+    }else{
+        u->parant->right = v;
+    }
+    v->parant = u->parant;
+}
+
+void RB_Delete_FixUp(RBTree T, RBNode* x, RBTree rbnil){
+    RBTree w;//uncle
+    auto root = Find_Root(T, rbnil);
+    while (!x->isRed && x != root && x != rbnil) {
+        if (x->parant->left == x) {
+            w = x->parant->right;
+            if (w->isRed) {
+                // Case 1: x的兄弟w是红色的  
+                w->isRed = false;
+                x->parant->isRed = true;
+                LeftRota(x->parant);
+                w = x->parant->right;
+            }
+
+            if ( !w->left->isRed && !w->right->isRed) {
+                // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的  
+                w->isRed = true;
+                x = x->parant;
+            } else if(!w->right->isRed) {
+                w->left->isRed = false;
+                w->isRed = true;
+                RightRota(w);
+                w = x->parant->right;
+            }
+            w->isRed = x->parant->isRed;
+            x->parant->isRed = false;
+            w->right->isRed = false;
+            LeftRota(x->parant);
+            x = Find_Root(T, rbnil);
+        } else {//right
+            w = x->parant->left;
+            if(w->isRed){
+                w->isRed = false;
+                x->parant->isRed = true;
+                RightRota(x->parant);
+                w = x->parant->left;
+            }
+            if ( !w->left->isRed && !w->right->isRed) {
+                // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的  
+                w->isRed = true;
+                x = x->parant;
+            } else if(!w->right->isRed) {
+                w->right->isRed = false;
+                w->isRed = true;
+                LeftRota(w);
+                w = x->parant->left;
+            }
+            w->isRed = x->parant->isRed;
+            x->parant->isRed = false;
+            w->left->isRed = false;
+            RightRota(x);
+            x = Find_Root(T, rbnil);
+        }
+    }
+    x->isRed = false;
+}
+
+void RB_Delete(RBTree T, RBTree z, RBTree rbnil){
+    RBTree y = z;
+    RBTree x;
+    bool oldyisRed = y->isRed;
+    if(z->left == rbnil){
+        x = z->right;
+        RB_Transplant(T, z, z->right, rbnil);
+    }else if(z->right == rbnil){
+        x = z->left;
+        RB_Transplant(T, z, z->left, rbnil);
+    } else {
+        y = y->right;
+        while (y->left != rbnil)
+            y = y->left;
+        cout << "z的后继为：" << y->data << endl;
+        oldyisRed = y->isRed;
+        x = y->right;
+
+        if(y->parant == z){
+            x->parant = y;
+        }else {
+            RB_Transplant(T, y, y->right, rbnil);
+            y->right = z->right;
+            y->right->parant = y;
+        }
+        RB_Transplant(T, z, y, rbnil);
+        y->left = z->left;
+        y->left->parant = y;
+        y->isRed = z->isRed;
+    }
+
+    if(!oldyisRed)
+        RB_Delete_FixUp(T, x, rbnil);
+}
+
 int main(){
     //1 2 5 7 8 11 14
     cout<<"start main=============="<<endl;
@@ -218,6 +322,20 @@ int main(){
     RB_Insert(rbtree, ab6, nil);
     auto ab7 = new RBNode(4, nil);
     RB_Insert(rbtree, ab7, nil);
+
+    cout<<endl;
+    cout<<endl;
+    cout<<"insert end=============="<<endl;
+    cout<<endl;
+    cout<<endl;
+
+    leaveOrder(Find_Root(rbtree, nil), nil);
+
+    RB_Delete(rbtree, ab4, nil);
+    RB_Delete(rbtree, ab5, nil);
+    RB_Delete(rbtree, ab3, nil);
+    RB_Delete(rbtree, ab2, nil);
+    RB_Delete(rbtree, ab7, nil);
         
     /**/
     leaveOrder(Find_Root(rbtree, nil), nil);
