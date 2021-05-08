@@ -336,6 +336,8 @@ int main(){
     RB_Delete(rbtree, ab3, nil);
     RB_Delete(rbtree, ab2, nil);
     RB_Delete(rbtree, ab7, nil);
+    RB_Delete(rbtree, ab6, nil);
+    RB_Delete(rbtree, ab1, nil);
         
     /**/
     leaveOrder(Find_Root(rbtree, nil), nil);
