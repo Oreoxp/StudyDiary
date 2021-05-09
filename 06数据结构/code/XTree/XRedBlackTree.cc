@@ -209,7 +209,7 @@ void RB_Transplant(RBTree T, RBTree u, RBTree v, RBTree rbnil) {
 }
 
 void RB_Delete_FixUp(RBTree T, RBNode* x, RBTree rbnil){
-    RBTree w;//uncle
+    RBTree w;//brother
     auto root = Find_Root(T, rbnil);
     while (!x->isRed && x != root && x != rbnil) {
         if (x->parant->left == x) {
