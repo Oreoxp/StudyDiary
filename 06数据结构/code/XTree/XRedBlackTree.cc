@@ -16,6 +16,7 @@ public:
     RBNode * right;
     RBNode * parant;
     bool isRed;
+    int size = 0;//Dynamic sequence
 
 public:
     RBNode(int d , RBNode * rbni, RBNode *l = nullptr, RBNode *r = nullptr,
@@ -31,11 +32,14 @@ RBTree InitRedBlackTree(int rootDate, RBTree rbnil){
     RBTree root = new RBNode(rootDate, rbnil);
     root->isRed = false;
     root->parant = rbnil;
+    root->size = 1;
     return root;
 }
 
 RBTree InitRedBlackTreeNil() {
     RBNode* rbnil = new RBNode(-1, nullptr);
+    rbnil->isRed = false;
+    rbnil->size = 0;
     return rbnil;
 }
 
@@ -123,6 +127,9 @@ void leaveOrder(RBTree bt, RBTree rbnil) {
             cout << endl;
 }
 
+
+//----------------------------insert----------------------------
+
 void RB_Insert_Fixup(RBTree T, RBNode* x, RBTree rbnil) {
     while(x->parant->isRed){
         if(x->parant == x->parant->parant->left){
@@ -195,6 +202,12 @@ void RB_Insert(RBTree T, RBNode* x, RBTree rbnil) {
     x->isRed = 1;
     RB_Insert_Fixup(T, x, rbnil);
 }
+
+//----------------------------insert   end----------------------
+
+
+
+//----------------------------delete----------------------------
 
 void RB_Transplant(RBTree T, RBTree u, RBTree v, RBTree rbnil) {
     if(u->parant == rbnil){
@@ -299,6 +312,14 @@ void RB_Delete(RBTree T, RBTree z, RBTree rbnil){
     if(!oldyisRed)
         RB_Delete_FixUp(T, x, rbnil);
 }
+
+//----------------------------delete  end-----------------------
+
+
+//-----------------Dynamic sequence statistics------------------
+//   x.size = x.left.size + x. right.size + 1 
+
+//----------------Dynamic sequence statistics  end--------------
 
 int main(){
     //1 2 5 7 8 11 14
