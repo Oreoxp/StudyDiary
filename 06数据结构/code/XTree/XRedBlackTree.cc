@@ -318,6 +318,31 @@ void RB_Delete(RBTree T, RBTree z, RBTree rbnil){
 
 //-----------------Dynamic sequence statistics------------------
 //   x.size = x.left.size + x. right.size + 1 
+//   subscript = T->left->size + 1;
+
+RBNode* OS_Select(RBNode* T, int i) {
+    int sub = T->left->size + 1;
+    if(i == sub) 
+        return T;
+    else if(i < sub)
+        return OS_Select(T->left, i);
+    else 
+        return OS_Select(T->right, i-sub);
+}
+
+int OS_Rank(RBNode* x, RBTree rbnil) {
+    int sub = x->left->size + 1;
+    auto y = x;
+    
+    while(y != Find_Root(x, rbnil)) {
+        if(y == y->parant->right){
+            sub = sub +y->parant->left->size + 1;
+        }
+        y = y->parant;
+    }
+    return sub;
+}
+
 
 //----------------Dynamic sequence statistics  end--------------
 
@@ -350,6 +375,8 @@ int main(){
     cout<<endl;
     cout<<endl;
 
+    auto os = OS_Select(Find_Root(rbtree, nil), 5);
+    cout <<"OS_Select::"<< os->data << endl;
     leaveOrder(Find_Root(rbtree, nil), nil);
 
     RB_Delete(rbtree, ab4, nil);
