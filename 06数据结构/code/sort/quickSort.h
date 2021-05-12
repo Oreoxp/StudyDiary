@@ -18,6 +18,7 @@ int Pos(vector<int> &nums, int l, int r){
 
 int RamdomPos(vector<int> &nums, int l, int r){
     int randnum = (rand() % (r-l+1))+ l;
+    swap(nums[randnum], nums[r]);
     return Pos(nums, l, r);
 }
 
