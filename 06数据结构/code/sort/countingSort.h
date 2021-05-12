@@ -12,7 +12,7 @@ vector<int> countingSortEx(vector<int> &nums, int maxnum){
         midnums[nums[i]] += 1;
     }
 
-    for(int i = 0;i<midnums.size();i++){
+    for(int i = 1;i<midnums.size();i++){
         midnums[i] += midnums[i-1];
     }
 
