@@ -36,7 +36,7 @@ protected:
 
 ​		在这个简单模型中，一个 object 是一系列的 slots ， 每一个 slot 指向一个members。 Members 按其声明次序，各被指定一个 slot。 每一个 data member或function member都有自己的一个 slot。 下图可以说明这种模型。
 
-![01简单对象模型](.\markdownimage\01简单对象模型.png)
+![01简单对象模型](./markdownimage/01简单对象模型.png)
 
 ​		**<u>在这个简单模型中，members 本身并不放在 object 之中。只有 ” 指向 member 的指针 ” 才放在 object 内。</u>**
 
@@ -53,7 +53,7 @@ protected:
 
 ​		Member function table是一系列的 slots, 每一个 slot 指出一个member function；Data member table则直接含有 data 本身，如图1.2所示。
 
-![01member table对象模型](.\markdownimage\01member table对象模型.png)
+![01member table对象模型](./markdownimage/01member table对象模型.png)
 
 ​		虽然这个模型也没有实际应用于真正的 C++ 编译器身上，但member function table 这个观念却成为支持 virtual functions的一个有效方案。
 
@@ -69,7 +69,7 @@ protected:
    中。这个表格被称为 virtual table （**vtbl**）。
 2. 每一个 class ohject 被添加了一个指针，指向相关的 virtual table。通常这个指针被称为 **vptr**。 vptr 的**设定(setting)** 和**重置(resetting)** 都由每一个 class 的 consructor、destructor 和 copy assignment 运算符自动完成。**<u>每一个 class 所关联的 type_info object (用以支持runtime type identilcation， RTTI)也经由virtual table 被指出来，通常是放在表格的第一个 slot 处。</u>**
 
-![01C++对象模型](.\markdownimage\01C++对象模型.png)
+![01C++对象模型](./markdownimage/01C++对象模型.png)
 
 ​		上图说明 C++ 对象模型如何应用于前面所说的 Point class 身上。
 
@@ -108,7 +108,7 @@ slot 内含 base class subobject 的地址。这个体制的主要缺点是，�
 
 ​		当然啦，你也可以想象另一种所谓的 base table 模型。这里所说的 base class table 被产生出来时，表格中的每一个 slot 内含一个相关的 base class 地址，这很像 virtual table 内含每一个 virtual function 的地址一样。每一个 class object 内含一个 **bptr**，它会被初始化，指向其 base class table。这种策略的主要缺点是由于间接性而导致的空间和存取时间上的额外负担，优点则是在每一个 class object 中对于继承都有一致的表现方式：每一个 class object 都应该在某个固定位置上安放一个 base table 指针，与 base classes 的大小或数目无关。第二个优点是，不需要改变 class objects 本身，就可以放大、缩小、或更改 base class table.
 
-![01虚拟多重继承](.\markdownimage\01虚拟多重继承.png)
+![01虚拟多重继承](./markdownimage/01虚拟多重继承.png)
 
 ​		不管上述哪一种体制，“ 间接性”的级数都将因为继承的深度而增加。例如，一个 Rental_book 需要两次间接存取才能够探取到继承自 Library_ materials 的members，而 Book 只需要一次。
 
@@ -178,7 +178,7 @@ void foobar(X  &_result)
 );
 ```
 
-![01对象模型影响程序](.\markdownimage\01对象模型影响程序.png)
+![01对象模型影响程序](./markdownimage/01对象模型影响程序.png)
 
 
 
