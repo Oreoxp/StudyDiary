@@ -1,0 +1,11 @@
+file(REMOVE_RECURSE
+  "../../bin/simple_discard"
+  "../../bin/simple_discard.pdb"
+  "CMakeFiles/simple_discard.dir/discard/discard.cc.o"
+  "CMakeFiles/simple_discard.dir/discard/main.cc.o"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/simple_discard.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

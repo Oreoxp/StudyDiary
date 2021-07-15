@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/dxp/Desktop/muduo/muduo/muduo/base/TimeZone.h
+muduo/base/copyable.h
+/home/dxp/Desktop/muduo/muduo/muduo/base/muduo/base/copyable.h
+memory
+-
+time.h
+-
+
+/home/dxp/Desktop/muduo/muduo/muduo/base/Types.h
+stdint.h
+-
+string.h
+-
+string
+-
+assert.h
+-
+
+/home/dxp/Desktop/muduo/muduo/muduo/base/copyable.h
+
+/home/dxp/Desktop/muduo/muduo/muduo/base/tests/TimeZone_unittest.cc
+muduo/base/TimeZone.h
+/home/dxp/Desktop/muduo/muduo/muduo/base/tests/muduo/base/TimeZone.h
+muduo/base/Types.h
+/home/dxp/Desktop/muduo/muduo/muduo/base/tests/muduo/base/Types.h
+assert.h
+-
+stdio.h
+-
+string.h
+-
+

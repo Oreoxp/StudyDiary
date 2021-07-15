@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/",
+                "/usr/include/linux",
+                "/usr/lib/gcc/x86_64-linux-gnu/7/include/",
+                "/usr/lib/gcc/x86_64-linux-gnu/9/include/",
+                "${HOME}/Desktop/github/StudyDiary/代码库及其解析/C++多线程服务端编程/code/muduo/muduo/",
+                "${HOME}/Desktop/github/StudyDiary/代码库及其解析/C++多线程服务端编程/code/muduo/muduo",
+                "${HOME}/Desktop/github/StudyDiary/代码库及其解析/C++多线程服务端编程/code/muduo/muduo/muduo/"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compileCommands": "${workspaceFolder}/muduo/build/release-cpp11/compile_commands.json"
+        }
+    ],
+    "version": 4
+}
