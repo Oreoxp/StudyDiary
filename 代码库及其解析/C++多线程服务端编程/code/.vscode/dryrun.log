@@ -1,0 +1,6 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/home/dxp/Desktop/github/StudyDiary/代码库及其解析/C++多线程服务端编程/code'
+make: Leaving directory '/home/dxp/Desktop/github/StudyDiary/代码库及其解析/C++多线程服务端编程/code'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+ 
