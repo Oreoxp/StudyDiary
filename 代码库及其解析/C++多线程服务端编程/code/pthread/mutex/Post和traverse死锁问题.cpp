@@ -72,7 +72,7 @@ void traverse()
 				it != foos.end(); ++it)
     {
 			it->doit();
-    }
+    }//读取时临界区过大
     pthread_mutex_unlock(&g_mutex);
 }
 
