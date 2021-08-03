@@ -2,6 +2,10 @@
 #include <vector>  
 
 using namespace std;
+/*
+快速排序思路：
+    从数列随意中挑出一个元素，然后遍历数组，将小于该元素的值放元素左边，大于该元素的值放元素右边。
+*/
 
 int Pos(vector<int> &nums, int l, int r){
     int x = nums[r];
