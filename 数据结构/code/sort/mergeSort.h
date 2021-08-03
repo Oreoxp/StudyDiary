@@ -3,16 +3,19 @@
 //#include<Windows.h>
 
 using namespace std;
+/*
+归并排序思路：
+    将数组分为两部分，然后将两个数组合二为一。缩小递归上述操作。
+*/
 
-
-void merge(vector<int>& nums,int p,int q, int r){
-    vector<int> L(nums.begin()+p,nums.begin()+q);
-    vector<int> R(nums.begin()+q+1,nums.begin()+r);
-    int size = L.size()+R.size();
+void merge(vector<int>& nums,int l,int mid, int r) {
+    vector<int> L(nums.begin() + l, nums.begin() + mid);
+    vector<int> R(nums.begin() + mid + 1, nums.begin() + r);
+    int size = L.size() + R.size();
     int li = 0;
     int ri = 0;
 
-    for(int i = p;i<r;i++){
+    for(int i = l; i < r; i++) {
         if(li < L.size() && ri < R.size()) {
             if(L[li] >= R[ri]){
                 nums[i] = L[li];
@@ -33,12 +36,12 @@ void merge(vector<int>& nums,int p,int q, int r){
     }
 }
 
-void mergeSortEx(vector<int>& nums,int p,int r){
-    if(p < r){
-        int q = ( p + r)/2;
-        mergeSortEx(nums,p,q);
-        mergeSortEx(nums,q+1,r);
-        merge(nums, p, q, r);
+void mergeSortEx(vector<int>& nums,int l,int r){
+    if(l < r){
+        int mid = ( l + r ) / 2;
+        mergeSortEx(nums, l, mid);
+        mergeSortEx(nums, mid+1, r);
+        merge(nums, l, mid, r);
     }
 }
 
