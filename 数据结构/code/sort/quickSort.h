@@ -8,10 +8,10 @@ using namespace std;
 */
 
 int Pos(vector<int> &nums, int l, int r){
-    int x = nums[r];
+    int key = nums[r];
     int i = l-1;
     for(int j = l;j < r;j++){
-        if(x <= nums[j]){
+        if(key <= nums[j]){
             i += 1;
             swap(nums[i],nums[j]);
         }
