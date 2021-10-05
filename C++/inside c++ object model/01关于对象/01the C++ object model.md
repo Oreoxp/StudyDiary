@@ -132,7 +132,7 @@ base class 加上一个指针。其它演化出来的模型则若不是导入一
 X foobar ()
 {
 	X	XX;
-	X *px = newX;
+	X *px = new X;
   
 	// foo() 是一个 virtua1 function
 	xx.foo();
