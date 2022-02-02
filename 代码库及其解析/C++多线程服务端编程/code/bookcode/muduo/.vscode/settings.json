@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "__hash_table": "cpp",
+        "__string": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "locale": "cpp",
+        "utility": "cpp"
+    }
+}

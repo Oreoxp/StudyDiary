@@ -20,7 +20,7 @@
 
 ​		**<u>所谓 Reactor 模式，是有一个循环的过程，监听对应事件是否触发，触发时调用对应的 callback 进行处理。</u>**
 
-​		这里的事件在 muduo 中包括 Socket 可读写事件、定时器事件。在其他网络库中如 libevent 也包括了 signal、用户自定义事件等。
+​		这里的事件在 muduo 中包括 Socket 可读写事件、定时器事件。在其他网络库中如 libevent *也包括了* signal、用户自定义事件等。
 
 ​		负责事件循环的部分在 muduo 命名为 EventLoop ，其他库如 netty 、libevent 也都有对应的组件。
 
