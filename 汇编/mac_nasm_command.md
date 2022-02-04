@@ -14,4 +14,3 @@ nasm -f macho64 -o exam.o exam.asm
 ```command
 ld -macosx_version_min 11.3 -o exam -e _MAIN exam.o -L /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem
 ```
-
