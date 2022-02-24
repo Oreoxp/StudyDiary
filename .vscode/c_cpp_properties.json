@@ -12,7 +12,8 @@
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "macos-clang-arm64"
+            "intelliSenseMode": "macos-clang-arm64",
+            "compileCommands": "${workspaceFolder}/代码库及其解析/C++多线程服务端编程/code/muduo/build/release-cpp11/compile_commands.json"
         }
     ],
     "version": 4

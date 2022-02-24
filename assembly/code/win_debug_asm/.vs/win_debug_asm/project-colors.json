@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3": {
+      "ProjectGuid": "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3",
+      "DisplayName": "杂项文件",
+      "ColorIndex": -1
+    },
+    "f79df2ca-f04d-4dfd-a969-9185ebcc8030": {
+      "ProjectGuid": "f79df2ca-f04d-4dfd-a969-9185ebcc8030",
+      "DisplayName": "win_debug_asm",
+      "ColorIndex": 0
+    }
+  },
+  "NextColorIndex": 1
+}
