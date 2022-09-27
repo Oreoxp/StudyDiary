@@ -1,0 +1,6 @@
+\.vs
+*.tlog
+\*.tlog
+\Release\
+Release\
+Release
