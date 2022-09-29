@@ -29,6 +29,35 @@ const char* fragmentShaderSource =
     "}\n\0";
 
 
+void PaintLine(float* points, float* point_a, float* point_b, int count) {
+  float x0 = point_a[0];
+  float y0 = point_a[1];
+
+  float x1 = point_b[0];
+  float y1 = point_b[1];
+
+  int d = x0 + 0.01f - y0 + 0.005f;
+
+  float x = x0, y = y0;
+  int i = 3;
+  points[0] = x0;
+  points[1] = y0;
+  points[2] = 0;
+
+  while (x < x1 && y < y1) {
+    points[i++] = x;
+    points[i++] = y;
+    points[i++] = 0;
+    if (d < 0) {
+      y += 0.001f;
+      d += -x1 - x0 + y0 - y1;
+    } else {
+      d += y0 - y1;
+    }
+    x += 0.001f;
+  }
+}
+
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -93,11 +122,18 @@ int main() {
   glDeleteShader(fragmentShader);
 
   //三角形的三个顶点坐标
-  float vertices[] = {
+  /* float vertices[] = {
    -0.5f, -0.5f, 0.0f,
-    0.5f, -0.5f, 0.0f,
-    0.0f, 0.5f, 0.0f
-  };
+    0.5f, -0.5f, 0.0f, 
+    0.0f, 0.5f, 0.0f, 
+    0.5f,  0.0f, 0.0f,
+    0.0f,  0.0f, 0.0f,
+  };*/
+  float vertices[30000];
+  float point_a[3] = {-1.0f, -1.0f, 0.0f};
+  float point_b[3] = {1.0f, 1.0f, 0.0f};
+  PaintLine(vertices, point_a, point_b, 30000);
+
 
   //顶点数组对象：Vertex Array Object，VAO
   //顶点缓冲对象：Vertex Buffer Object，VBO
@@ -106,11 +142,14 @@ int main() {
   glGenBuffers(1, &VBO);
   glBindVertexArray(VAO);  //
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 30000, vertices, GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+
+
+
   //循环渲染
   while (!glfwWindowShouldClose(window)) {
     processInput(window);
@@ -119,7 +158,8 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(shaderProgram);  //使用这个着色器程序
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);  //绘制三角形
+    //glDrawArrays(GL_TRIANGLES, 0, 3);  //绘制三角形
+    glDrawArrays(GL_POINTS, 0, 30000);  //绘制点
 
     glfwSwapBuffers(window);
     glfwPollEvents();
