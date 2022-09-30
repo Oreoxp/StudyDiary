@@ -29,30 +29,72 @@ const char* fragmentShaderSource =
     "}\n\0";
 
 
-void PaintLine(float* points, float* point_a, float* point_b, int count) {
+void PaintLine(float* points, float* point_a, float* point_b, int count, int sub) {
   float x0 = point_a[0];
   float y0 = point_a[1];
 
   float x1 = point_b[0];
   float y1 = point_b[1];
 
+  float k = (y1 - y0) / (x1 - x0);
+
   float d = 2 * (y0 - y1) * (x0 + 0.001f) + (x1 - x0) * (2 * y0 + 0.001f) +
           2 * x0 * y1 - 2 * x1 * y0;
 
   float x = x0, y = y0;
-  int i = 0;
-
-  while (x < x1 && y < y1) {
-    points[i++] = x;
-    points[i++] = y;
-    points[i++] = 0;
-    if (d < 0) {
-      y += 0.001f;
-      d += 2 * (x1 - x0) + 2 * (y0 - y1);
-    } else {
-      d += 2 * (y0 - y1); 
+  int i = sub;
+  if ( k < 1 && k >= 0) {
+    while (x <= x1 && y <= y1) {
+      points[i++] = x;
+      points[i++] = y;
+      points[i++] = 0;
+      if (d < 0) {
+        y += 0.001f;
+        d += 2 * (x1 - x0) + 2 * (y0 - y1);
+      } else {
+        d += 2 * (y0 - y1);
+      }
+      x += 0.001f;
     }
-    x += 0.001f;
+  } else if (k >= 1) {
+    while (x <= x1 && y <= y1) {
+      points[i++] = x;
+      points[i++] = y;
+      points[i++] = 0;
+      if (d < 0) {
+        y += 0.001f * k;
+        d += 2 * (x1 - x0) + 2 * (y0 - y1);
+      } else {
+        d += 2 * (y0 - y1);
+      }
+      x += 0.001f;
+    }
+  } else if (k > -1 && k <= 0) {
+    while (x <= x1 && y >= y1) {
+      points[i++] = x;
+      points[i++] = y;
+      points[i++] = 0;
+      if (d > 0) {
+        y -= 0.001f;
+        d -= 2 * (x1 - x0) - 2 * (y0 - y1);
+      } else if (d < 0) {
+        d += 2 * (y0 - y1);
+      }
+      x += 0.001f;
+    }
+  } else if (k <= -1) {
+    while (x <= x1 && y >= y1) {
+      points[i++] = x;
+      points[i++] = y;
+      points[i++] = 0;
+      if (d > 0) {
+        y -= 0.001f * (-k);
+        d -= 2 * (x1 - x0) - 2 * (y0 - y1);
+      } else if (d < 0) {
+        d += 2 * (y0 - y1);
+      }
+      x += 0.001f;
+    }
   }
 }
 
@@ -127,10 +169,20 @@ int main() {
     0.5f,  0.0f, 0.0f,
     0.0f,  0.0f, 0.0f,
   };*/
-  float vertices[30000];
-  float point_a[3] = {-1.0f, -1.0f, 0.0f};
-  float point_b[3] = {3.0f, 1.0f, 0.0f};
-  PaintLine(vertices, point_a, point_b, 30000);
+  float vertices[120000];
+
+  float point_a1[3] = {-1.0f, -1.0f, 0.0f};
+  float point_b1[3] = {0.0f, 1.0f, 0.0f};
+  PaintLine(vertices, point_a1, point_b1, 30000, 0);
+  float point_a2[3] = {-1.0f, -1.0f, 0.0f};
+  float point_b2[3] = {1.0f, 0.0f, 0.0f};
+  PaintLine(vertices, point_a2, point_b2, 30000, 30000);
+  float point_a3[3] = {-1.0f, 1.0f, 0.0f};
+  float point_b3[3] = {1.0f, 0.0f, 0.0f};
+  PaintLine(vertices, point_a3, point_b3, 30000, 60000);
+  float point_a4[3] = {-1.0f, 1.0f, 0.0f};
+  float point_b4[3] = {0.0f, -1.0f, 0.0f};
+  PaintLine(vertices, point_a4, point_b4, 30000, 90000);
 
 
   //顶点数组对象：Vertex Array Object，VAO
@@ -140,7 +192,7 @@ int main() {
   glGenBuffers(1, &VBO);
   glBindVertexArray(VAO);  //
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, 30000, vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 120000, vertices, GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -157,7 +209,7 @@ int main() {
     glUseProgram(shaderProgram);  //使用这个着色器程序
     glBindVertexArray(VAO);
     //glDrawArrays(GL_TRIANGLES, 0, 3);  //绘制三角形
-    glDrawArrays(GL_POINTS, 0, 30000);  //绘制点
+    glDrawArrays(GL_POINTS, 0, 120000);  //绘制点
 
     glfwSwapBuffers(window);
     glfwPollEvents();
