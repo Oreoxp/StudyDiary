@@ -36,13 +36,11 @@ void PaintLine(float* points, float* point_a, float* point_b, int count) {
   float x1 = point_b[0];
   float y1 = point_b[1];
 
-  int d = x0 + 0.01f - y0 + 0.005f;
+  float d = 2 * (y0 - y1) * (x0 + 0.001f) + (x1 - x0) * (2 * y0 + 0.001f) +
+          2 * x0 * y1 - 2 * x1 * y0;
 
   float x = x0, y = y0;
-  int i = 3;
-  points[0] = x0;
-  points[1] = y0;
-  points[2] = 0;
+  int i = 0;
 
   while (x < x1 && y < y1) {
     points[i++] = x;
@@ -50,9 +48,9 @@ void PaintLine(float* points, float* point_a, float* point_b, int count) {
     points[i++] = 0;
     if (d < 0) {
       y += 0.001f;
-      d += -x1 - x0 + y0 - y1;
+      d += 2 * (x1 - x0) + 2 * (y0 - y1);
     } else {
-      d += y0 - y1;
+      d += 2 * (y0 - y1); 
     }
     x += 0.001f;
   }
@@ -131,7 +129,7 @@ int main() {
   };*/
   float vertices[30000];
   float point_a[3] = {-1.0f, -1.0f, 0.0f};
-  float point_b[3] = {1.0f, 1.0f, 0.0f};
+  float point_b[3] = {3.0f, 1.0f, 0.0f};
   PaintLine(vertices, point_a, point_b, 30000);
 
 
