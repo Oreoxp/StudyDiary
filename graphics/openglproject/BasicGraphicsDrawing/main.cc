@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <windows.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -13,21 +14,43 @@ void DrawLine();
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-const char* vertexShaderSoucre =
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
-const char* fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n\0";
+/*
+    顶点着色器GLSL源码
+    GLSL版本号和OpenGL的版本是匹配的，使用openGL3.3版本则使用GLSL的330
+    使用in关键字，在顶点着色器中声明所有的输入顶点属性
+    layout (location = 0)设定了输入变量(顶点属性)的位置值；并且后面链接顶点属性设置的时候会通过顶点属性位置值进行绑定
+    vec3 表示三个分量的值(注意每个值都是浮点数类型)
+    第二行就是表示在位置0的地方有一个三个分量的输入变量aPos
+    将输入的三维aPos转换为四维并赋值给全局变量gl_Position
+*/
+const char* vertexShaderSource = "#version 330 core\n"
+"layout (location = 0) in vec3 aPos;\n"   //位置变量的属性位置值为 0
+"layout (location = 1) in vec3 aColor;\n" //颜色变量的属性位置值为 1
+"out vec4 vertexColor;\n"
+"void main()\n"
+"{\n"
+"   vertexColor = vec4(aColor, 1.0);\n"
+"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"}\0";
+/*
+    片段着色器GLSL源码
+    GLSL版本号和OpenGL的版本是匹配的，使用openGL3.3版本则使用GLSL的330
+    out 表示输出变量 四维向量的变量FragColor
+    暂时自定义为 一个Alpha值为1.0(1.0代表完全不透明)的橘黄色的vec4赋值给颜色输出。
+    RGBA的四分量向量
+    片段着色器所做的是计算像素最后的颜色输出。为了让事情更简单暂时自定义为  我们的片段着色器将会一直输出橘黄色。
+*/
+const char* fragmentShaderSource = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"in vec4 vertexColor;\n"
+"void main()\n"
+"{\n"
+"   FragColor = vertexColor;\n"// 将ourColor设置为我们从顶点数据那里得到的输入颜色
+"}\n\0";
 
+#define my_min(a,b,c) min(min(a,b),c)
+#define my_max(a,b,c) max(max(a,b),c)
+#define BUFF_ARR_SIZE 16000000
 
 void PaintLine(float* points, float* point_a, float* point_b, int count, int sub) {
   float x0 = point_a[0];
@@ -98,6 +121,52 @@ void PaintLine(float* points, float* point_a, float* point_b, int count, int sub
   }
 }
 
+void PaintTriangle(float* points, float* point_a, float* point_b, float* point_c, int count, int sub) {
+    float x0 = point_a[0];
+    float y0 = point_a[1];
+    float x1 = point_b[0];
+    float y1 = point_b[1];
+    float x2 = point_c[0];
+    float y2 = point_c[1];
+
+    float xmin = my_min(x0, x1, x2);
+    float xmax = my_max(x0, x1, x2);
+    float ymin = my_min(y0, y1, y2);
+    float ymax = my_max(y0, y1, y2);
+    float x = xmin, y = ymin;
+    float a, b, c;
+    int i = sub;
+    while (y < ymax) {
+        x = xmin;
+        while (x < xmax) {
+            a = ((y1 - y2) * x + (x2 - x1) * y + x1 * y2 - x2 * y1) / ((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1);
+            b = ((y2 - y0) * x + (x0 - x2) * y + x2 * y0 - x0 * y2) / ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2);
+            c = ((y0 - y1) * x + (x1 - x0) * y + x0 * y1 - x1 * y0) / ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0);
+            if (a >= 0 && b >= 0 && c >= 0) {
+               if ((a > 0 || ((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1) * ((y1 - y2) * (-1) + (x2 - x1) * (-1) + x1 * y2 - x2 * y1))
+                    && (b > 0 || ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2) * ((y2 - y0) * (-1) + (x0 - x2) * (-1) + x2 * y0 - x0 * y2))
+                    && (c > 0 || ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0) * ((y0 - y1) * (-1) + (x1 - x0) * (-1) + x0 * y1 - x1 * y0))) {
+                    points[i++] = x;
+                    points[i++] = y;
+                    points[i++] = 0;
+                    
+                    if (i != sub + 3) {
+                        points[i++] = points[i - 6] + 0.000003f;
+                        points[i++] = points[i - 6] + 0.000002f;
+                        points[i++] = points[i - 6] + 0.000001f;
+                    } else {
+                        points[i++] = 0 + 0.0001f;
+                        points[i++] = 0 + 0.0002f;
+                        points[i++] = 0 + 0.0003f;
+                    }
+               }
+            }
+            x += 0.002f;
+        }
+        y += 0.002f;
+    }
+}
+
 int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -125,8 +194,10 @@ int main() {
   }
 
   //下面是绘制三角形的主要代码
-  int vertexShader = glCreateShader(GL_VERTEX_SHADER);  //创建顶点着色器
-  glShaderSource(vertexShader, 1, &vertexShaderSoucre, NULL);
+
+  //创建顶点着色器
+  int vertexShader = glCreateShader(GL_VERTEX_SHADER);  
+  glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
   glCompileShader(vertexShader);
   int success;
   char infoLog[512];
@@ -137,7 +208,8 @@ int main() {
               << infoLog << std::endl;
   }
 
-  int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);  //片段着色器
+  //片段着色器
+  int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER); 
   glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
   glCompileShader(fragmentShader);
   glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
@@ -146,10 +218,12 @@ int main() {
     std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n"
               << infoLog << std::endl;
   }
+
+
   //把两个着色器关联上一个着色器program
   int shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram,
-                 vertexShader);  //顶点着色器和片段着色器都关联上着色器程序
+  //顶点着色器和片段着色器都关联上着色器程序
+  glAttachShader(shaderProgram, vertexShader);  
   glAttachShader(shaderProgram, fragmentShader);
   glLinkProgram(shaderProgram);
   glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
@@ -161,29 +235,31 @@ int main() {
   glDeleteShader(vertexShader);  //删除，顶点着色器和片段着色器都不需要再使用，数据都在着色器程序内
   glDeleteShader(fragmentShader);
 
-  //三角形的三个顶点坐标
-  /* float vertices[] = {
-   -0.5f, -0.5f, 0.0f,
-    0.5f, -0.5f, 0.0f, 
-    0.0f, 0.5f, 0.0f, 
-    0.5f,  0.0f, 0.0f,
-    0.0f,  0.0f, 0.0f,
-  };*/
-  float vertices[120000];
-
+  float* vertices = new float[BUFF_ARR_SIZE];
+  /*
   float point_a1[3] = {-1.0f, -1.0f, 0.0f};
   float point_b1[3] = {0.0f, 1.0f, 0.0f};
-  PaintLine(vertices, point_a1, point_b1, 30000, 0);
+  PaintLine(vertices, point_a1, point_b1, 30000, 0); 
+ 
   float point_a2[3] = {-1.0f, -1.0f, 0.0f};
   float point_b2[3] = {1.0f, 0.0f, 0.0f};
   PaintLine(vertices, point_a2, point_b2, 30000, 30000);
+
   float point_a3[3] = {-1.0f, 1.0f, 0.0f};
   float point_b3[3] = {1.0f, 0.0f, 0.0f};
   PaintLine(vertices, point_a3, point_b3, 30000, 60000);
   float point_a4[3] = {-1.0f, 1.0f, 0.0f};
   float point_b4[3] = {0.0f, -1.0f, 0.0f};
-  PaintLine(vertices, point_a4, point_b4, 30000, 90000);
+  PaintLine(vertices, point_a4, point_b4, 30000, 90000);*/
 
+  float point_a1[3] = { -1.0f, 0.0f, 0.0f };
+  float point_b1[3] = { 0.0f, 1.0f, 0.0f };
+  float point_c1[3] = { 1.0f, -1.0f, 0.0f };
+  PaintTriangle(vertices, point_a1, point_b1, point_c1, 30000, 0);
+  float point_a2[3] = { -1.0f, 1.0f, 0.0f };
+  float point_b2[3] = { 1.0f, 1.0f, 0.0f };
+  float point_c2[3] = { 1.0f, 0.0f, 0.0f };
+  PaintTriangle(vertices, point_a2, point_b2, point_c2, 30000, 2251002);
 
   //顶点数组对象：Vertex Array Object，VAO
   //顶点缓冲对象：Vertex Buffer Object，VBO
@@ -192,9 +268,13 @@ int main() {
   glGenBuffers(1, &VBO);
   glBindVertexArray(VAO);  //
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, 120000, vertices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glBufferData(GL_ARRAY_BUFFER, BUFF_ARR_SIZE, vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
@@ -206,10 +286,10 @@ int main() {
 
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
     glUseProgram(shaderProgram);  //使用这个着色器程序
     glBindVertexArray(VAO);
-    //glDrawArrays(GL_TRIANGLES, 0, 3);  //绘制三角形
-    glDrawArrays(GL_POINTS, 0, 120000);  //绘制点
+    glDrawArrays(GL_POINTS, 0, BUFF_ARR_SIZE);  //绘制点
 
     glfwSwapBuffers(window);
     glfwPollEvents();
