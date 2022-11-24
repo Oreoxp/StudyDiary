@@ -178,7 +178,6 @@ void PaintTriangle(float* points, float* point_a, float* point_b, float* point_c
     }
 }
 
-
 void PaintTriangleWithMSAA(float* points,
                            float* point_a,
                            float* point_b,
@@ -209,10 +208,12 @@ void PaintTriangleWithMSAA(float* points,
   points[i++] = 0.1f;
   points[i++] = 0.1f;
   points[i++] = 0.1f;
+  int in_count;
+
   while (y < ymax) {
     x = xmin;
     while (x < xmax) {
-      int in_count = 0;
+      in_count = 0;
       for (int m = 0; m < 4; ++m) {
         for (int n = 0; n < 4; ++n) {
           a = ((y1 - y2) * x + (x2 - x1) * y + x1 * y2 - x2 * y1) /
@@ -235,7 +236,8 @@ void PaintTriangleWithMSAA(float* points,
                   ((y0 - y1) * (-1) + (x1 - x0) * (-1) + x0 * y1 - x1 * y0))) >
                     0) {  //该点在图形内
               in_count++;
-              /*std::cout << "point:[i] = (" << i << "," << i + 1 << "," << i + 2
+              /*std::cout << "point:[i] = (" << i << "," << i + 1 << "," << i +
+                 2
                         << ")" << std::endl;*/
               points[i++] = x;
               points[i++] = y;
@@ -243,34 +245,33 @@ void PaintTriangleWithMSAA(float* points,
               i += 3;
             }
           }
-          x += MSAA_STEPINT/4.0;
+          x += MSAA_STEPINT / 4;
         }
-        y += MSAA_STEPINT/4.0;
+        y += MSAA_STEPINT / 4;
         x -= MSAA_STEPINT;
       }
-      y -= MSAA_STEPINT / 4.0;
+      y -= MSAA_STEPINT;
       x += MSAA_STEPINT;
 
       i -= 96;
-      //auto ss = 1.0 - (in_count / 16.0) + 1.0;
+      // auto ss = 1.0 - (in_count / 16.0) + 1.0;
       auto ss = in_count / 16.0;
       if (in_count != 0) {
         for (int m = 0; m < 4; ++m) {
           for (int n = 0; n < 4; ++n) {
             int ssss = i + m * 24 + (n * 6 + 3);
             /*std::cout << "color:[i] = (" << ssss << "," << ssss + 1 << ","
-                      << ssss + 2 << ")" << m * 24 + (n * 6 + 3) << "    m=" << m
+                      << ssss + 2 << ")" << m * 24 + (n * 6 + 3) << "    m=" <<
+               m
                       << " n="<<n<< std::endl;*/
             points[i + m * 24 + (n * 6 + 3)] = 0.9f * ss;
             points[i + m * 24 + (n * 6 + 3) + 1] = 0.9f * ss;
             points[i + m * 24 + (n * 6 + 3) + 2] = 0.9f * ss;
           }
         }
-        /*std::cout <<std::endl;*/
+        std::cout << ss << std::endl;
       }
       i += 96;
-      x += MSAA_STEPINT/4.0;
-      y -= MSAA_STEPINT / 4.0 * 3.0;
     }
     y += MSAA_STEPINT;
   }
