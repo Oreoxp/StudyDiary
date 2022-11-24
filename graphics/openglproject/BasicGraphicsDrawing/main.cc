@@ -50,7 +50,9 @@ const char* fragmentShaderSource = "#version 330 core\n"
 
 #define my_min(a,b,c) min(min(a,b),c)
 #define my_max(a,b,c) max(max(a,b),c)
-#define BUFF_ARR_SIZE 16000000
+#define BUFF_ARR_SIZE 120000000
+
+#define MSAA_STEPINT 0.008f
 
 void PaintLine(float* points, float* point_a, float* point_b, int count, int sub) {
   float x0 = point_a[0];
@@ -143,28 +145,135 @@ void PaintTriangle(float* points, float* point_a, float* point_b, float* point_c
             b = ((y2 - y0) * x + (x0 - x2) * y + x2 * y0 - x0 * y2) / ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2);
             c = ((y0 - y1) * x + (x1 - x0) * y + x0 * y1 - x1 * y0) / ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0);
             if (a >= 0 && b >= 0 && c >= 0) {
-               if ((a > 0 || ((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1) * ((y1 - y2) * (-1) + (x2 - x1) * (-1) + x1 * y2 - x2 * y1))
-                    && (b > 0 || ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2) * ((y2 - y0) * (-1) + (x0 - x2) * (-1) + x2 * y0 - x0 * y2))
-                    && (c > 0 || ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0) * ((y0 - y1) * (-1) + (x1 - x0) * (-1) + x0 * y1 - x1 * y0))) {
-                    points[i++] = x;
-                    points[i++] = y;
-                    points[i++] = 0;
-                    
-                    if (i != sub + 3) {
-                        points[i++] = points[i - 6] + 0.000003f;
-                        points[i++] = points[i - 6] + 0.000002f;
-                        points[i++] = points[i - 6] + 0.000001f;
-                    } else {
-                        points[i++] = 0 + 0.0001f;
-                        points[i++] = 0 + 0.0002f;
-                        points[i++] = 0 + 0.0003f;
-                    }
-               }
+              if ((a > 0 ||
+                   ((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1) *
+                       ((y1 - y2) * (-1) + (x2 - x1) * (-1) + x1 * y2 -
+                        x2 * y1)) &&
+                  (b > 0 ||
+                   ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2) *
+                       ((y2 - y0) * (-1) + (x0 - x2) * (-1) + x2 * y0 -
+                        x0 * y2)) &&
+                  (c > 0 ||
+                   ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0) *
+                       ((y0 - y1) * (-1) + (x1 - x0) * (-1) + x0 * y1 -
+                        x1 * y0))) {    //该点在图形内
+                points[i++] = x;
+                points[i++] = y;
+                points[i++] = 0;
+
+                if (i != sub + 3) {     //步进坐标
+                  points[i++] = points[i - 6] + 0.000003f;
+                  points[i++] = points[i - 6] + 0.000002f;
+                  points[i++] = points[i - 6] + 0.000001f;
+                } else {                //set color
+                  points[i++] = 0 + 0.0001f;
+                  points[i++] = 0 + 0.0002f;
+                  points[i++] = 0 + 0.0003f;
+                }
+              }
             }
             x += 0.002f;
         }
         y += 0.002f;
     }
+}
+
+
+void PaintTriangleWithMSAA(float* points,
+                           float* point_a,
+                           float* point_b,
+                           float* point_c,
+                           int count,
+                           int sub) {
+  float x0 = point_a[0];
+  float y0 = point_a[1];
+  float x1 = point_b[0];
+  float y1 = point_b[1];
+  float x2 = point_c[0];
+  float y2 = point_c[1];
+
+  float xmin = my_min(x0, x1, x2);
+  float xmax = my_max(x0, x1, x2);
+  float ymin = my_min(y0, y1, y2);
+  float ymax = my_max(y0, y1, y2);
+  float x = xmin, y = ymin;
+  float a, b, c;
+  float bu;
+
+  int i = sub;
+
+  points[i++] = x;
+  points[i++] = y;
+  points[i++] = 0;
+
+  points[i++] = 0.1f;
+  points[i++] = 0.1f;
+  points[i++] = 0.1f;
+  while (y < ymax) {
+    x = xmin;
+    while (x < xmax) {
+      int in_count = 0;
+      for (int m = 0; m < 4; ++m) {
+        for (int n = 0; n < 4; ++n) {
+          a = ((y1 - y2) * x + (x2 - x1) * y + x1 * y2 - x2 * y1) /
+              ((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1);
+          b = ((y2 - y0) * x + (x0 - x2) * y + x2 * y0 - x0 * y2) /
+              ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2);
+          c = ((y0 - y1) * x + (x1 - x0) * y + x0 * y1 - x1 * y0) /
+              ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0);
+          if (a >= 0 && b >= 0 && c >= 0) {
+            if ((a > 0 ||
+                 (((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1) *
+                  ((y1 - y2) * (-1) + (x2 - x1) * (-1) + x1 * y2 - x2 * y1)) >
+                     0) &&
+                (b > 0 ||
+                 (((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2) *
+                  ((y2 - y0) * (-1) + (x0 - x2) * (-1) + x2 * y0 - x0 * y2)) >
+                     0) &&
+                (c > 0 ||
+                 (((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0) *
+                  ((y0 - y1) * (-1) + (x1 - x0) * (-1) + x0 * y1 - x1 * y0))) >
+                    0) {  //该点在图形内
+              in_count++;
+              /*std::cout << "point:[i] = (" << i << "," << i + 1 << "," << i + 2
+                        << ")" << std::endl;*/
+              points[i++] = x;
+              points[i++] = y;
+              points[i++] = 0;
+              i += 3;
+            }
+          }
+          x += MSAA_STEPINT/4.0;
+        }
+        y += MSAA_STEPINT/4.0;
+        x -= MSAA_STEPINT;
+      }
+      y -= MSAA_STEPINT / 4.0;
+      x += MSAA_STEPINT;
+
+      i -= 96;
+      //auto ss = 1.0 - (in_count / 16.0) + 1.0;
+      auto ss = in_count / 16.0;
+      if (in_count != 0) {
+        for (int m = 0; m < 4; ++m) {
+          for (int n = 0; n < 4; ++n) {
+            int ssss = i + m * 24 + (n * 6 + 3);
+            /*std::cout << "color:[i] = (" << ssss << "," << ssss + 1 << ","
+                      << ssss + 2 << ")" << m * 24 + (n * 6 + 3) << "    m=" << m
+                      << " n="<<n<< std::endl;*/
+            points[i + m * 24 + (n * 6 + 3)] = 0.9f * ss;
+            points[i + m * 24 + (n * 6 + 3) + 1] = 0.9f * ss;
+            points[i + m * 24 + (n * 6 + 3) + 2] = 0.9f * ss;
+          }
+        }
+        /*std::cout <<std::endl;*/
+      }
+      i += 96;
+      x += MSAA_STEPINT/4.0;
+      y -= MSAA_STEPINT / 4.0 * 3.0;
+    }
+    y += MSAA_STEPINT;
+  }
 }
 
 int main() {
@@ -256,10 +365,10 @@ int main() {
   float point_b1[3] = { 0.0f, 1.0f, 0.0f };
   float point_c1[3] = { 1.0f, -1.0f, 0.0f };
   PaintTriangle(vertices, point_a1, point_b1, point_c1, 30000, 0);
-  float point_a2[3] = { -1.0f, 1.0f, 0.0f };
-  float point_b2[3] = { 1.0f, 1.0f, 0.0f };
-  float point_c2[3] = { 1.0f, 0.0f, 0.0f };
-  PaintTriangle(vertices, point_a2, point_b2, point_c2, 30000, 2251002);
+  float point_a2[3] = { 0.0f, 1.0f, 0.0f };
+  float point_b2[3] = {-0.5f, -1.0f, 0.0f};
+  float point_c2[3] = {0.5f, -1.0f, 0.0f};
+  PaintTriangleWithMSAA(vertices, point_a2, point_b2, point_c2, 30000, 2251002);
 
   //顶点数组对象：Vertex Array Object，VAO
   //顶点缓冲对象：Vertex Buffer Object，VBO
