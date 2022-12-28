@@ -45,34 +45,27 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    float x0 = _v[0][0];
-    float y0 = _v[0][1];
-    float x1 = _v[1][0];
-    float y1 = _v[1][1];
-    float x2 = _v[2][0];
-    float y2 = _v[2][1];
 
-    float a = ((y1 - y2) * x + (x2 - x1) * y + x1 * y2 - x2 * y1) / ((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1);
-    float b = ((y2 - y0) * x + (x0 - x2) * y + x2 * y0 - x0 * y2) / ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2);
-    float c = ((y0 - y1) * x + (x1 - x0) * y + x0 * y1 - x1 * y0) / ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0);
-    if (a >= 0 && b >= 0 && c >= 0) {
-        if ((a > 0 ||
-            ((y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1) *
-                ((y1 - y2) * (-1) + (x2 - x1) * (-1) + x1 * y2 -
-                x2 * y1)) &&
-            (b > 0 ||
-            ((y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2) *
-                ((y2 - y0) * (-1) + (x0 - x2) * (-1) + x2 * y0 -
-                x0 * y2)) &&
-            (c > 0 ||
-            ((y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0) *
-                ((y0 - y1) * (-1) + (x1 - x0) * (-1) + x0 * y1 -
-                x1 * y0))){
-                    return true;
-                }
-    }
+    Eigen::Vector2f p;
+    p << x, y;
 
-    return false;
+
+    //1. 准备三角形各边的向量
+    Eigen::Vector2f v1 = _v[1].head(2) - _v[0].head(2);
+    Eigen::Vector2f v2 = _v[2].head(2) - _v[1].head(2);
+    Eigen::Vector2f v3 = _v[0].head(2) - _v[2].head(2);
+
+    //2. 准备测量点和三角形各点连线的向量
+    Eigen::Vector2f p1 = p - _v[0].head(2);
+    Eigen::Vector2f p2 = p - _v[1].head(2);
+    Eigen::Vector2f p3 = p - _v[2].head(2);
+
+    //3. 判断叉乘结果
+    float z1 = v1.x() * p1.y() - v1.y() * p1.x(); 
+    float z2 = v2.x() * p2.y() - v2.y() * p2.x(); 
+    float z3 = v3.x() * p3.y() - v3.y() * p3.x(); 
+
+    return (z1 > 0 && z2 > 0 && z3 > 0) || (z1 < 0 && z2 < 0 && z3 < 0);
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -146,40 +139,37 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
 
     // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
 
-    float x0 = v[0][0];
-    float y0 = v[0][1];
-    float x1 = v[1][0];
-    float y1 = v[1][1];
-    float x2 = v[2][0];
-    float y2 = v[2][1];
+    // 1. 找到三角形的bounding box（最小包裹矩形框）的坐标
+    float min_x = std::min(v[0][0], std::min(v[1][0], v[2][0])); 
+    float max_x = std::max(v[0][0], std::max(v[1][0], v[2][0]));
+    float min_y = std::min(v[0][1], std::min(v[1][1], v[2][1]));
+    float max_y = std::max(v[0][1], std::max(v[1][1], v[2][1]));
+    // 2. 遍历三角形bbox中的所有测试点
+    for (int x = min_x; x <= max_x; x++) {
+        for (int y = min_y; y <= max_y; y++) {
+            if(insideTriangle(x, y, t.v)){
+                float min_depth = FLT_MAX; //默认值为无穷大（远）
 
-    float xmin = std::min(std::min(v[0][0], v[1][0]), v[2][0]);
-    float xmax = my_max(x0, x1, x2);
-    float ymin = my_min(y0, y1, y2);
-    float ymax = my_max(y0, y1, y2);
-    
-    int x = (int)xmin, y = (int)ymin;
-    while (y < ymax) {
-        x = xmin;
-        while (x < xmax) { 
-            if(insideTriangle(x,y,t.v)){    //该点在图形内
-                auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
-                float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                // 如果在三角形内部，计算该位置的插值深度值（interpolated depth value)
+                auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v); //计算重心坐标，见第九讲着色
+                float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float z_interpolated =
+                        alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 z_interpolated *= w_reciprocal;
-                
-                // compare the current depth with the value in depth buffer
-                if(depth_buf[get_index(x,y)]>z_interpolated)// note: we use get_index to get the index of current point in depth buffer
-                {
-                    // we have to update this pixel
-                    depth_buf[get_index(x,y)]=z_interpolated; // update depth buffer
-                    // assign color to this pixel
-                    set_pixel(Vector3f(x,y,z_interpolated), t.getColor());
+
+                min_depth = std::min(min_depth, z_interpolated);
+
+                // 与深度缓冲区(depth buffer)对应值进行比较
+                if (depth_buf[get_index(x, y)] > min_depth) {
+                    // set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
+                    Vector3f color = t.getColor();
+                    Vector3f point;
+                    point << x, y, min_depth;
+                    depth_buf[get_index(x, y)] = min_depth;
+                    set_pixel(point, color);
                 }
-              }
-            ++x;
+            }
         }
-        ++y;
     }
 }
 
