@@ -280,6 +280,57 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
     // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
     // Use: auto pixel_color = fragment_shader(payload);
 
+    auto v = t.toVector4();
+
+    // bounding box
+    float min_x = std::min(v[0][0], std::min(v[1][0], v[2][0]));
+    float max_x = std::max(v[0][0], std::max(v[1][0], v[2][0]));
+    float min_y = std::min(v[0][1], std::min(v[1][1], v[2][1]));
+    float max_y = std::max(v[0][1], std::max(v[1][1], v[2][1]));
+
+    int x_min = std::floor(min_x);
+    int x_max = std::ceil(max_x);
+    int y_min = std::floor(min_y);
+    int y_max = std::ceil(max_y);
+
+    for (int i = x_min; i <= x_max; ++i) {
+        for (int j = y_min; j <= y_max; ++j) {
+            if (insideTriangle(i + 0.5, j + 0.5, t.v)) {
+                //Depth interpolated
+                auto[alpha, beta, gamma] = computeBarycentric2D(i + 0.5, j + 0.5, t.v);
+
+                //直接进行深度插值投影时三角形重心会变，所以要使用透视校正插值
+                float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                zp *= Z;
+
+                if (zp < depth_buf[get_index(i, j)]) {
+                    // color
+                    auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1);
+                    // normal
+                    auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2],
+                                                           1).normalized();
+                    // texture
+                    auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1],
+                                                              t.tex_coords[2], 1);
+                    // shadingcoords
+                    //view_pos[] 是三角形顶点在view space中的坐标，插值是为了还原在camera space 中的坐标
+                    //详见http://games-cn.org/forums/topic/zuoye3-interpolated_shadingcoords/
+                    auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1],
+                                                                  view_pos[2], 1);
+                    // 用来传递插值结果的结构体
+                    fragment_shader_payload payload(interpolated_color, interpolated_normal, interpolated_texcoords,
+                                                    texture ? &*texture : nullptr);
+                    payload.view_pos = interpolated_shadingcoords;
+                    auto pixel_color = fragment_shader(payload);
+                    // 设置深度
+                    depth_buf[get_index(i, j)] = zp;
+                    // 设置颜色
+                    set_pixel(Eigen::Vector2i(i, j), pixel_color);
+                }
+            }
+        }
+    }
  
 }
 

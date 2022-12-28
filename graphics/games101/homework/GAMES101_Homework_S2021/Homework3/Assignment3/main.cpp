@@ -8,6 +8,8 @@
 #include "Texture.hpp"
 #include "OBJ_Loader.h"
 
+inline double Degree(double angle)  {return angle*MY_PI/180.0;}
+
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
@@ -50,6 +52,20 @@ Eigen::Matrix4f get_model_matrix(float angle)
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
     // TODO: Use the same projection matrix from the previous assignments
+
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+
+    float n=zNear;
+    float f=zFar;
+    float t=-abs(zNear)*tan(Degree(eye_fov)/2.0); // you do not need to add "-" here, it is just for visualizatin
+    float r=t*aspect_ratio;
+
+    projection << 
+                n/r, 0, 0, 0,
+                0, n/t, 0, 0,
+                0, 0, (n+f)/(n-f), -2*n*f/(n-f),
+                0, 0, 1, 0;
+
 
 }
 
