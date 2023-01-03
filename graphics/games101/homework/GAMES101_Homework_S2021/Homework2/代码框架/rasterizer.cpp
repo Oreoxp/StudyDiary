@@ -46,26 +46,19 @@ static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
 
-    Eigen::Vector2f p;
-    p << x, y;
+    Vector3f v[3];
+    for(int i=0;i<3;i++)
+        v[i] = {_v[i].x(),_v[i].y(), 1.0};
+     
+    Vector3f f0 = v[1].cross(v[0]);
+    Vector3f f1 = v[2].cross(v[1]);
+    Vector3f f2 = v[0].cross(v[2]);
+    Vector3f p(x,y,1.);
+    Vector3f p0 = v[1].cross(p);
+    Vector3f p1 = v[2].cross(p);
+    Vector3f p2 = v[0].cross(p);
 
-
-    //1. 准备三角形各边的向量
-    Eigen::Vector2f v1 = _v[1].head(2) - _v[0].head(2);
-    Eigen::Vector2f v2 = _v[2].head(2) - _v[1].head(2);
-    Eigen::Vector2f v3 = _v[0].head(2) - _v[2].head(2);
-
-    //2. 准备测量点和三角形各点连线的向量
-    Eigen::Vector2f p1 = p - _v[0].head(2);
-    Eigen::Vector2f p2 = p - _v[1].head(2);
-    Eigen::Vector2f p3 = p - _v[2].head(2);
-
-    //3. 判断叉乘结果
-    float z1 = v1.x() * p1.y() - v1.y() * p1.x(); 
-    float z2 = v2.x() * p2.y() - v2.y() * p2.x(); 
-    float z3 = v3.x() * p3.y() - v3.y() * p3.x(); 
-
-    return (z1 > 0 && z2 > 0 && z3 > 0) || (z1 < 0 && z2 < 0 && z3 < 0);
+    return (f0.dot(p0) > 0 && f1.dot(p1)  > 0 && f2.dot(p2)  > 0) || (f0.dot(p0)  < 0 && f1.dot(p1)  < 0 && f2.dot(p2)  < 0);
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
