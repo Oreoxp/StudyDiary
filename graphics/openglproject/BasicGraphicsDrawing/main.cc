@@ -336,6 +336,7 @@ int main() {
   glAttachShader(shaderProgram, vertexShader);  
   glAttachShader(shaderProgram, fragmentShader);
   glLinkProgram(shaderProgram);
+  // 查看link的状态
   glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);  //出错log
@@ -375,10 +376,20 @@ int main() {
   //顶点缓冲对象：Vertex Buffer Object，VBO
   unsigned int VBO, VAO;
   glGenVertexArrays(1, &VAO);
+  //生成一个长度为 1 的 buffer
   glGenBuffers(1, &VBO);
   glBindVertexArray(VAO);  //
+   //VBO 变成了一个顶点缓冲类型
+   //    绑定对象的过程就像设置铁路的道岔开关，每一个缓冲类型中的各个对象就像不同
+   //  的轨道一样，我们将开关设置为其中一个状态，那么之后的列车都会驶入这条轨道。
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  // 向顶点缓冲 buffer 中传输数据
+  //      第四个参数指定了我们希望显卡如何管理给定的数据。它有三种形式：
+  //  GL_STATIC_DRAW ：数据不会或几乎不会改变。
+  //  GL_DYNAMIC_DRAW：数据会被改变很多。
+  //  GL_STREAM_DRAW ：数据每次绘制时都会改变。
   glBufferData(GL_ARRAY_BUFFER, BUFF_ARR_SIZE, vertices, GL_STATIC_DRAW);
+
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
