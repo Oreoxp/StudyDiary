@@ -3,6 +3,10 @@
 
 #include <iostream>
 #include <windows.h>
+#include <filesystem>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -26,11 +30,17 @@ const unsigned int SCR_HEIGHT = 600;
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"   //位置变量的属性位置值为 0
 "layout (location = 1) in vec3 aColor;\n" //颜色变量的属性位置值为 1
+"layout(location = 2) in vec2 aTexCoord; \n"//纹理变量的属性位置值为 1
 "out vec4 vertexColor;\n"
+"out vec4 ourPosition;\n"
+"out vec2 TexCoord;\n"
+"uniform vec2 dev = vec2(0.5, 0);\n"
 "void main()\n"
 "{\n"
 "   vertexColor = vec4(aColor, 1.0);\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   gl_Position = vec4(aPos, 1.0);\n"
+"   ourPosition = gl_Position;\n"  
+"   TexCoord = vec2(aTexCoord.x, aTexCoord.y); \n"
 "}\0";
 /*
     片段着色器GLSL源码
@@ -43,14 +53,18 @@ const char* vertexShaderSource = "#version 330 core\n"
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
 "in vec4 vertexColor;\n"
+"in vec4 ourPosition;\n"
+"in vec2 TexCoord;\n"
+"uniform sampler2D texture1;\n"
+"uniform sampler2D texture2;\n"//采样器
 "void main()\n"
 "{\n"
-"   FragColor = vertexColor;\n"// 将ourColor设置为我们从顶点数据那里得到的输入颜色
+"   FragColor = mix(texture(texture1, TexCoord), texture(texture2, vec2(TexCoord.x, TexCoord.y)), 0.2);\n"
 "}\n\0";
 
 #define my_min(a,b,c) min(min(a,b),c)
 #define my_max(a,b,c) max(max(a,b),c)
-#define BUFF_ARR_SIZE 120000000
+#define BUFF_ARR_SIZE 30
 
 #define MSAA_STEPINT 0.008f
 
@@ -346,7 +360,7 @@ int main() {
   glDeleteShader(vertexShader);  //删除，顶点着色器和片段着色器都不需要再使用，数据都在着色器程序内
   glDeleteShader(fragmentShader);
 
-  float* vertices = new float[BUFF_ARR_SIZE];
+  //float* vertices = new float[BUFF_ARR_SIZE];
   /*
   float point_a1[3] = {-1.0f, -1.0f, 0.0f};
   float point_b1[3] = {0.0f, 1.0f, 0.0f};
@@ -366,18 +380,36 @@ int main() {
   float point_a1[3] = { -1.0f, 0.0f, 0.0f };
   float point_b1[3] = { 0.0f, 1.0f, 0.0f };
   float point_c1[3] = { 1.0f, -1.0f, 0.0f };
-  PaintTriangle(vertices, point_a1, point_b1, point_c1, 30000, 0);
+
+  float vertices[] = {
+      //     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
+           0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // 右上
+           0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // 右下
+          -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // 左下
+          -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // 左上
+  };
+  unsigned int indices[] = {
+      0, 1, 3,  // first triangle
+      1, 2, 3   // second triangle
+  };
+
+
+  /*
+  //PaintTriangle(vertices, point_a1, point_b1, point_c1, 30000, 0);
   float point_a2[3] = { 0.0f, 1.0f, 0.0f };
   float point_b2[3] = {-0.5f, -1.0f, 0.0f};
   float point_c2[3] = {0.5f, -1.0f, 0.0f};
-  PaintTriangleWithMSAA(vertices, point_a2, point_b2, point_c2, 30000, 2251002);
-
+  //PaintTriangleWithMSAA(vertices, point_a2, point_b2, point_c2, 30000, 2251002);
+  */
   //顶点数组对象：Vertex Array Object，VAO
   //顶点缓冲对象：Vertex Buffer Object，VBO
-  unsigned int VBO, VAO;
+  unsigned int VBO, VAO, EBO;
+
+
   glGenVertexArrays(1, &VAO);
   //生成一个长度为 1 的 buffer
   glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
   glBindVertexArray(VAO);  //
    //VBO 变成了一个顶点缓冲类型
    //    绑定对象的过程就像设置铁路的道岔开关，每一个缓冲类型中的各个对象就像不同
@@ -388,18 +420,82 @@ int main() {
   //  GL_STATIC_DRAW ：数据不会或几乎不会改变。
   //  GL_DYNAMIC_DRAW：数据会被改变很多。
   //  GL_STREAM_DRAW ：数据每次绘制时都会改变。
-  glBufferData(GL_ARRAY_BUFFER, BUFF_ARR_SIZE, vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+               GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        (void*)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        (void*)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
 
+  //Textures
+  unsigned int texture, texture2;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  // 为当前绑定的纹理对象设置环绕、过滤方式
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  int width, height, nrChannels;
+  stbi_set_flip_vertically_on_load(true); 
+  unsigned char* data = stbi_load("./wall.jpg", &width, &height, &nrChannels, 0);
+  //载入的图片数据
+  //  第一个参数指定了纹理目标(Target)。设置为GL_TEXTURE_2D意味着会生成与当前绑定的纹理对象在同一个目标上的纹理（任何绑定到GL_TEXTURE_1D和GL_TEXTURE_3D的纹理不会受到影响）。
+  //  第二个参数为纹理指定多级渐远纹理的级别，如果你希望单独手动设置每个多级渐远纹理的级别的话。这里我们填0，也就是基本级别。
+  //  第三个参数告诉OpenGL我们希望把纹理储存为何种格式。我们的图像只有RGB值，因此我们也把纹理储存为RGB值。
+  //  第四个和第五个参数设置最终的纹理的宽度和高度。我们之前加载图像的时候储存了它们，所以我们使用对应的变量。
+  //  下个参数应该总是被设为0（历史遗留的问题）。
+  //  第七第八个参数定义了源图的格式和数据类型。我们使用RGB值加载这个图像，并把它们储存为char(byte)数组，我们将会传入对应值。
+  //  最后一个参数是真正的图像数据。
+  if (data) {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+      //    当调用glTexImage2D时，当前绑定的纹理对象就会被附加上纹理图像。然而，目前只有基本级别(Base-level)的纹理图像被加载了，如果要使用多级渐远纹理，
+      //我们必须手动设置所有不同的图像（不断递增第二个参数）。或者，直接在生成纹理之后调用glGenerateMipmap。
+      //这会为当前绑定的纹理自动生成所有需要的多级渐远纹理。
+      glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+      std::cout << "Failed to load texture" << std::endl;
+  }
+  //生成后释放数据
+  stbi_image_free(data);
+
+  // texture 2
+  // ---------
+  glGenTextures(1, &texture2);
+  glBindTexture(GL_TEXTURE_2D, texture2);
+  // set the texture wrapping parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                  GL_REPEAT);  // set texture wrapping to GL_REPEAT (default
+                               // wrapping method)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  // set texture filtering parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // load image, create texture and generate mipmaps
+  data = stbi_load("./awesomeface.png", &width, &height, &nrChannels, 0);
+  if (data) {
+    // note that the awesomeface.png has transparency and thus an alpha channel,
+    // so make sure to tell OpenGL the data type is of GL_RGBA
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+    std::cout << "Failed to load texture2" << std::endl;
+  }
+  stbi_image_free(data);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-
+  glUseProgram(shaderProgram); 
+  glUniform1i(glGetUniformLocation(shaderProgram, "texture2"), 1); 
 
   //循环渲染
   while (!glfwWindowShouldClose(window)) {
@@ -408,9 +504,17 @@ int main() {
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    
+        // bind textures on corresponding texture units
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+
     glUseProgram(shaderProgram);  //使用这个着色器程序
     glBindVertexArray(VAO);
-    glDrawArrays(GL_POINTS, 0, BUFF_ARR_SIZE);  //绘制点
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);  //绘制点
 
     glfwSwapBuffers(window);
     glfwPollEvents();

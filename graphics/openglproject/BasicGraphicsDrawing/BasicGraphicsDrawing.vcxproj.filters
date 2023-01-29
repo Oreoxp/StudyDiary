@@ -3,5 +3,19 @@
   <ItemGroup>
     <ClCompile Include="main.cc" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="stb_image.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="shader">
+      <UniqueIdentifier>{acb061e3-8413-40d4-964f-986615db609b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\triangle.vs">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\triangle.fs">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>
