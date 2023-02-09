@@ -51,7 +51,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     projection << 1 / (aspect_ratio * tan(Degree(eye_fov / 2))), 0, 0, 0,
                                0, 1 / tan(Degree(eye_fov / 2)), 0, 0,
                                0, 0, -(zFar + zNear) / (zFar - zNear), -2 * zFar * zNear / (zFar - zNear),
-                               0, 0, -1, 0;
+                               0, 0, -1, 0; 
     return projection;
 }
 
