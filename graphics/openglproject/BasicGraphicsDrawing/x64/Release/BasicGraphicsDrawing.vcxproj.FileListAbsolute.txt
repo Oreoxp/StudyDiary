@@ -1,2 +1,0 @@
-D:\github\StudyDiary\graphics\openglproject\BasicGraphicsDrawing\x64\Release\BasicGraphicsDrawing.exe
-F:\Github\StudyDiary\graphics\openglproject\BasicGraphicsDrawing\x64\Release\BasicGraphicsDrawing.exe
