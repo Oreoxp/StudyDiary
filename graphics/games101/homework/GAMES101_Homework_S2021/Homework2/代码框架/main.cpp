@@ -6,7 +6,7 @@
 #include "Triangle.hpp"
 
 constexpr double MY_PI = 3.1415926;
-inline double Degree(double angle)  {return angle*MY_PI/180.0;}
+#define deggree(x) (x*MY_PI/180)
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
@@ -26,45 +26,26 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
-
-    // TODO: Implement this function
-    // Create the model matrix for rotating the triangle around the Z axis.
-    // Then return it.
-    std::cout<< "rota = "<< rotation_angle <<std::endl;
-    
-    auto degree = Degree(rotation_angle);
-    Eigen::Matrix4f translate;
-    translate << cos(degree), -sin(degree), 0, 0,    
-     sin(degree), cos(degree), 0, 0,    
-     0, 0, 1, 0,    
-     0, 0, 0, 1;
-
-    model = translate * model;
-
+    auto deg = deggree(rotation_angle);
+    model << 
+      std::cos(deg), std::sin(deg), 0, 0,
+      -std::sin(deg), std::cos(deg), 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1;
     return model;
 }
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
-    // Students will implement this function
-
-    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-
-    // TODO: Implement this function
-    // Create the projection matrix for the given parameters.
-    // Then return it.    45, 1, 0.1, 50
-    float n=zNear;
-    float f=zFar;
-    float t=-abs(zNear)*tan(Degree(eye_fov)/2.0); // you do not need to add "-" here, it is just for visualizatin
-    float r=t*aspect_ratio;
-
+    // TODO: Copy-paste your implementation from the previous assignment.
+    Eigen::Matrix4f projection;
+    
+    auto near = -std::tan(deggree(eye_fov / 2.0f));
     projection << 
-                n/r, 0, 0, 0,
-                0, n/t, 0, 0,
-                0, 0, (n+f)/(n-f), -2*n*f/(n-f),
-                0, 0, 1, 0;
-
-
+        1.0f / (aspect_ratio * near), 0, 0,0,
+        0, 1.0f / (near), 0, 0,
+        0, 0, 1, 0, 
+        0, 0, 1, 0;
     return projection;
 }
 
@@ -90,8 +71,8 @@ int main(int argc, const char** argv)
                     {2, 0, -2},
                     {0, 2, -2},
                     {-2, 0, -2},
-                    {3.5, -1, -5},
-                    {2.5, 1.5, -5},
+                    {3.5, -3, -5},
+                    {5.5, 1.5, -5},
                     {-1, 0.5, -5}
             };
 
