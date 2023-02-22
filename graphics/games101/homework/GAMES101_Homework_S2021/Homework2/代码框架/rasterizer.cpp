@@ -133,8 +133,8 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     float min_y = std::min(v[0][1], std::min(v[1][1],v[2][1]));
     float max_y = std::max(v[0][1], std::max(v[1][1],v[2][1]));
 
+   
     /*
-
     for(int i = min_x; i < max_x; ++i) {
       for (int j = min_y; j < max_y; ++j) {
         if(insideTriangle(i, j, t.v)){
@@ -150,42 +150,39 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
               }
         }
       }
-    }
-    */
-    // MSAA
-    for (int i = min_x; i <= max_x; i++) {
-      for (int j = min_y; j <= max_y; j++) {
-        float min_depth = FLT_MAX;
-        int msaa_count = 0;
-        for (int ii = 0; ii < 2; ii++) {
-          for (int jj = 0; jj < 2; jj++) {
-            float x = i + ii * 0.5f + 0.25f;
-            float y = j + jj * 0.5f + 0.25f;
-            if (insideTriangle(x, y, t.v)) {
-              msaa_count++;
-              /*
-              min_depth = std::min(min_depth, v[0].z());
-              if (min_depth < depth_buf[get_index(x, y)]) {
-                depth_buf[get_index(x, y)] = min_depth;
-              }*/
-            }
-          }
-        }
-
-        if (msaa_count > 0) {
-          Vector3f color = t.getColor() * 0.25f * msaa_count;
-          if (msaa_count == 1 ||msaa_count == 2 ||msaa_count == 3) {
-            color = t.getColor();
-          }
-          Vector3f point(i, j, min_depth);
-          min_depth = std::min(min_depth, v[0].z());
-          if (min_depth < depth_buf[get_index(i, j)]) {
-            depth_buf[get_index(i, j)] = min_depth;
-            set_pixel(point, color);
-          }
-        }
-      }
-    }
+    }*/
+    
+//     // MSAA
+//     for (int i = min_x; i <= max_x; i++) {
+//       for (int j = min_y; j <= max_y; j++) {
+//         float min_depth = FLT_MAX;
+//         int msaa_count = 0;
+//         for (int ii = 0; ii < 2; ii++) {
+//           for (int jj = 0; jj < 2; jj++) {
+//             float x = i + ii * 0.5f + 0.25f;
+//             float y = j + jj * 0.5f + 0.25f;
+//             if (insideTriangle(x, y, t.v)) {
+//               msaa_count++;
+//             }
+//           }
+//         }
+// 
+//         if (msaa_count > 0) {
+//           min_depth = FLT_MAX;
+//           Vector3f color = t.getColor() * 0.25f * msaa_count;
+//           Vector3f point(i, j, min_depth);
+//           min_depth = std::min(min_depth, v[0].z());
+//           if (min_depth < depth_buf[get_index(i, j)]) {
+//             depth_buf[get_index(i, j)] = min_depth;
+//             set_pixel(point, color);
+//           }
+//         }
+//         
+//         if(msaa_count < 4) {
+//             depth_buf[get_index(i, j)] = std::numeric_limits<float>::infinity();
+//         }
+//       }
+//     }
 
     // If so, use the following code to get the interpolated z value.
     //auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
@@ -225,8 +222,8 @@ void rst::rasterizer::clear(rst::Buffers buff)
 
 rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
-    frame_buf.resize(w * h);
     w=w*4+100;
+    frame_buf.resize(w * h);
     depth_buf.resize(w * h);
 }
 
