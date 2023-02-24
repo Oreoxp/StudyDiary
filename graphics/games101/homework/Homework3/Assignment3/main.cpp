@@ -66,7 +66,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
                 0, 0, (n+f)/(n-f), -2*n*f/(n-f),
                 0, 0, 1, 0;
 
-
+    return projection;
 }
 
 Eigen::Vector3f vertex_shader(const vertex_shader_payload& payload)
@@ -99,7 +99,10 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f return_color = {0, 0, 0};
     if (payload.texture)
     {
-        // TODO: Get the texture value at the texture coordinates of the current fragment
+      // TODO: Get the texture value at the texture coordinates of the current
+      // fragment
+      return_color = payload.texture->getColor(payload.tex_coords.x(),
+                                               payload.tex_coords.y());
 
     }
     Eigen::Vector3f texture_color;
@@ -128,7 +131,28 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
+        Eigen::Vector3f light_dir =
+            (light.position - point).normalized();  // 点到光向量
+        Eigen::Vector3f view_dir =
+            (eye_pos - point).normalized();  // 点到视点向量
+        Eigen::Vector3f half_vector =
+            (light_dir + view_dir).normalized();  // 半程向量
+        // blinn phong model
+        //  L  = La(环境光) + Ld(漫反射光) + Ls(高光)
+        //  La = ka * Ia
+        Eigen::Vector3f La = ka.cwiseProduct(amb_light_intensity);
 
+        // Ld = kd * Id * max(0,n*l)
+        // 距离衰减
+        float r2 = (light.position - point).dot(light.position - point);
+        Eigen::Vector3f Ld = kd.cwiseProduct(light.intensity / r2);
+        Ld *= std::max(0.0f, normal.normalized().dot(light_dir));
+
+        // Ls = ks * Is * max(0,r*v)^p
+        Eigen::Vector3f Ls = ks.cwiseProduct(light.intensity / r2);
+        Ls *= pow(std::max(0.0f, normal.normalized().dot(half_vector)), p);
+
+        result_color += (La + Ld + Ls);
     }
 
     return result_color * 255.f;
@@ -144,7 +168,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     auto l2 = light{{-20, 20, 0}, {500, 500, 500}};
 
     std::vector<light> lights = {l1, l2};
-    Eigen::Vector3f amb_light_intensity{10, 10, 10};
+    Eigen::Vector3f amb_light_intensity{10, 50, 10};
     Eigen::Vector3f eye_pos{0, 0, 10};
 
     float p = 150;
@@ -154,11 +178,30 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f normal = payload.normal;
 
     Eigen::Vector3f result_color = {0, 0, 0};
-    for (auto& light : lights)
-    {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
-        // components are. Then, accumulate that result on the *result_color* object.
-        
+    for (auto& light : lights) {
+        // TODO: For each light source in the code, calculate what the
+        // *ambient*, *diffuse*, and *specular* components are. Then, accumulate
+        // that result on the *result_color* object.
+
+        Eigen::Vector3f light_dir = (light.position - point).normalized(); //点到光向量
+        Eigen::Vector3f view_dir = (eye_pos - point).normalized();//点到视点向量
+        Eigen::Vector3f half_vector = (light_dir + view_dir).normalized();//半程向量
+        // blinn phong model
+        //  L  = La(环境光) + Ld(漫反射光) + Ls(高光)
+        //  La = ka * Ia
+        Eigen::Vector3f La = ka.cwiseProduct(amb_light_intensity);
+
+        // Ld = kd * Id * max(0,n*l)
+        // 距离衰减
+        float r2 = (light.position - point).dot(light.position - point);
+        Eigen::Vector3f Ld = kd.cwiseProduct(light.intensity / r2);
+        Ld *= std::max(0.0f, normal.normalized().dot(light_dir));
+
+        // Ls = ks * Is * max(0,r*v)^p
+        Eigen::Vector3f Ls = ks.cwiseProduct(light.intensity / r2);
+        Ls *= pow(std::max(0.0f, normal.normalized().dot(half_vector)), p);
+
+        result_color += (La + Ld + Ls);
     }
 
     return result_color * 255.f;
