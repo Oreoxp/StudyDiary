@@ -9,15 +9,15 @@
 // depth, field-of-view, etc.). We then call the render function().
 int main()
 {
-    Scene scene(1280, 960);
+    Scene scene(1280, 960);//场景
 
-    auto sph1 = std::make_unique<Sphere>(Vector3f(-1, 0, -12), 2);
-    sph1->materialType = DIFFUSE_AND_GLOSSY;
+    auto sph1 = std::make_unique<Sphere>(Vector3f(-1, 0, -12), 2);//球面镜
+    sph1->materialType = DIFFUSE_AND_GLOSSY;//漫射和光泽
     sph1->diffuseColor = Vector3f(0.6, 0.7, 0.8);
 
     auto sph2 = std::make_unique<Sphere>(Vector3f(0.5, -0.5, -8), 1.5);
     sph2->ior = 1.5;
-    sph2->materialType = REFLECTION_AND_REFRACTION;
+    sph2->materialType = REFLECTION_AND_REFRACTION;//反射和反射
 
     scene.Add(std::move(sph1));
     scene.Add(std::move(sph2));
@@ -25,8 +25,8 @@ int main()
     Vector3f verts[4] = {{-5,-3,-6}, {5,-3,-6}, {5,-3,-16}, {-5,-3,-16}};
     uint32_t vertIndex[6] = {0, 1, 3, 1, 2, 3};
     Vector2f st[4] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
-    auto mesh = std::make_unique<MeshTriangle>(verts, vertIndex, 2, st);
-    mesh->materialType = DIFFUSE_AND_GLOSSY;
+    auto mesh = std::make_unique<MeshTriangle>(verts, vertIndex, 2, st);//网格
+    mesh->materialType = DIFFUSE_AND_GLOSSY;//漫射和光泽
 
     scene.Add(std::move(mesh));
     scene.Add(std::make_unique<Light>(Vector3f(-20, 70, 20), 0.5));
