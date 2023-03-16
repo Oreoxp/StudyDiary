@@ -3,16 +3,17 @@
 
 #include <GLFW/glfw3.h>
 #include <QOpenGLFunctions_3_0>
-#include <QtGui/QOpenGLShaderProgram>
-#include <QtGui/QOpenGLTexture>
+#include <QtOpenGL/QOpenGLShaderProgram>
+#include <QtOpenGL/QOpenGLTexture>
 #include <QtQuick/QQuickWindow>
 #include <QtQuick/QQuickFramebufferObject>
 #include <QOpenGLFramebufferObjectFormat>
 #include <QOpenGLVertexArrayObject>
 
 class GLFWItem : public QQuickFramebufferObject {
-    Q_OBJECT
-   public:
+  Q_OBJECT
+  QML_NAMED_ELEMENT(Renderer)
+public:
     GLFWItem();
     ~GLFWItem();
 
@@ -44,6 +45,9 @@ public:
       }
     }
 
+    void mvp();
+    void clearWindow();
+
 public slots:
     void onTrianglePosChanged();
 public:
@@ -53,5 +57,7 @@ public:
     GLuint m_vao;
     GLuint m_vbo;
     GLuint m_program;
+    GLuint texture1;
+    GLuint texture2;
 };
 #endif

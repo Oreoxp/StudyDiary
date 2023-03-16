@@ -1,6 +1,6 @@
-import QtQuick 2.0
+import QtQuick
 import GLFWItem 1.0
-import QtQuick.Controls 2
+import QtQuick.Controls
 
 Item {
     width: 800

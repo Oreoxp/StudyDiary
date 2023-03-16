@@ -8,8 +8,8 @@ int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
 
-    qmlRegisterType<GLFWItem>("GLFWItem", 1, 0,
-                                  "GLFWItem");
+    qmlRegisterType<GLFWItem>("GLFWItem", 1, 0, "GLFWItem");
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
     QQuickView view;
     view.setResizeMode(QQuickView::SizeRootObjectToView);
