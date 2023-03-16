@@ -25,6 +25,9 @@ QQuickFramebufferObject::Renderer* GLFWItem::createRenderer() const {
   render_ = new GLFWRenderer();
   connect(this, SIGNAL(trianglePosChanged()), render_,
           SLOT(onTrianglePosChanged()), Qt::QueuedConnection);
+  connect(this, SIGNAL(keyDownChanged(GLFWItem::CLICK_TYPE)), render_,
+          SLOT(onKeyDownChanged(GLFWItem::CLICK_TYPE)),
+          Qt::QueuedConnection);
   return render_;
 }
 
@@ -32,17 +35,45 @@ void GLFWItem::changeTrianglePos() {
   emit trianglePosChanged();
 }
 
+void GLFWItem::changeKeyDown(GLFWItem::CLICK_TYPE type) {
+  emit keyDownChanged(type);
+}
+
+
 // Create VAO and VBO
 float vertices[] = {
-    //     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
-    0.5f,  0.5f,  0.0f,        1.0f, 0.0f, 0.0f,    1.0f, 1.0f,  // 右上
-    0.5f,  -0.5f, 0.0f,        0.0f, 1.0f, 0.0f,    1.0f, 0.0f,  // 右下
-    -0.5f, -0.5f, 0.0f,        0.0f, 0.0f, 1.0f,    0.0f, 0.0f,  // 左下
-    -0.5f, 0.5f,  0.0f,        1.0f, 1.0f, 0.0f,    0.0f, 1.0f   // 左上
-};
-unsigned int indices[] = {
-    0, 1, 3,  // first triangle
-    1, 2, 3   // second triangle
+    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
+    0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+
+    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+    0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+
+    -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+
+    0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
+    0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
+    0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+
+    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+    0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+
+
+// world space positions of our cubes
+QVector3D cubePositions[] = {
+    QVector3D(0.0f, 0.0f, 0.0f),    QVector3D(2.0f, 5.0f, -15.0f),
+    QVector3D(-1.5f, -2.2f, -2.5f), QVector3D(-3.8f, -2.0f, -12.3f),
+    QVector3D(2.4f, -0.4f, -3.5f),  QVector3D(-1.7f, 3.0f, -7.5f),
+    QVector3D(1.3f, -2.0f, -2.5f),  QVector3D(1.5f, 2.0f, -2.5f),
+    QVector3D(1.5f, 0.2f, -1.5f),   QVector3D(-1.3f, 1.0f, -1.5f)
 };
 
 GLFWRenderer::GLFWRenderer()
@@ -105,27 +136,21 @@ GLFWRenderer::GLFWRenderer()
     }
 
     if (!m_vao) {
-      unsigned int EBO;
       glGenVertexArrays(1, &m_vao);
       glGenBuffers(1, &m_vbo);
-      glGenBuffers(1, &EBO);
       
       glBindVertexArray(m_vao);
       glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
       glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-                   GL_STATIC_DRAW);
 
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+          // position attribute
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                             (void*)0);
       glEnableVertexAttribArray(0);
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+      // texture coord attribute
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                             (void*)(3 * sizeof(float)));
       glEnableVertexAttribArray(1);
-      glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                            (void*)(6 * sizeof(float)));
-      glEnableVertexAttribArray(2);
 
       // load and create a texture
       // texture 1
@@ -168,14 +193,12 @@ GLFWRenderer::GLFWRenderer()
       }
       stbi_image_free(data2);
 
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
-      glBindVertexArray(0);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
       glUseProgram(m_program);
       glUniform1i(glGetUniformLocation(m_program, "texture1"), 0);
       glUniform1i(glGetUniformLocation(m_program, "texture2"), 1);
     }
+    timer.start();
 }
 
 GLFWRenderer::~GLFWRenderer() {
@@ -220,29 +243,35 @@ void GLFWRenderer::render() {
 
     glUseProgram(m_program);
 
-    QMatrix4x4 model{};
     QMatrix4x4 view{};
     QMatrix4x4 projection{};
-    model.rotate(qRadiansToDegrees(-30.0f), 1.0f, 0.0f, 0.0f);
-    view.translate(0.0f, 0.0f, -3.0f);
-    projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)600,
+    view.translate(m_view);
+    projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)800,
                            0.1f, 100.0f);
 
-    
-    unsigned int modelLoc = glGetUniformLocation(m_program, "model");
     unsigned int viewLoc = glGetUniformLocation(m_program, "view");
     unsigned int projectionLoc = glGetUniformLocation(m_program, "projection");
-    // pass them to the shaders (3 different ways)
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view.data());
-    // note: currently we set the projection matrix each frame, but since the
-    // projection matrix rarely changes it's often best practice to set it
-    // outside the main loop only once.
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection.data());
 
 
     glBindVertexArray(m_vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    for (unsigned int i = 0; i < 10; i++) {
+        // calculate the model matrix for each object and pass it to shader
+        // before drawing
+        QMatrix4x4 model;
+        model.translate(cubePositions[i]);
+        float angle = 20.0f * i;
+        model.rotate(qRadiansToDegrees(angle), QVector3D(1.0f, 0.3f, 0.5f));
+        unsigned int modelLoc = glGetUniformLocation(m_program, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    //glDrawArrays(GL_TRIANGLES, 0, 36);
 
     glBindVertexArray(0);
     // Release FBO
@@ -268,28 +297,22 @@ void GLFWRenderer::onTrianglePosChanged() {
         -0.6f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f   
     };
 
-    unsigned int EBO;
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);
-    glGenBuffers(1, &EBO);
 
     glBindVertexArray(m_vao);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(newvertices), newvertices,
                  GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-                 GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                           (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+    // texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                           (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                          (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -312,4 +335,23 @@ void GLFWRenderer::clearWindow() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void GLFWRenderer::onKeyDownChanged(GLFWItem::CLICK_TYPE type) {
+    switch (type) {
+        case GLFWItem::CLICK_TYPE::DOWN_UP:
+        m_view.setY(m_view.y() + 0.1f);
+        break;
+        case GLFWItem::CLICK_TYPE::DOWN_DOWN:
+        m_view.setY(m_view.y() - 0.1f);
+        break;
+        case GLFWItem::CLICK_TYPE::DOWN_LEFT:
+        m_view.setX(m_view.x() - 0.1f);
+        break;
+        case GLFWItem::CLICK_TYPE::DOWN_RIGHT:
+        m_view.setX(m_view.x() + 0.1f);
+        break;
+        default:
+        break;
+    }
 }
