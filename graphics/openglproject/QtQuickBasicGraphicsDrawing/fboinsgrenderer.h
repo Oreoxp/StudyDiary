@@ -9,19 +9,29 @@
 #include <QtQuick/QQuickFramebufferObject>
 #include <QOpenGLFramebufferObjectFormat>
 #include <QOpenGLVertexArrayObject>
+#include <QElapsedTimer>
 
 class GLFWItem : public QQuickFramebufferObject {
   Q_OBJECT
   QML_NAMED_ELEMENT(Renderer)
 public:
+  enum CLICK_TYPE { 
+    DOWN_LEFT,
+    DOWN_RIGHT,
+    DOWN_UP,
+    DOWN_DOWN,
+  };
     GLFWItem();
     ~GLFWItem();
 
+    Q_ENUM(CLICK_TYPE);
     Q_INVOKABLE void changeTrianglePos();
+    Q_INVOKABLE void changeKeyDown(GLFWItem::CLICK_TYPE);
     Renderer* createRenderer() const override;
 
 signals:
     void trianglePosChanged();
+ void keyDownChanged(GLFWItem::CLICK_TYPE);
 
 private:
 };
@@ -50,7 +60,9 @@ public:
 
 public slots:
     void onTrianglePosChanged();
-public:
+    void onKeyDownChanged(GLFWItem::CLICK_TYPE);
+
+   public:
     GLFWItem* m_item;
     QQuickWindow* m_window = nullptr;
     QOpenGLFramebufferObject* m_fbo;
@@ -59,5 +71,7 @@ public:
     GLuint m_program;
     GLuint texture1;
     GLuint texture2;
+    QElapsedTimer timer;
+    QVector3D m_view = {0.,0.,-3.0f};
 };
 #endif
