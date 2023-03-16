@@ -263,6 +263,12 @@ void GLFWRenderer::render() {
         QMatrix4x4 model;
         model.translate(cubePositions[i]);
         float angle = 20.0f * i;
+        if (i % 3 == 0) {
+        if (i == 0) {
+          angle = 20.0f;
+        }
+        angle *= timer.elapsed() / 50.0;
+        }
         model.rotate(qRadiansToDegrees(angle), QVector3D(1.0f, 0.3f, 0.5f));
         unsigned int modelLoc = glGetUniformLocation(m_program, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
