@@ -245,7 +245,9 @@ void GLFWRenderer::render() {
 
     QMatrix4x4 view{};
     QMatrix4x4 projection{};
-    view.translate(m_view);
+
+    view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    //view.translate(m_view);
     projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)800,
                            0.1f, 100.0f);
 
@@ -264,10 +266,10 @@ void GLFWRenderer::render() {
         model.translate(cubePositions[i]);
         float angle = 20.0f * i;
         if (i % 3 == 0) {
-        if (i == 0) {
-          angle = 20.0f;
-        }
-        angle *= timer.elapsed() / 50.0;
+          if (i == 0) {
+            angle = 20.0f;
+          }
+          angle *= timer.elapsed() / 50.0;
         }
         model.rotate(qRadiansToDegrees(angle), QVector3D(1.0f, 0.3f, 0.5f));
         unsigned int modelLoc = glGetUniformLocation(m_program, "model");
@@ -346,16 +348,23 @@ void GLFWRenderer::clearWindow() {
 void GLFWRenderer::onKeyDownChanged(GLFWItem::CLICK_TYPE type) {
     switch (type) {
         case GLFWItem::CLICK_TYPE::DOWN_UP:
-        m_view.setY(m_view.y() + 0.1f);
+        //m_view.setY(m_view.y() + 0.1f);
+        cameraPos += cameraSpeed * cameraFront;
         break;
         case GLFWItem::CLICK_TYPE::DOWN_DOWN:
-        m_view.setY(m_view.y() - 0.1f);
+        cameraPos -= cameraSpeed * cameraFront;
+        //m_view.setY(m_view.y() - 0.1f);
         break;
         case GLFWItem::CLICK_TYPE::DOWN_LEFT:
-        m_view.setX(m_view.x() - 0.1f);
+        cameraPos -= QVector3D::crossProduct(cameraFront, cameraUp).normalized() *
+                     cameraSpeed;
+        //m_view.setX(m_view.x() - 0.1f);
         break;
         case GLFWItem::CLICK_TYPE::DOWN_RIGHT:
-        m_view.setX(m_view.x() + 0.1f);
+        cameraPos +=
+            QVector3D::crossProduct(cameraFront, cameraUp).normalized() *
+            cameraSpeed;
+        //m_view.setX(m_view.x() + 0.1f);
         break;
         default:
         break;

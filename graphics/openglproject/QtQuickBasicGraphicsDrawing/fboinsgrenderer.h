@@ -73,5 +73,10 @@ public slots:
     GLuint texture2;
     QElapsedTimer timer;
     QVector3D m_view = {0.,0.,-3.0f};
+
+    QVector3D cameraPos = QVector3D(0.0f, 0.0f, 3.0f);
+    QVector3D cameraFront = QVector3D(0.0f, 0.0f, -1.0f);
+    QVector3D cameraUp = QVector3D(0.0f, 1.0f, 0.0f);
+    float cameraSpeed = 0.05f;
 };
 #endif
