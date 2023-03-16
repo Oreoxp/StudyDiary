@@ -1,43 +1,19 @@
 #include "fboinsgrenderer.h"
 
-#include <QtGui/QOpenGLFramebufferObject>
+#include <QtOpenGL/QOpenGLFramebufferObject>
 
 #include <QtQuick/QQuickWindow>
 #include <qsgsimpletexturenode.h>
+#include <QTransform>
 
+#include <string>
+#include <fstream>
+#include <sstream>
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-/*
-class GLFWItem : public QQuickFramebufferObject {
-  Q_OBJECT
- public:
-  GLFWItem();
-  ~GLFWItem();
 
-  Q_INVOKABLE void changeTrianglePos();
-  Renderer* createRenderer() const override;
-
- private:
-};
-
-class GLFWRenderer : public QQuickFramebufferObject::Renderer,
-                     protected QOpenGLFunctions_3_0 {
- public:
-  GLFWRenderer();
-  ~GLFWRenderer();
-
-  QOpenGLFramebufferObject* createFramebufferObject(const QSize& size) override;
-  void render() override;
-  void changeTrianglePos();
-
-  QOpenGLFramebufferObject* m_fbo;
-  GLuint m_vao;
-  GLuint m_vbo;
-  GLuint m_program;
-};
-*/
 
 GLFWItem::GLFWItem() {}
 
@@ -58,11 +34,11 @@ void GLFWItem::changeTrianglePos() {
 
 // Create VAO and VBO
 float vertices[] = {
-    //     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
-    0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,  // 右上
-    0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,  // 右下
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // 左下
-    -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f   // 左上
+    //     ---- 浣嶇疆 ----       ---- 棰滆壊 ----     - 绾圭悊鍧愭爣 -
+    0.5f,  0.5f,  0.0f,        1.0f, 0.0f, 0.0f,    1.0f, 1.0f,  // 鍙充笂
+    0.5f,  -0.5f, 0.0f,        0.0f, 1.0f, 0.0f,    1.0f, 0.0f,  // 鍙充笅
+    -0.5f, -0.5f, 0.0f,        0.0f, 0.0f, 1.0f,    0.0f, 0.0f,  // 宸︿笅
+    -0.5f, 0.5f,  0.0f,        1.0f, 1.0f, 0.0f,    0.0f, 1.0f   // 宸︿笂
 };
 unsigned int indices[] = {
     0, 1, 3,  // first triangle
@@ -84,44 +60,38 @@ GLFWRenderer::GLFWRenderer()
         qWarning() << "Invalid OpenGL context";
         return;
       }
-      // Create shader program
-      const char* vertexShaderSource =
-          "#version 330 core\n"
-          "layout (location = 0) in vec3 aPos;\n"  // 位置变量的属性位置值为 0
-          "layout (location = 1) in vec3 aColor;\n"  // 颜色变量的属性位置值为 1
-          "layout(location = 2) in vec2 aTexCoord; \n"  // 纹理变量的属性位置值为
-                                                        // 1
-          "out vec4 vertexColor;\n"
-          "out vec4 ourPosition;\n"
-          "out vec2 TexCoord;\n"
-          "uniform vec2 dev = vec2(0.5, 0);\n"
-          "void main()\n"
-          "{\n"
-          "   vertexColor = vec4(aColor, 1.0);\n"
-          "   gl_Position = vec4(aPos, 1.0);\n"
-          "   ourPosition = gl_Position;\n"
-          "   TexCoord = vec2(aTexCoord.x, aTexCoord.y); \n"
-          "}\0";
-      const char* fragmentShaderSource =
-          "#version 330 core\n"
-          "out vec4 FragColor;\n"
-          "in vec4 vertexColor;\n"
-          "in vec4 ourPosition;\n"
-          "in vec2 TexCoord;\n"
-          "void main()\n"
-          "{\n"
-          "   FragColor = vertexColor;\n"
-          "}\n\0";
+      // open files
+      std::ifstream vShaderFile;
+      vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+      vShaderFile.open("./11.vs");
+      std::stringstream vShaderStream;
+      vShaderStream << vShaderFile.rdbuf();
+      vShaderFile.close();
+
+      std::string vertexShaderSource = vShaderStream.str();
+      const char* vShaderCode = vertexShaderSource.c_str();
+
+      
+      // open files
+      std::ifstream fShaderFile;
+      fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+      fShaderFile.open("./11.fs");
+      std::stringstream fShaderStream;
+      fShaderStream << fShaderFile.rdbuf();
+      fShaderFile.close();
+
+      std::string fShaderSource = fShaderStream.str();
+      const char* fShaderCode = fShaderSource.c_str();
 
       GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
       GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-      glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+      glShaderSource(vertexShader, 1, &vShaderCode, nullptr);
       glCompileShader(vertexShader);
 
       int success;
       glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
 
-      glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+      glShaderSource(fragmentShader, 1, &fShaderCode, nullptr);
       glCompileShader(fragmentShader);
 
       glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
@@ -139,7 +109,7 @@ GLFWRenderer::GLFWRenderer()
       glGenVertexArrays(1, &m_vao);
       glGenBuffers(1, &m_vbo);
       glGenBuffers(1, &EBO);
-
+      
       glBindVertexArray(m_vao);
       glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
       glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -157,9 +127,54 @@ GLFWRenderer::GLFWRenderer()
                             (void*)(6 * sizeof(float)));
       glEnableVertexAttribArray(2);
 
+      // load and create a texture
+      // texture 1
+      glGenTextures(1, &texture2);
+      glBindTexture(GL_TEXTURE_2D, texture2);
+      // set the texture wrapping parameters
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      int width, height, nrChannels;
+      //stbi_set_flip_vertically_on_load(true);
+      unsigned char* data =
+          stbi_load("./awesomeface.png", &width, &height, &nrChannels, 0);
+      if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA,
+                     GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+      } else {
+        std::cout << "Failed to load texture" << std::endl;
+      }
+      stbi_image_free(data);
+
+            // texture 2
+      glGenTextures(1, &texture1);
+      glBindTexture(GL_TEXTURE_2D, texture1);
+      // set the texture wrapping parameters
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      unsigned char* data2 =
+          stbi_load("./wall.jpg", &width, &height, &nrChannels, 0);
+      if (data2) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+                     GL_UNSIGNED_BYTE, data2);
+        glGenerateMipmap(GL_TEXTURE_2D);
+      } else {
+        std::cout << "Failed to load texture" << std::endl;
+      }
+      stbi_image_free(data2);
+
       glBindBuffer(GL_ARRAY_BUFFER, 0);
       glBindVertexArray(0);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+      glUseProgram(m_program);
+      glUniform1i(glGetUniformLocation(m_program, "texture1"), 0);
+      glUniform1i(glGetUniformLocation(m_program, "texture2"), 1);
     }
 }
 
@@ -184,7 +199,6 @@ QOpenGLFramebufferObject* GLFWRenderer::createFramebufferObject(
     return m_fbo;
 }
 
-
 void GLFWRenderer::render() {
     // Blit FBO to default framebuffer
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo->handle());
@@ -199,11 +213,36 @@ void GLFWRenderer::render() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture2);
 
     glUseProgram(m_program);
+
+    QMatrix4x4 model{};
+    QMatrix4x4 view{};
+    QMatrix4x4 projection{};
+    model.rotate(qRadiansToDegrees(-30.0f), 1.0f, 0.0f, 0.0f);
+    view.translate(0.0f, 0.0f, -3.0f);
+    projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)600,
+                           0.1f, 100.0f);
+
+    
+    unsigned int modelLoc = glGetUniformLocation(m_program, "model");
+    unsigned int viewLoc = glGetUniformLocation(m_program, "view");
+    unsigned int projectionLoc = glGetUniformLocation(m_program, "projection");
+    // pass them to the shaders (3 different ways)
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view.data());
+    // note: currently we set the projection matrix each frame, but since the
+    // projection matrix rarely changes it's often best practice to set it
+    // outside the main loop only once.
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection.data());
+
+
     glBindVertexArray(m_vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    //glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glBindVertexArray(0);
     // Release FBO
@@ -214,35 +253,19 @@ void GLFWRenderer::render() {
     glDisable(GL_CULL_FACE);
 }
 
+
+void GLFWRenderer::mvp() {
+
+}
+
 void GLFWRenderer::onTrianglePosChanged() {
-    m_window->resetOpenGLState();
-    m_window->setClearBeforeRendering(true);
-    m_fbo->release();
-    glBindVertexArray(m_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    // 将 FBO 绑定到上下文中
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo->handle());
-
-    // 清除颜色、深度和模板缓冲区
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-    // 解绑 VAO 和 VBO
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // 将默认帧缓冲区绑定到上下文中
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+    clearWindow();
     
     float newvertices[] = {
-        //     ---- 位置 ----       ---- 颜色 ----     - 纹理坐标 -
-        0.6f,  0.5f,  0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,  // 右上
-        0.6f,  -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,  // 右下
-        -0.6f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // 左下
-        -0.6f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f   // 左上
+        0.6f,  0.5f,  0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,  
+        0.6f,  -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,  
+        -0.6f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,  
+        -0.6f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f   
     };
 
     unsigned int EBO;
@@ -272,4 +295,21 @@ void GLFWRenderer::onTrianglePosChanged() {
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     update();
+}
+
+void GLFWRenderer::clearWindow() {
+    m_fbo->release();
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo->handle());
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

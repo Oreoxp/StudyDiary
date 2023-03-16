@@ -49,4 +49,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="11.vs" />
+    <None Include="11.fs" />
+  </ItemGroup>
 </Project>
