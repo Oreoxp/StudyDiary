@@ -5,6 +5,7 @@
 #include <QOpenGLFunctions_3_0>
 #include <QtOpenGL/QOpenGLShaderProgram>
 #include <QtOpenGL/QOpenGLTexture>
+#include <QOpenGLShaderProgram>
 #include <QtQuick/QQuickWindow>
 #include <QtQuick/QQuickFramebufferObject>
 #include <QOpenGLFramebufferObjectFormat>
@@ -67,6 +68,8 @@ public slots:
     QQuickWindow* m_window = nullptr;
     QOpenGLFramebufferObject* m_fbo;
     GLuint m_vao;
+    GLuint m__light_vao;
+    GLuint m_light_cube_vao;
     GLuint m_vbo;
     GLuint m_program;
     GLuint texture1;
@@ -74,9 +77,12 @@ public slots:
     QElapsedTimer timer;
     QVector3D m_view = {0.,0.,-3.0f};
 
-    QVector3D cameraPos = QVector3D(0.0f, 0.0f, 3.0f);
+    QVector3D cameraPos = QVector3D(0.0f, 0.0f, 5.0f);
     QVector3D cameraFront = QVector3D(0.0f, 0.0f, -1.0f);
     QVector3D cameraUp = QVector3D(0.0f, 1.0f, 0.0f);
     float cameraSpeed = 0.05f;
+
+    QOpenGLShaderProgram m_light_shader;
+    QOpenGLShaderProgram m_light_cube_shader;
 };
 #endif
