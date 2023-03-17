@@ -42,24 +42,35 @@ void GLFWItem::changeKeyDown(GLFWItem::CLICK_TYPE type) {
 
 // Create VAO and VBO
 float vertices[] = {
-    -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
-    0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.5f,  -0.5f, -0.5f,
+    0.0f,  0.0f,  -1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f,
+    0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, -0.5f, 0.5f,  -0.5f,
+    0.0f,  0.0f,  -1.0f, -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f,
 
-    -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
-    0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,
+    -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.5f,  -0.5f, 0.5f,
+    0.0f,  0.0f,  1.0f,  0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  -0.5f, 0.5f,  0.5f,
+    0.0f,  0.0f,  1.0f,  -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,
 
-    -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,
+    -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  -0.5f, 0.5f,  -0.5f,
+    -1.0f, 0.0f,  0.0f,  -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  -0.5f, -0.5f, 0.5f,
+    -1.0f, 0.0f,  0.0f,  -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,
 
-    0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f,
-    0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
+    0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.5f,  0.5f,  -0.5f,
+    1.0f,  0.0f,  0.0f,  0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
+    0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.5f,  -0.5f, 0.5f,
+    1.0f,  0.0f,  0.0f,  0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-    -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,
-    0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.5f,  -0.5f, -0.5f,
+    0.0f,  -1.0f, 0.0f,  0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,
+    0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  -0.5f, -0.5f, 0.5f,
+    0.0f,  -1.0f, 0.0f,  -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,
 
-    -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
-    0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f,
-};
+    -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  -0.5f,
+    0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,
+    0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f};
 
 QVector3D cubePositions[] = {
     QVector3D(0.0f, 0.0f, 0.0f),    QVector3D(2.0f, 5.0f, -15.0f),
@@ -110,22 +121,24 @@ GLFWRenderer::GLFWRenderer()
 
     glBindVertexArray(m_vao);
 
+    
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                           (void*)0);
     glEnableVertexAttribArray(0);
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                          (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
 
     // second, configure the light's VAO (VBO stays the same; the vertices are
     // the same for the light object which is also a 3D cube)
     glGenVertexArrays(1, &m_light_cube_vao);
     glBindVertexArray(m_light_cube_vao);
 
-    // we only need to bind to the VBO (to link it with glVertexAttribPointer),
-    // no need to fill it; the VBO's data already contains all we need (it's
-    // already bound, but we do it again for educational purposes)
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                           (void*)0);
     glEnableVertexAttribArray(0);
   }
@@ -165,56 +178,52 @@ void GLFWRenderer::render() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    m_light_shader.bind();
 
-    m_fbo->bind();
-    m_light_shader.setUniformValue("objectColor", QVector3D{1.0f, 0.5f, 0.31f});
-    m_light_shader.setUniformValue("lightColor", QVector3D{1.0f, 0.5f, 0.31f});
-
+    QVector3D lightPos(5.2f, 5.0f, 2.0f);
     // calculate the model matrix for each object and pass it to shader
     // before drawing
-    QMatrix4x4 model = QMatrix4x4();
+    QMatrix4x4 model1 = QMatrix4x4();
     QMatrix4x4 view{};
     QMatrix4x4 projection{};
-
+    // model1.rotate(qRadiansToDegrees(10.0f) * timer.elapsed() * 0.0001, 0, 0,
+    // 1);
     view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
     view.rotate(qRadiansToDegrees(45.0f), 1.0, 0., 0.);
     view.rotate(qRadiansToDegrees(-50.0f), 0.0, 0., 1.);
     // view.translate(m_view);
     projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)800,
                            0.1f, 100.0f);
+
+    QMatrix4x4 model2 = QMatrix4x4();
+    model2.scale(0.2f);
+    model2.rotate(qRadiansToDegrees(10.0f * timer.elapsed() / 12000), 0, 0, 1);
+    model2.translate({0,0,3});
+    model2.translate(lightPos);
+
+    m_light_cube_shader.bind();
+    m_light_cube_shader.setUniformValue("view", view);
+    m_light_cube_shader.setUniformValue("projection", projection);
+    m_light_cube_shader.setUniformValue("model", model2);
+    glBindVertexArray(m_light_cube_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    m_light_cube_shader.release();
+
+
+    m_light_shader.bind();
+    m_fbo->bind();
+    m_light_shader.setUniformValue("objectColor", QVector3D{1.0f, 0.5f, 0.31f});
+    m_light_shader.setUniformValue("lightColor", QVector3D{1.0f, 1.0f, 1.0f});
     m_light_shader.setUniformValue("view", view);
     m_light_shader.setUniformValue("projection", projection);
-    m_light_shader.setUniformValue("model", model);
+    m_light_shader.setUniformValue("model", model1);
+    m_light_shader.setUniformValue(
+        "lightPos",
+        model2 * QVector3D{0., 0., 0.} - model1 * QVector3D{0., 0., 0.});
+    m_light_shader.setUniformValue("viewPos", view * QVector3D{0., 0., 0.});
     // render the cube
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
-    m_light_cube_shader.bind();
-    QVector3D lightPos(1.2f, 1.0f, 2.0f);
-    model = QMatrix4x4();
-    model.translate(lightPos);
-    model.scale(0.2f);
-    m_light_cube_shader.setUniformValue("view", view);
-    m_light_cube_shader.setUniformValue("projection", projection);
-    m_light_cube_shader.setUniformValue("model", model);
-    glBindVertexArray(m_light_cube_vao);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    m_light_cube_shader.release();
-    /*
-    glUseProgram(m_program);
-    QVector3D lightPos(1.2f, 1.0f, 2.0f);
-    model = QMatrix4x4();
-    model.translate(lightPos);
-    model.scale(QVector3D(0.2f, 0.2f, 0.2f));
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view.data());
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection.data());
-
-    glBindVertexArray(m__light_vao);
-    glDrawArrays(GL_TRIANGLES, 0, 36);*/
-    // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    // glDrawArrays(GL_TRIANGLES, 0, 36);
 
     glBindVertexArray(0);
 
@@ -250,11 +259,11 @@ void GLFWRenderer::onTrianglePosChanged() {
                  GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                           (void*)0);
     glEnableVertexAttribArray(0);
-    // texture coord attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                           (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
