@@ -17,7 +17,9 @@ void main()
     // diffuse
     vec3 Ld = lightColor * max(dot(Normal, normalize(lightPos - FragPos)), 0.0);
     // specular
-    vec3 Ls = vec3(0.01); // specular color (white)
+    vec3 ks = vec3(0.7937, 0.7937, 0.7937);
+
+    vec3 Ls = ks *  (lightPos - Normal)/dot(lightPos - Normal,lightPos - Normal) * pow(max(0.0f, dot(Normal, normalize(lightPos + viewPos))),128);
     
     // combine results
     vec3 result = (La + Ld + Ls) * objectColor;
