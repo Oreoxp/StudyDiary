@@ -58,8 +58,8 @@ public:
 
     void mvp();
     void clearWindow();
-
-public slots:
+    void loadTexture(QString path, GLuint* texture);
+   public slots:
     void onTrianglePosChanged();
     void onKeyDownChanged(GLFWItem::CLICK_TYPE);
 
@@ -74,6 +74,7 @@ public slots:
     GLuint m_program;
     GLuint texture1;
     GLuint texture2;
+    GLuint m_diffuse_map;
     QElapsedTimer timer;
     QVector3D m_view = {0.,0.,-3.0f};
 

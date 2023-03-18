@@ -1,27 +1,53 @@
 #version 330 core
 out vec4 FragColor;
 
-in vec3 FragPos;
-in vec3 Normal;
+struct Material {
+    sampler2D diffuse;
+    vec3 specular;    
+    float shininess;
+}; 
 
-uniform vec3 lightPos; 
-uniform vec3 viewPos; 
-uniform vec3 lightColor;
-uniform vec3 objectColor;
+struct Light {
+    vec3 position;
+    vec3 direction;
+    float cutOff;
+
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+in vec3 FragPos;  
+in vec3 Normal;  
+in vec2 TexCoords;
+  
+uniform vec3 viewPos;
+uniform Material material;
+uniform Light light;
 
 void main()
 {
-    // ambient
-    float kd = 0.001;
-    vec3 La = kd * lightColor;
-    // diffuse
-    vec3 Ld = lightColor * max(dot(Normal, normalize(lightPos - FragPos)), 0.0);
-    // specular
-    vec3 ks = vec3(0.7937, 0.7937, 0.7937);
+    vec3 lightDir = normalize(light.position - FragPos);
+    float theta = degrees(acos(dot(lightDir, normalize(-light.direction))));
 
-    vec3 Ls = ks *  (lightPos - Normal)/dot(lightPos - Normal,lightPos - Normal) * pow(max(0.0f, dot(Normal, normalize(lightPos + viewPos))),128);
-    
-    // combine results
-    vec3 result = (La + Ld + Ls) * objectColor;
-    FragColor = vec4(result, 1.0);
-}
+    // ambient
+    vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
+  	
+    // diffuse 
+    vec3 norm = normalize(Normal);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = light.diffuse * diff * texture(material.diffuse, TexCoords).rgb;  
+
+    // specular
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);  
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = light.specular * spec * texture(material.diffuse, TexCoords).rgb; // 修改此处，使用漫反射纹理 
+
+    if (theta > light.cutOff) {    
+        FragColor = vec4(light.ambient * texture(material.diffuse, TexCoords).rgb, 1.0);
+    } else {
+        vec3 result = ambient + diffuse + specular;
+        FragColor = vec4(result, 1.0);
+    }
+} 
