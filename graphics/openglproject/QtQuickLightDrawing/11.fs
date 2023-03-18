@@ -15,6 +15,7 @@ struct Light {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+    vec3 color;
 };
 
 in vec3 FragPos;  
@@ -25,28 +26,46 @@ uniform vec3 viewPos;
 uniform Material material;
 uniform Light light;
 
+#define NR_POINT_LIGHTS 2
+uniform Light Lights[NR_POINT_LIGHTS];
+
+vec3 CalcLight(Light light_model, vec3 normal, vec3 fragPos, vec3 view_Pos);
+
 void main()
 {
-    vec3 lightDir = normalize(light.position - FragPos);
-    float theta = degrees(acos(dot(lightDir, normalize(-light.direction))));
-    float theta_cutOff = theta - light.cutOff;
-    float epsilon   = -5.0;
-    float intensity = clamp(theta_cutOff / epsilon, 0.0, 1.0);
-
-    // ambient
-    vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
-  	
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * texture(material.diffuse, TexCoords).rgb;  
-
-    // specular
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = light.specular * spec * texture(material.diffuse, TexCoords).rgb; // 修改此处，使用漫反射纹理 
-
-    vec3 result = ambient*intensity + diffuse*intensity + specular;
+    vec3 result = vec3(0.0);
+    for(int i = 0; i < NR_POINT_LIGHTS; i++){
+        result += CalcLight(Lights[i], Normal, FragPos, viewPos);
+    }
     FragColor = vec4(result, 1.0);
 } 
+
+vec3 CalcLight(Light light_model, vec3 normal, vec3 fragPos, vec3 view_Pos)
+{
+    vec3 lightDir = normalize(light_model.position - fragPos);
+    float intensity = 0.0;
+    if(light_model.cutOff == 0){
+        intensity = 1.0;
+    }else{
+        float theta = degrees(acos(dot(lightDir, normalize(-light_model.direction))));
+        float theta_cutOff = theta - light_model.cutOff;
+        float epsilon   = -5.0;
+        intensity = clamp(theta_cutOff / epsilon, 0.0, 1.0);
+    }
+    // ambient
+    vec3 ambient = light_model.ambient * texture(material.diffuse, TexCoords).rgb;
+  	
+    // diffuse 
+    vec3 norm = normalize(normal);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = light_model.diffuse * diff * texture(material.diffuse, TexCoords).rgb;  
+
+    // specular
+    vec3 viewDir = normalize(view_Pos - fragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);  
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = light_model.specular * spec * (material.specular);
+
+    vec3 result =ambient*intensity + diffuse*intensity + specular;
+    return result;
+}

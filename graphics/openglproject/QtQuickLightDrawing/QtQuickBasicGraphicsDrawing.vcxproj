@@ -108,9 +108,9 @@
     <ClCompile Include="main.cpp" />
     <QtRcc Include="qml.qrc" />
     <None Include="11.fs" />
-    <None Include="11.vs" />
+    <None Include="11.vert" />
     <None Include="12.fs" />
-    <None Include="12.vs" />
+    <None Include="12.vert" />
     <None Include="main.qml" />
   </ItemGroup>
   <ItemGroup>
