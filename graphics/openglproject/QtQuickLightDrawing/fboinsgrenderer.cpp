@@ -234,7 +234,7 @@ void GLFWRenderer::render() {
     m_light_shader.setUniformValue(
         "light.direction",
         model1 * QVector3D{0., 0., 0.} - model2 * QVector3D{0., 0., 0.});
-    m_light_shader.setUniformValue("light.cutOff", 5.0f);
+    m_light_shader.setUniformValue("light.cutOff", 8.0f);
     m_light_shader.setUniformValue("light.ambient", QVector3D{0.2f, 0.2f, 0.2f});
     m_light_shader.setUniformValue("light.diffuse", QVector3D{1.5f, 1.5f, 1.5f});
     m_light_shader.setUniformValue("light.specular", QVector3D{1.0f, 1.0f, 1.0f});
