@@ -29,11 +29,13 @@ public:
     Q_ENUM(CLICK_TYPE);
     Q_INVOKABLE void changeTrianglePos();
     Q_INVOKABLE void changeKeyDown(GLFWItem::CLICK_TYPE);
+    Q_INVOKABLE void changeSliderValue(int value);
     Renderer* createRenderer() const override;
 
 signals:
     void trianglePosChanged();
- void keyDownChanged(GLFWItem::CLICK_TYPE);
+    void keyDownChanged(GLFWItem::CLICK_TYPE);
+    void sliderValueChanged(int value);
 
 private:
 };
@@ -63,6 +65,7 @@ public:
    public slots:
     void onTrianglePosChanged();
     void onKeyDownChanged(GLFWItem::CLICK_TYPE);
+    void onSliderValueChanged(int value);
 
    public:
     GLFWItem* m_item;

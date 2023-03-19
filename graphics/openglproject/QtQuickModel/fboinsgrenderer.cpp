@@ -25,6 +25,8 @@ QQuickFramebufferObject::Renderer* GLFWItem::createRenderer() const {
   connect(this, SIGNAL(keyDownChanged(GLFWItem::CLICK_TYPE)), render_,
           SLOT(onKeyDownChanged(GLFWItem::CLICK_TYPE)),
           Qt::QueuedConnection);
+  connect(this, SIGNAL(sliderValueChanged(int)), render_,
+          SLOT(onSliderValueChanged(int)), Qt::QueuedConnection);
   return render_;
 }
 
@@ -34,6 +36,10 @@ void GLFWItem::changeTrianglePos() {
 
 void GLFWItem::changeKeyDown(GLFWItem::CLICK_TYPE type) {
   emit keyDownChanged(type);
+}
+
+void GLFWItem::changeSliderValue(int value) {
+  emit sliderValueChanged(value);
 }
 
 
@@ -110,8 +116,11 @@ GLFWRenderer::GLFWRenderer()
             QOpenGLShader::ShaderTypeBit::Vertex, "./12.vert");
     m_light_cube_shader.addCacheableShaderFromSourceFile(
         QOpenGLShader::ShaderTypeBit::Fragment, "./12.fs");
+    m_light_cube_shader.addCacheableShaderFromSourceFile(
+        QOpenGLShader::ShaderTypeBit::Geometry, "./12.geom");
+    m_light_cube_shader.link();
 
-    m_model = new Model("../resouce/nanosuit/nanosuit.obj");
+    m_model = new Model("../resouce/nanosuit/1.obj");
   }
     timer.start();
 }
@@ -178,7 +187,7 @@ void GLFWRenderer::render() {
   model.translate(
       QVector3D(0.0f, 0.0f,
                 0.0f));  // translate it down so it's at the center of the scene
-  model.scale(0.2f);
+  model.scale(2.0f);
   model.rotate(qRadiansToDegrees(45.0f), 0.0, 0., 1.);
   model.rotate(qRadiansToDegrees(90.0f), 1.0, 1., 0.);
   m_light_cube_shader.setUniformValue("model", model);
@@ -293,4 +302,8 @@ void GLFWRenderer::loadTexture(QString path, GLuint* texture){
   image = image.convertToFormat(QImage::Format_RGBA8888);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
   glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+void GLFWRenderer::onSliderValueChanged(int value) {
+  qDebug() << "onSliderValueChanged" << value;
 }
