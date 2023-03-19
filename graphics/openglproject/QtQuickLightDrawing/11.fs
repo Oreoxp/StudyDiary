@@ -62,10 +62,17 @@ vec3 CalcLight(Light light_model, vec3 normal, vec3 fragPos, vec3 view_Pos)
 
     // specular
     vec3 viewDir = normalize(view_Pos - fragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    //vec3 reflectDir = reflect(-lightDir, norm);  
+   // float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    //vec3 specular = light_model.specular * spec * (material.specular);
+
+    //Blinn-Phong model specular
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = max(dot(normal, halfwayDir), 0.0);
     vec3 specular = light_model.specular * spec * (material.specular);
 
-    vec3 result =ambient*intensity + diffuse*intensity + specular;
+
+    vec3 result = ambient*intensity + diffuse*intensity + specular;
+    //vec3 result = specular;
     return result;
 }
