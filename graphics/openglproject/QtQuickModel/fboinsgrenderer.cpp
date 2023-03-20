@@ -191,7 +191,7 @@ void GLFWRenderer::render() {
   model.rotate(qRadiansToDegrees(45.0f), 0.0, 0., 1.);
   model.rotate(qRadiansToDegrees(90.0f), 1.0, 1., 0.);
   m_light_cube_shader.setUniformValue("model", model);
-  m_light_cube_shader.setUniformValue("u_subdivisionLevel", subdivisionLevel);
+  m_light_cube_shader.setUniformValue("u_subdivisionLevel", (int)(subdivisionLevel * 2));
   m_model->Draw(&m_light_cube_shader);
   m_light_cube_shader.release();
   // render the cube
