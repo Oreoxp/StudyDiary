@@ -7,6 +7,7 @@ in vec3 fragNormal;
 in vec3 fragPosition;
 in vec3 gs_barycentricCoords;
 in vec3 gs_position;
+in vec3 gs_color;
 
 uniform sampler2D texture_diffuse1;
 
@@ -32,11 +33,13 @@ void main()
     //    FragColor = vec4(1.0, 1.0, 1.0, 1.0); // Output default color for back-facing triangles
     //}
      // 计算片段与顶点的距离
-    float distance = length(gs_position - gl_FragCoord.xyz);
+    //float distance = length(gs_position - gl_FragCoord.xyz);
     
     // 如果距离小于阈值，则显示红色
-    if (distance < edgeThreshold)
-    {
-        FragColor = vec4(1.0, 0.0, 0.0, 1.0); // 红色
-    }
+    //if (distance < edgeThreshold)
+    //{
+    //    FragColor = vec4(1.0, 0.0, 0.0, 1.0); // 红色
+    //}
+    
+    FragColor = vec4(gs_color, 1.0);
 }
