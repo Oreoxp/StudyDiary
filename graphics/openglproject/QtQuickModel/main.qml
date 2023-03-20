@@ -9,7 +9,7 @@ Item {
     focus: true
 
     Timer {
-        interval: 16 // 60 fps
+        interval: 30 
         running: true
         repeat: true
         onTriggered: {
