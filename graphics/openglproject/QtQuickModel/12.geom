@@ -1,7 +1,7 @@
 #version 330 core
 
 layout (triangles) in;
-layout (line_strip, max_vertices = 9) out;
+layout (line_strip, max_vertices = 30) out;
 
 //细分参数
 uniform float u_subdivisionLevel = 1.0;
@@ -54,15 +54,14 @@ void main()
         vec4 p0 = gl_in[i].gl_Position;
         vec4 p1 = gl_in[(i + 1) % 3].gl_Position;
         vec4 p2 = gl_in[(i + 2) % 3].gl_Position;
-        vec4 mid_point = move_point_to_arc(p0.xyz, p1.xyz, p2.xyz, ((p0 + p1) / 2.0).xyz);
-        gl_Position = mid_point;
+        gl_Position = (p0 + p1) / u_subdivisionLevel;
         gs_color = vec3(0.0, 1.0, 0.0);
         EmitVertex();
     }
     vec4 p0 = gl_in[0].gl_Position;
     vec4 p1 = gl_in[1].gl_Position;
     vec4 p2 = gl_in[2].gl_Position;
-    gl_Position =move_point_to_arc(p0.xyz, p1.xyz, p2.xyz, ((p0 + p1) / 2.0).xyz);
+    gl_Position =(p0 + p1) / u_subdivisionLevel;
     gs_color = vec3(0.0, 1.0, 0.0);
     EmitVertex();
     EndPrimitive();
