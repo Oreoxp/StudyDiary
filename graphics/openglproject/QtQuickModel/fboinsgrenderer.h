@@ -91,5 +91,7 @@ public:
     QOpenGLShaderProgram m_light_cube_shader;
 
     Model* m_model;
+
+    float subdivisionLevel = 1.0;
 };
 #endif

@@ -120,7 +120,7 @@ GLFWRenderer::GLFWRenderer()
         QOpenGLShader::ShaderTypeBit::Geometry, "./12.geom");
     m_light_cube_shader.link();
 
-    m_model = new Model("../resouce/nanosuit/1.obj");
+    m_model = new Model("../resouce/nanosuit/2.obj");
   }
     timer.start();
 }
@@ -191,6 +191,7 @@ void GLFWRenderer::render() {
   model.rotate(qRadiansToDegrees(45.0f), 0.0, 0., 1.);
   model.rotate(qRadiansToDegrees(90.0f), 1.0, 1., 0.);
   m_light_cube_shader.setUniformValue("model", model);
+  m_light_cube_shader.setUniformValue("u_subdivisionLevel", subdivisionLevel);
   m_model->Draw(&m_light_cube_shader);
   m_light_cube_shader.release();
   // render the cube
@@ -306,4 +307,5 @@ void GLFWRenderer::loadTexture(QString path, GLuint* texture){
 
 void GLFWRenderer::onSliderValueChanged(int value) {
   qDebug() << "onSliderValueChanged" << value;
+  subdivisionLevel = value / 50.0;
 }
