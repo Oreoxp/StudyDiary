@@ -15,6 +15,14 @@ void Sphere::setUniformValue(const char* name, QMatrix4x4 value) {
     m_shader.setUniformValue(name, value);
 }
 
+void Sphere::setUniformValue(const char* name, int value){
+    m_shader.setUniformValue(name, value);
+}
+
+void Sphere::setUniformValue(const char* name, QVector3D value){
+    m_shader.setUniformValue(name, value);
+}
+
 void Sphere::Draw() {
   m_model->Draw(&m_shader);
   m_shader.release();

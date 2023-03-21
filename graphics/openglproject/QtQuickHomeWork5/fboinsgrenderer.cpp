@@ -160,12 +160,49 @@ QOpenGLFramebufferObject* GLFWRenderer::createFramebufferObject(
     format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
     format.setSamples(4);
     m_fbo = new QOpenGLFramebufferObject(size, format);
+    back_fbo = new QOpenGLFramebufferObject(size, format);
     return m_fbo;
 }
 
 void GLFWRenderer::render() {
-  // Blit FBO to default framebuffer
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo->handle());
+    {
+        back_fbo->bind();
+
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
+                GL_STENCIL_BUFFER_BIT);
+
+        glUseProgram(m_program);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glEnable(GL_MULTISAMPLE);
+
+        QMatrix4x4 view{};
+        QMatrix4x4 projection{};
+
+        view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
+        // view.translate(m_view);
+        projection.perspective(qRadiansToDegrees(45.0f),
+                               (float)800 / (float)800, 0.1f, 100.0f);
+
+        unsigned int viewLoc = glGetUniformLocation(m_program, "view");
+        unsigned int projectionLoc =
+            glGetUniformLocation(m_program, "projection");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view.data());
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection.data());
+
+        glBindVertexArray(m_vao);
+
+        QMatrix4x4 model;
+        model.translate(QVector3D(0, 0, 0));
+        // model.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
+        unsigned int modelLoc = glGetUniformLocation(m_program, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        back_fbo->release();
+    }
 
   m_fbo->bind();
 
@@ -175,6 +212,9 @@ void GLFWRenderer::render() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   glUseProgram(m_program);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_MULTISAMPLE);
 
   QMatrix4x4 view{};
   QMatrix4x4 projection{};
@@ -194,12 +234,14 @@ void GLFWRenderer::render() {
 
   QMatrix4x4 model;
   model.translate(QVector3D(0, 0, 0));
-  //model.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
+  // model.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
   unsigned int modelLoc = glGetUniformLocation(m_program, "model");
   glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
 
   glDrawArrays(GL_TRIANGLES, 0, 36);
 
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 0);
   m_sphere.bind();
   m_sphere.setUniformValue("view", view);
   m_sphere.setUniformValue("projection", projection);
@@ -207,22 +249,19 @@ void GLFWRenderer::render() {
   model2.scale(0.3f);
   model2.translate(QVector3D(-2.5,3, 2));
   m_sphere.setUniformValue("model", model2);
-  m_sphere.setUniformValue("ourTexture1", 0);
-  m_sphere.setUniformValue("ourTexture2", 1);
-  m_sphere.setUniformValue("ourTexture3", 2);
+  m_sphere.setUniformValue("view_pos", view * QVector3D(0, 0, 0));
 
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glEnable(GL_MULTISAMPLE);
+  GLuint back_tex = back_fbo->texture();
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, back_tex);
+  m_sphere.setUniformValue("back_FragColor", 0);
+  //glEnable(GL_BLEND);
+  //0glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   m_sphere.Draw();
-
-  // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  // glDrawArrays(GL_TRIANGLES, 0, 36);
 
   glBindVertexArray(0);
   // Release FBO
   m_fbo->release();
-
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
