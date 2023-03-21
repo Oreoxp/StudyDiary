@@ -67,6 +67,7 @@ GLFWRenderer::GLFWRenderer()
     : m_fbo(nullptr),
       m_vao(0), m_vbo(0), m_program(0) {
     initializeOpenGLFunctions();
+    m_shader = new QOpenGLShaderProgram();
     if (!m_program) {
       // Make sure a valid OpenGL context is current
       QOpenGLContext* ctx = QOpenGLContext::currentContext();
@@ -78,67 +79,19 @@ GLFWRenderer::GLFWRenderer()
         qWarning() << "Invalid OpenGL context";
         return;
       }
-      // open files
-      std::ifstream vShaderFile;
-      vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-      vShaderFile.open("./11.vs");
-      std::stringstream vShaderStream;
-      vShaderStream << vShaderFile.rdbuf();
-      vShaderFile.close();
-
-      std::string vertexShaderSource = vShaderStream.str();
-      const char* vShaderCode = vertexShaderSource.c_str();
-
-      
-      // open files
-      std::ifstream fShaderFile;
-      fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-      fShaderFile.open("./11.fs");
-      std::stringstream fShaderStream;
-      fShaderStream << fShaderFile.rdbuf();
-      fShaderFile.close();
-
-      std::string fShaderSource = fShaderStream.str();
-      const char* fShaderCode = fShaderSource.c_str();
-
-      GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-      GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-      glShaderSource(vertexShader, 1, &vShaderCode, nullptr);
-      glCompileShader(vertexShader);
-
-      int success;
-      glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-      glShaderSource(fragmentShader, 1, &fShaderCode, nullptr);
-      glCompileShader(fragmentShader);
-
-      glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
-      m_program = glCreateProgram();
-      glAttachShader(m_program, vertexShader);
-      glAttachShader(m_program, fragmentShader);
-      glLinkProgram(m_program);
-      glDeleteShader(vertexShader);
-      glDeleteShader(fragmentShader);
+      m_shader->addShaderFromSourceFile(QOpenGLShader::Vertex, "./11.vs");
+      m_shader->addShaderFromSourceFile(QOpenGLShader::Fragment, "./11.fs");
+      m_shader->link();
     }
+    
+    glGenVertexArrays(1, &m_vao);
+    glGenBuffers(1, &m_vbo);
 
-    if (!m_vao) {
-      glGenVertexArrays(1, &m_vao);
-      glGenBuffers(1, &m_vbo);
-      
-      glBindVertexArray(m_vao);
-      glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-          // position attribute
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                            (void*)0);
-      glEnableVertexAttribArray(0);
-      // texture coord attribute
-      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                            (void*)(3 * sizeof(float)));
-      glEnableVertexAttribArray(1);
-    }
+    glBindVertexArray(0);
     timer.start();
 }
 
@@ -165,45 +118,6 @@ QOpenGLFramebufferObject* GLFWRenderer::createFramebufferObject(
 }
 
 void GLFWRenderer::render() {
-    {
-        back_fbo->bind();
-
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
-                GL_STENCIL_BUFFER_BIT);
-
-        glUseProgram(m_program);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-        glEnable(GL_MULTISAMPLE);
-
-        QMatrix4x4 view{};
-        QMatrix4x4 projection{};
-
-        view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
-        // view.translate(m_view);
-        projection.perspective(qRadiansToDegrees(45.0f),
-                               (float)800 / (float)800, 0.1f, 100.0f);
-
-        unsigned int viewLoc = glGetUniformLocation(m_program, "view");
-        unsigned int projectionLoc =
-            glGetUniformLocation(m_program, "projection");
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view.data());
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection.data());
-
-        glBindVertexArray(m_vao);
-
-        QMatrix4x4 model;
-        model.translate(QVector3D(0, 0, 0));
-        // model.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
-        unsigned int modelLoc = glGetUniformLocation(m_program, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
-
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        back_fbo->release();
-    }
-
   m_fbo->bind();
 
   // Render to FBO
@@ -211,53 +125,32 @@ void GLFWRenderer::render() {
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-  glUseProgram(m_program);
+  m_shader->bind();
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_MULTISAMPLE);
 
   QMatrix4x4 view{};
   QMatrix4x4 projection{};
+  QMatrix4x4 model;
 
   view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
   view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
   // view.translate(m_view);
   projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)800,
                          0.1f, 100.0f);
-
-  unsigned int viewLoc = glGetUniformLocation(m_program, "view");
-  unsigned int projectionLoc = glGetUniformLocation(m_program, "projection");
-  glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view.data());
-  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection.data());
-
-  glBindVertexArray(m_vao);
-
-  QMatrix4x4 model;
   model.translate(QVector3D(0, 0, 0));
-  // model.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
-  unsigned int modelLoc = glGetUniformLocation(m_program, "model");
-  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.data());
+
+  m_shader->setUniformValue("material.view_", view);
+  m_shader->setUniformValue("material.projection_", projection);
+  m_shader->setUniformValue("material.model_", model);
+
+  for(int i = 0; i < sizeof(vertices) / sizeof(float); i = i + 6) {
+    m_shader->setUniformValue("material.pos_", QVector3D(vertices[i], vertices[i + 1], vertices[i + 2]));
+    m_shader->setUniformValue("material.normal_", QVector3D(vertices[i + 3], vertices[i + 4], vertices[i + 5]));
+  }
 
   glDrawArrays(GL_TRIANGLES, 0, 36);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  m_sphere.bind();
-  m_sphere.setUniformValue("view", view);
-  m_sphere.setUniformValue("projection", projection);
-  QMatrix4x4 model2;
-  model2.scale(0.3f);
-  model2.translate(QVector3D(-2.5,3, 2));
-  m_sphere.setUniformValue("model", model2);
-  m_sphere.setUniformValue("view_pos", view * QVector3D(0, 0, 0));
-
-  GLuint back_tex = back_fbo->texture();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, back_tex);
-  m_sphere.setUniformValue("back_FragColor", 0);
-  //glEnable(GL_BLEND);
-  //0glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  m_sphere.Draw();
 
   glBindVertexArray(0);
   // Release FBO

@@ -1,15 +1,24 @@
 #version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 aTexCoord;
-
 out vec2 TexCoord;
+
+struct Material {
+    int type_; // 0 = ordinary, 1 = transparent
+    vec3 pos_;
+    vec3 texture_;
+    vec3 normal_;
+    mat4 model_;
+    mat4 view_;
+    mat4 projection_;
+};
+
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform Material material;
+
 void main()
 {
-    gl_Position = projection * view * model * vec4(aPos, 1.0f);
-    TexCoord = vec2(aTexCoord.x, 1.0 - aTexCoord.y);
+    gl_Position = material.projection_ * material.view_ * material.model_ * vec4(material.pos_, 1.0f);
 }

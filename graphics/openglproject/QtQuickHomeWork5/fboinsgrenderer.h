@@ -68,6 +68,7 @@ public slots:
     QQuickWindow* m_window = nullptr;
     QOpenGLFramebufferObject* m_fbo;
     QOpenGLFramebufferObject* back_fbo;
+    QOpenGLShaderProgram* m_shader; 
     GLuint m_vao;
     GLuint m_vbo;
     GLuint m_program;
@@ -80,6 +81,5 @@ public slots:
     QVector3D cameraFront = QVector3D(0.0f, 0.0f, -1.0f);
     QVector3D cameraUp = QVector3D(0.0f, 1.0f, 0.0f);
     float cameraSpeed = 0.05f;
-    Sphere m_sphere;
 };
 #endif

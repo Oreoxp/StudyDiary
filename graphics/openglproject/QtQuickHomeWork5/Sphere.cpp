@@ -1,5 +1,5 @@
 #include "Sphere.h"
-
+/*
 Sphere::Sphere(){
     m_model = new Model("../resouce/nanosuit/1.obj");
     m_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, "./sphere.vs");
@@ -26,4 +26,4 @@ void Sphere::setUniformValue(const char* name, QVector3D value){
 void Sphere::Draw() {
   m_model->Draw(&m_shader);
   m_shader.release();
-}
+}*/
