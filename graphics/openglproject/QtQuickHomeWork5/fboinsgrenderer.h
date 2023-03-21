@@ -67,6 +67,7 @@ public slots:
     GLFWItem* m_item;
     QQuickWindow* m_window = nullptr;
     QOpenGLFramebufferObject* m_fbo;
+    QOpenGLFramebufferObject* back_fbo;
     GLuint m_vao;
     GLuint m_vbo;
     GLuint m_program;
