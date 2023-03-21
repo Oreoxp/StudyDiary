@@ -13,6 +13,6 @@ void main()
     vec3 view_dir = FragPos - view_pos;
     vec3 refract_dir = refract(view_dir, Normal, 1.0/1.5);
 
-    vec4 ss = texture(back_FragColor, TexCoord);
+    vec4 ss = texture(back_FragColor, vec2(0,0));
     FragColor = ss;
 }

@@ -106,7 +106,6 @@
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).moc</QtMocFileName>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="rendererStruct.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <QtRcc Include="qml.qrc" />
     <None Include="11.fs" />
@@ -117,7 +116,6 @@
     <QtMoc Include="fboinsgrenderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="rendererStruct.h" />
     <ClInclude Include="Sphere.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

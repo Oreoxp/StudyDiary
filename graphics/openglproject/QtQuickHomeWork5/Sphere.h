@@ -1,8 +1,7 @@
 #pragma once
 
 #include <QtOpenGL/QOpenGLShaderProgram>
-#include "rendererStruct.h"
-
+/*
 class Sphere {
 public:
     Sphere();
@@ -12,8 +11,8 @@ public:
     void setUniformValue(const char* name, int value);
     void setUniformValue(const char* name, QVector3D value);
 
-
 private:
     QOpenGLShaderProgram m_shader;
     Model* m_model;
 };
+*/
