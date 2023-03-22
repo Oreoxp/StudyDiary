@@ -1,4 +1,7 @@
 #version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+
 out vec2 TexCoord;
 
 struct Material {
@@ -20,5 +23,5 @@ uniform Material material;
 
 void main()
 {
-    gl_Position = material.projection_ * material.view_ * material.model_ * vec4(material.pos_, 1.0f);
+    gl_Position = vec4(aPos, 1.0f);
 }
