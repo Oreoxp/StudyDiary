@@ -90,8 +90,11 @@ GLFWRenderer::GLFWRenderer()
       m_shader->link();
     }
 
-    //Model m_model("../resouce/nanosuit/2.obj");
+    Model m_model("../resouce/nanosuit/1.obj");
     
+    auto model_data = m_model.getModelData();
+    vertices.insert(vertices.end(), model_data.begin(), model_data.end());
+
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);
 
@@ -103,7 +106,7 @@ GLFWRenderer::GLFWRenderer()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                           (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                           (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
@@ -144,10 +147,10 @@ void GLFWRenderer::render() {
   glDepthFunc(GL_LESS);
   glEnable(GL_MULTISAMPLE);
 
+  glBindVertexArray(m_vao);
   QMatrix4x4 view{};
   QMatrix4x4 projection{};
   QMatrix4x4 model;
-  /*
   view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
   view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
   // view.translate(m_view);
@@ -158,17 +161,18 @@ void GLFWRenderer::render() {
   m_shader->setUniformValue("material.view_", view);
   m_shader->setUniformValue("material.projection_", projection);
   m_shader->setUniformValue("material.model_", model);
+  m_shader->setUniformValue("material.type_", 0);
 
-  for(int i = 0; i < sizeof(vertices) / sizeof(float); i = i + 6) {
-    m_shader->setUniformValue("material.pos_", QVector3D(vertices[i], vertices[i + 1], vertices[i + 2]));
-    m_shader->setUniformValue("material.normal_", QVector3D(vertices[i + 3], vertices[i + 4], vertices[i + 5]));
-  }
-
-  glDrawArrays(GL_TRIANGLES, 0, 36);*/
-
-  //glDrawArrays(GL_POINTS, 0, 1);
-  glBindVertexArray(m_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
+
+  glBindVertexArray(m_vao);
+
+  QMatrix4x4 model2;
+  model2.scale(0.3);
+  model2.translate(QVector3D(-2.8,4,2));
+  m_shader->setUniformValue("material.model_", model2);
+  m_shader->setUniformValue("material.type_", 1);
+  glDrawArrays(GL_TRIANGLES, 36, (vertices.size() / 6) - 36);  // »æÖÆÄ£ÐÍ
   m_shader->release();
   glBindVertexArray(0);
   // Release FBO
