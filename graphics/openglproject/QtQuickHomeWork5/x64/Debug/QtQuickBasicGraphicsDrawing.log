@@ -1,0 +1,4 @@
+﻿  fboinsgrenderer.cpp
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\shared\minwindef.h(130,1): warning C4005: “APIENTRY”: 宏重定义
+F:\Github\StudyDiary\graphics\opengllib\glfw-3.3.8\include\GLFW\glfw3.h(123): message : 参见“APIENTRY”的前一个定义
+  QtQuickBasicGraphicsDrawing.vcxproj -> F:\Github\StudyDiary\graphics\openglproject\QtQuickHomeWork5\x64\Debug\QtQuickBasicGraphicsDrawing.exe
