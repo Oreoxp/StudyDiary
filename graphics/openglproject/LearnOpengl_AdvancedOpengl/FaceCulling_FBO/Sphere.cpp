@@ -1,7 +1,7 @@
 #include "Sphere.h"
 
 Sphere::Sphere(){
-    m_model = new Model("../../resouce/nanosuit/1.obj");
+    m_model = new Model("../../resouce/nanosuit/2.obj");
     m_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, "./sphere.vs");
     m_shader.addShaderFromSourceFile(QOpenGLShader::Fragment, "./sphere.fs");
     m_shader.link();
