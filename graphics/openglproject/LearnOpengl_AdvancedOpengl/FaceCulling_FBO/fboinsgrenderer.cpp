@@ -212,7 +212,8 @@ void GLFWRenderer::render() {
                        GL_FALSE, projection.data());
 
     glBindVertexArray(m_vao);
-
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           cubeMapTexture, 0);
     QMatrix4x4 model;
     model.translate(QVector3D(0, 0, 0));
     glUniformMatrix4fv(glGetUniformLocation(m_program, "model"), 1, GL_FALSE,
@@ -222,7 +223,7 @@ void GLFWRenderer::render() {
 
 
     // 将 FBO 纹理转换为立方体纹理
-    glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
+    glBindTexture(GL_TEXTURE_2D, cubeMapTexture);
     for (unsigned int i = 0; i < 6; ++i) {
       glCopyTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, 0, 0,
                           800, 800);

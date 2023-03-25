@@ -82,6 +82,6 @@ class GLFWRenderer : public QObject,
   QVector3D cameraFront = QVector3D(0.0f, 0.0f, -1.0f);
   QVector3D cameraUp = QVector3D(0.0f, 1.0f, 0.0f);
   float cameraSpeed = 0.05f;
-  Sphere m_sphere;
+  /*Sphere m_sphere;*/
 };
 #endif
