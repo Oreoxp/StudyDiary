@@ -147,7 +147,7 @@ GLFWRenderer::GLFWRenderer()
   if (!m_vao) {
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);
-
+     
     glBindVertexArray(m_vao);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
