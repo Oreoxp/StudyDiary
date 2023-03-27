@@ -70,7 +70,11 @@ class GLFWRenderer : public QObject,
   QOpenGLFramebufferObject* back_fbo;
   QOpenGLShaderProgram* m_shader; 
   GLuint m_vao;
+  GLuint m_vao2;
   GLuint m_vbo;
+  GLuint m_vbo2;
+  GLuint framebuffer;
+  GLuint textureColorbuffer;
   GLuint m_program;
   GLuint texture1;
   GLuint texture2;
