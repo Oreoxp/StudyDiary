@@ -117,6 +117,7 @@
     <QtMoc Include="fboinsgrenderer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="rendererStruct.h" />
     <ClInclude Include="Sphere.h" />
   </ItemGroup>

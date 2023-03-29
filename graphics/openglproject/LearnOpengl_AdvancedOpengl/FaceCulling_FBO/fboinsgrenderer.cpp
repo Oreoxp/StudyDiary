@@ -11,6 +11,8 @@
 #include <sstream>
 #include <string>
 
+#include "stb_image.h"
+
 GLFWItem::GLFWItem() {}
 
 GLFWItem::~GLFWItem() {}
@@ -36,30 +38,48 @@ void GLFWItem::changeKeyDown(GLFWItem::CLICK_TYPE type) {
 
 // Create VAO and VBO
 float vertices[] = {
-    // positions          // texture Coords
-    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
-    0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        // positions          // normals
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-    -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-    0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-    0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
-    0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-    -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
-    0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-    -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-    0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f};
 
 float quadVertices[] = {  // vertex attributes for a quad that fills the entire
                           // screen in Normalized Device Coordinates.
@@ -68,11 +88,64 @@ float quadVertices[] = {  // vertex attributes for a quad that fills the entire
 
     -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 1.0f};
 
+float skyboxVertices[] = {
+    // positions
+    -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
+    1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
+
+    -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f,
+    -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
+
+    1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
+
+    -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
+
+    -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
+
+    -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+    1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
+
+unsigned int loadCubemap(std::vector<std::string> faces) {
+  unsigned int textureID;
+  glGenTextures(1, &textureID);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+  int width, height, nrChannels;
+  for (unsigned int i = 0; i < faces.size(); i++) {
+    unsigned char* data =
+        stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+    if (data) {
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height,
+                   0, GL_RGB, GL_UNSIGNED_BYTE, data);
+      stbi_image_free(data);
+    } else {
+      std::cout << "Cubemap texture failed to load at path: " << faces[i]
+                << std::endl;
+      stbi_image_free(data);
+    }
+  }
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+  return textureID;
+}
+
 GLFWRenderer::GLFWRenderer()
-    : m_fbo(nullptr), m_vao(0), m_vbo(0), m_program(0) {
+    : m_fbo(nullptr),
+      m_vao(0),
+      m_vbo(0),
+      m_program(0),
+      camera(QVector3D(0.0, 0.0, 0.8f)) {
   initializeOpenGLFunctions();
   m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
+  m_skybox_shader = new QOpenGLShaderProgram();
   if (!m_program) {
     // Make sure a valid OpenGL context is current
     QOpenGLContext* ctx = QOpenGLContext::currentContext();
@@ -96,6 +169,12 @@ GLFWRenderer::GLFWRenderer()
     m_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
                                                "./sphere.fs");
     m_shader->link();
+
+    m_skybox_shader->addCacheableShaderFromSourceFile(
+        QOpenGLShader::Vertex, "./skybox.vs");
+    m_skybox_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
+                                               "./skybox.fs");
+    m_skybox_shader->link();
   }
 
   if (!m_vao) {
@@ -107,11 +186,9 @@ GLFWRenderer::GLFWRenderer()
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                          (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                          (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glGenVertexArrays(1, &m_vao2);
     glGenBuffers(1, &m_vbo2);
@@ -127,8 +204,31 @@ GLFWRenderer::GLFWRenderer()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
                           (void*)(2 * sizeof(float)));
+
+    
+    // skybox VAO
+    unsigned int skyboxVBO;
+    glGenVertexArrays(1, &m_skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(m_skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices,
+                 GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                          (void*)0);
+
+    
+    std::vector<std::string> faces{("./resource/right.jpg"),
+                                   ("./resource/left.jpg"),
+                                   ("./resource/top.jpg"),
+                                   ("./resource/bottom.jpg"),
+                                   ("./resource/front.jpg"),
+                                   ("./resource/back.jpg")};
+    cubemapTexture = loadCubemap(faces);
   }
   timer.start();
+  lastFrame = timer.elapsed();
 }
 
 GLFWRenderer::~GLFWRenderer() {
@@ -158,7 +258,11 @@ QOpenGLFramebufferObject* GLFWRenderer::createFramebufferObject(
 }
 
 void GLFWRenderer::render() {
+  float currentFrame = timer.elapsed();
+  deltaTime = (currentFrame - lastFrame)/50.0;
+  lastFrame = currentFrame;
   // Render to first FBO
+  /*
   {
     back_fbo->bind();
     m_main_shader->bind();
@@ -170,15 +274,14 @@ void GLFWRenderer::render() {
       qDebug() << "OpenGL error:" << error;
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glEnable(GL_MULTISAMPLE);
 
     QMatrix4x4 view{};
     QMatrix4x4 projection{};
     QMatrix4x4 model{};
 
-    view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-    view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
-    projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)800,
+    view = camera.GetViewMatrix();
+    projection.perspective(qRadiansToDegrees(camera.Zoom),
+                           (float)800 / (float)800,
                            0.1f, 100.0f);
     model.translate(QVector3D(0, 0, 0));
 
@@ -186,8 +289,9 @@ void GLFWRenderer::render() {
     m_main_shader->setUniformValue("view", view);
     m_main_shader->setUniformValue("projection", projection);
     m_main_shader->setUniformValue("model", model);
+    
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    //glDrawArrays(GL_TRIANGLES, 0, 36);
 
     glBindVertexArray(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -196,7 +300,7 @@ void GLFWRenderer::render() {
     m_main_shader->release();
     back_fbo->release();
   }
-
+  */
   m_fbo->bind();
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -204,42 +308,60 @@ void GLFWRenderer::render() {
   GLenum error = glGetError();
   if (error != GL_NO_ERROR)
     qDebug() << "OpenGL error:" << error;
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glEnable(GL_MULTISAMPLE);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  // glViewport(0, 0, 1000, 1000);
 
-  m_shader->bind();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
-  
-  
+  glDepthFunc(GL_LEQUAL);
+  m_skybox_shader->bind();
+  glBindVertexArray(m_skyboxVAO);
+
   QMatrix4x4 view{};
   QMatrix4x4 projection{};
   QMatrix4x4 model{};
+  
+  view = camera.GetViewMatrix();
+  projection.perspective(camera.Zoom,
+                         (float)1000 / (float)1000, 0.1f, 100.0f);
+  //model.rotate(-90.0f, 0, 0, 1);
+  m_skybox_shader->setUniformValue("view", view);
+  m_skybox_shader->setUniformValue("projection", projection);
+  m_skybox_shader->setUniformValue("model", model);
+  m_skybox_shader->setUniformValue("skybox", 0);
+  // skybox cube
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glBindVertexArray(0);
+  glDepthFunc(GL_LESS);
+  m_skybox_shader->release();
+  glViewport(0, 0, 1000, 1000);
 
-  view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-  view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
-  projection.perspective(qRadiansToDegrees(45.0f), (float)1000 / (float)1000,
-                         0.1f, 100.0f);
-  model.translate(QVector3D(1.0, 1.0, 0));
+  /*
+  error = glGetError();
+  if (error != GL_NO_ERROR)
+    qDebug() << "OpenGL error:" << error;
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
 
+  m_shader->bind();
+  
+  QMatrix4x4 model{};
   glBindVertexArray(m_vao);
   m_shader->setUniformValue("view", view);
   m_shader->setUniformValue("projection", projection);
   m_shader->setUniformValue("model", model);
-  m_shader->setUniformValue("screenTexture", 0);
+  m_shader->setUniformValue("cameraPos", view*QVector3D());
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+  m_shader->setUniformValue("skybox", 0);
+  //m_shader->setUniformValue("screenTexture", 0);
 
   glDrawArrays(GL_TRIANGLES, 0, 36);
-
-  error = glGetError();
-  if (error != GL_NO_ERROR)
-    qDebug() << "OpenGL error:" << error;
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindVertexArray(0);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-  glViewport(0, 0, 1000, 1000);
   m_shader->release();
+  */
+  glBindVertexArray(0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   m_fbo->release();
 }
 
@@ -296,20 +418,18 @@ void GLFWRenderer::onKeyDownChanged(GLFWItem::CLICK_TYPE type) {
   switch (type) {
     case GLFWItem::CLICK_TYPE::DOWN_UP:
       // m_view.setY(m_view.y() + 0.1f);
-      cameraPos += cameraSpeed * cameraFront;
+      camera.ProcessKeyboard(FORWARD, deltaTime);
       break;
     case GLFWItem::CLICK_TYPE::DOWN_DOWN:
-      cameraPos -= cameraSpeed * cameraFront;
+      camera.ProcessKeyboard(BACKWARD, deltaTime);
       // m_view.setY(m_view.y() - 0.1f);
       break;
     case GLFWItem::CLICK_TYPE::DOWN_LEFT:
-      cameraPos -= QVector3D::crossProduct(cameraFront, cameraUp).normalized() *
-                   cameraSpeed;
+      camera.ProcessKeyboard(LEFT, deltaTime);
       // m_view.setX(m_view.x() - 0.1f);
       break;
     case GLFWItem::CLICK_TYPE::DOWN_RIGHT:
-      cameraPos += QVector3D::crossProduct(cameraFront, cameraUp).normalized() *
-                   cameraSpeed;
+      camera.ProcessKeyboard(RIGHT, deltaTime);
       // m_view.setX(m_view.x() + 0.1f);
       break;
     default:

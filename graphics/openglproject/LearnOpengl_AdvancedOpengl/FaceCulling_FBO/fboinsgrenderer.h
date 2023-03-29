@@ -11,6 +11,7 @@
 #include <QtQuick/QQuickFramebufferObject>
 #include <QtQuick/QQuickWindow>
 #include "sphere.h"
+#include "camera.h"
 
 class GLFWItem : public QQuickFramebufferObject {
   Q_OBJECT
@@ -69,9 +70,12 @@ class GLFWRenderer : public QObject,
   QOpenGLFramebufferObject* m_fbo;
   QOpenGLFramebufferObject* back_fbo;
   QOpenGLShaderProgram* m_main_shader; 
-  QOpenGLShaderProgram* m_shader; 
+  QOpenGLShaderProgram* m_shader;
+  QOpenGLShaderProgram* m_skybox_shader; 
   GLuint m_vao;
   GLuint m_vao2;
+  GLuint m_skyboxVAO;
+  GLuint cubemapTexture;
   GLuint m_vbo;
   GLuint m_vbo2;
   GLuint framebuffer;
@@ -87,6 +91,10 @@ class GLFWRenderer : public QObject,
   QVector3D cameraFront = QVector3D(0.0f, 0.0f, -1.0f);
   QVector3D cameraUp = QVector3D(0.0f, 1.0f, 0.0f);
   float cameraSpeed = 0.05f;
+
+  Camera camera;
+  float deltaTime = 0;
+  float lastFrame = 0;
   /*Sphere m_sphere;*/
 };
 #endif
