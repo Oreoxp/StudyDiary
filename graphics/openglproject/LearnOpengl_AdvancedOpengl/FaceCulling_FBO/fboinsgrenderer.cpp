@@ -209,11 +209,28 @@ void GLFWRenderer::render() {
   glEnable(GL_MULTISAMPLE);
 
   m_shader->bind();
-  glBindVertexArray(m_vao2);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
+  
+  
+  QMatrix4x4 view{};
+  QMatrix4x4 projection{};
+  QMatrix4x4 model{};
+
+  view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+  view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
+  projection.perspective(qRadiansToDegrees(45.0f), (float)1000 / (float)1000,
+                         0.1f, 100.0f);
+  model.translate(QVector3D(1.0, 1.0, 0));
+
+  glBindVertexArray(m_vao);
+  m_shader->setUniformValue("view", view);
+  m_shader->setUniformValue("projection", projection);
+  m_shader->setUniformValue("model", model);
   m_shader->setUniformValue("screenTexture", 0);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+
   error = glGetError();
   if (error != GL_NO_ERROR)
     qDebug() << "OpenGL error:" << error;
@@ -221,6 +238,7 @@ void GLFWRenderer::render() {
   glBindVertexArray(0);
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
+  glViewport(0, 0, 1000, 1000);
   m_shader->release();
   m_fbo->release();
 }
