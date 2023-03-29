@@ -71,6 +71,7 @@ float quadVertices[] = {  // vertex attributes for a quad that fills the entire
 GLFWRenderer::GLFWRenderer()
     : m_fbo(nullptr), m_vao(0), m_vbo(0), m_program(0) {
   initializeOpenGLFunctions();
+  m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
   if (!m_program) {
     // Make sure a valid OpenGL context is current
@@ -83,47 +84,12 @@ GLFWRenderer::GLFWRenderer()
       qWarning() << "Invalid OpenGL context";
       return;
     }
-    // open files
-    std::ifstream vShaderFile;
-    vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    vShaderFile.open("./11.vs");
-    std::stringstream vShaderStream;
-    vShaderStream << vShaderFile.rdbuf();
-    vShaderFile.close();
 
-    std::string vertexShaderSource = vShaderStream.str();
-    const char* vShaderCode = vertexShaderSource.c_str();
-
-    // open files
-    std::ifstream fShaderFile;
-    fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    fShaderFile.open("./11.fs");
-    std::stringstream fShaderStream;
-    fShaderStream << fShaderFile.rdbuf();
-    fShaderFile.close();
-
-    std::string fShaderSource = fShaderStream.str();
-    const char* fShaderCode = fShaderSource.c_str();
-
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vertexShader, 1, &vShaderCode, nullptr);
-    glCompileShader(vertexShader);
-
-    int success;
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-    glShaderSource(fragmentShader, 1, &fShaderCode, nullptr);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
-    m_program = glCreateProgram();
-    glAttachShader(m_program, vertexShader);
-    glAttachShader(m_program, fragmentShader);
-    glLinkProgram(m_program);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    m_main_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
+                                                   "./11.vs");
+    m_main_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
+                                               "./11.fs");
+    m_main_shader->link();
 
     m_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
                                                "./sphere.vs");
@@ -161,38 +127,6 @@ GLFWRenderer::GLFWRenderer()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
                           (void*)(2 * sizeof(float)));
-
-
-
-
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    // create a color attachment texture
-    
-    glGenTextures(1, &textureColorbuffer);
-    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 800, 0, GL_RGB,
-                 GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           textureColorbuffer, 0);
-    // create a renderbuffer object for depth and stencil attachment (we won't
-    // be sampling these)
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800,
-                          800);  // use a single renderbuffer object for
-                                 // both a depth AND stencil buffer.
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                              GL_RENDERBUFFER, rbo);  // now actually attach it
-    // now that we actually created the framebuffer and added all attachments we
-    // want to check if it is actually complete now
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-      std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
-                << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
   timer.start();
 }
@@ -215,101 +149,80 @@ QOpenGLFramebufferObject* GLFWRenderer::createFramebufferObject(
   format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
   format.setSamples(4);
   m_fbo = new QOpenGLFramebufferObject(size, format);
-  back_fbo = new QOpenGLFramebufferObject(size, format);
+  QOpenGLFramebufferObjectFormat fboFormat;
+  fboFormat.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+  fboFormat.setTextureTarget(GL_TEXTURE_2D);
+  fboFormat.setInternalTextureFormat(GL_RGBA8);
+  back_fbo = new QOpenGLFramebufferObject(size, fboFormat);
   return m_fbo;
 }
 
 void GLFWRenderer::render() {
   // Render to first FBO
   {
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     back_fbo->bind();
+    m_main_shader->bind();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    glUseProgram(m_program);
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) 
+      qDebug() << "OpenGL error:" << error;
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_MULTISAMPLE);
 
     QMatrix4x4 view{};
     QMatrix4x4 projection{};
+    QMatrix4x4 model{};
 
     view.lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
     view.rotate(qRadiansToDegrees(20.0f), 1, 1, 0);
     projection.perspective(qRadiansToDegrees(45.0f), (float)800 / (float)800,
                            0.1f, 100.0f);
-
-    glUniformMatrix4fv(glGetUniformLocation(m_program, "view"), 1, GL_FALSE,
-                       view.data());
-    glUniformMatrix4fv(glGetUniformLocation(m_program, "projection"), 1,
-                       GL_FALSE, projection.data());
+    model.translate(QVector3D(0, 0, 0));
 
     glBindVertexArray(m_vao);
-    QMatrix4x4 model;
-    model.translate(QVector3D(0, 0, 0));
-    glUniformMatrix4fv(glGetUniformLocation(m_program, "model"), 1, GL_FALSE,
-                       model.data());
+    m_main_shader->setUniformValue("view", view);
+    m_main_shader->setUniformValue("projection", projection);
+    m_main_shader->setUniformValue("model", model);
 
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
     glBindVertexArray(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_DEPTH_TEST);
+    glViewport(0, 0, 1000, 1000);
+    m_main_shader->release();
     back_fbo->release();
   }
 
+  m_fbo->bind();
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-  glUseProgram(m_program);
+  GLenum error = glGetError();
+  if (error != GL_NO_ERROR)
+    qDebug() << "OpenGL error:" << error;
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_MULTISAMPLE);
 
   m_shader->bind();
   glBindVertexArray(m_vao2);
-  glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
   m_shader->setUniformValue("screenTexture", 0);
   glDrawArrays(GL_TRIANGLES, 0, 6);
-  m_shader->release();
-  /*
-  // Render sphere with texture from first FBO
-  m_sphere.bind();
-  m_sphere.setUniformValue("view", view);
-  m_sphere.setUniformValue("projection", projection);
-  QMatrix4x4 model2;
-  model2.scale(0.3f);
-  model2.translate(QVector3D(-2.5, 3, 2));
-  m_sphere.setUniformValue("model", model2);
-  m_sphere.setUniformValue("view_pos", view * QVector3D(0, 0, 0));
-
-  // glActiveTexture(GL_TEXTURE0);
-  // glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
-  // m_sphere.setUniformValue("back_FragColor", 0);
-
-  // 绑定立方体纹理（请根据您的情况修改）
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
-  m_sphere.setUniformValue("envMap", 0);
-
-  // 将相机位置传递给球体片段着色器
-  m_sphere.setUniformValue("CameraPos", cameraPos);
-  m_sphere.setUniformValue("LightPos", QVector3D(5.0f, 5.0f, 5.0f));
-  m_sphere.setUniformValue("LightColor", QVector3D(1.0f, 1.0f, 1.0f));
-
-  // glEnable(GL_BLEND);
-  // 0glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  m_sphere.Draw();
-
-  glBindVertexArray(0);
-  // Release FBO
-  m_fbo->release();
-  */
+  error = glGetError();
+  if (error != GL_NO_ERROR)
+    qDebug() << "OpenGL error:" << error;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindVertexArray(0);
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
+  m_shader->release();
+  m_fbo->release();
 }
 
 void GLFWRenderer::mvp() {}

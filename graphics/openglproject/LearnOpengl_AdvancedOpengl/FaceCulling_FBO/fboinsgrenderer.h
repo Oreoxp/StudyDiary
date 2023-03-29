@@ -68,6 +68,7 @@ class GLFWRenderer : public QObject,
   QQuickWindow* m_window = nullptr;
   QOpenGLFramebufferObject* m_fbo;
   QOpenGLFramebufferObject* back_fbo;
+  QOpenGLShaderProgram* m_main_shader; 
   QOpenGLShaderProgram* m_shader; 
   GLuint m_vao;
   GLuint m_vao2;
