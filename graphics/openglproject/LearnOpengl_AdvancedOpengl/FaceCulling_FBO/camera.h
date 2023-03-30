@@ -17,10 +17,10 @@ enum Camera_Movement {
 };
 
 // Default camera values
-const float YAW         = 90.0f;
+const float YAW         =  -90.0f;
 const float PITCH       =  0.0f;
 const float SPEED       =  2.5f;
-const float SENSITIVITY =  0.1f;
+const float SENSITIVITY =  0.00001f;
 const float ZOOM        =  45.0f;
 
 
@@ -47,7 +47,7 @@ public:
            QVector3D up = QVector3D(0.0f, -1.0f, 0.0f),
            float yaw = YAW,
            float pitch = PITCH)
-        : Front(QVector3D(1.0f, 1.0f, 1.0f)),
+        : Front(QVector3D(0.0f, 0.0f, 1.0f)),
           MovementSpeed(SPEED),
           MouseSensitivity(SENSITIVITY),
           Zoom(ZOOM)
@@ -128,10 +128,10 @@ private:
     {
         // calculate the new Front vector
         QVector3D front;
-        front.setX(cos(qRadiansToDegrees(Yaw)) *
-                   cos(qRadiansToDegrees(Pitch)));
-        front.setY(sin(qRadiansToDegrees(Pitch)));
-        front.setZ(sin(qRadiansToDegrees(Yaw)) * cos(qRadiansToDegrees(Pitch)));
+        front.setX(cos(qDegreesToRadians(Yaw)) *
+                   cos(qDegreesToRadians(Pitch)));
+        front.setY(sin(qDegreesToRadians(Pitch)));
+        front.setZ(sin(qDegreesToRadians(Yaw)) * cos(qDegreesToRadians(Pitch)));
 
         Front = front.normalized();
         // also re-calculate the Right and Up vector

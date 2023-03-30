@@ -20,6 +20,13 @@ Item {
     GLFWItem {
         id:glfw
         anchors.fill: parent
+        
+        MouseArea {
+            anchors.fill: parent
+            onPositionChanged: {
+                glfw.mouseChange(mouseX, mouseY)
+            }
+        }
     }
 
 

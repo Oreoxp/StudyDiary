@@ -25,6 +25,8 @@ QQuickFramebufferObject::Renderer* GLFWItem::createRenderer() const {
           SLOT(onTrianglePosChanged()), Qt::QueuedConnection);
   connect(this, SIGNAL(keyDownChanged(GLFWItem::CLICK_TYPE)), render_,
           SLOT(onKeyDownChanged(GLFWItem::CLICK_TYPE)), Qt::QueuedConnection);
+  connect(this, SIGNAL(mouseChangeChangedd(qreal, qreal)), render_,
+          SLOT(onMouseChangeChanged(qreal, qreal)), Qt::QueuedConnection);
   return render_;
 }
 
@@ -34,6 +36,10 @@ void GLFWItem::changeTrianglePos() {
 
 void GLFWItem::changeKeyDown(GLFWItem::CLICK_TYPE type) {
   emit keyDownChanged(type);
+}
+
+void GLFWItem::mouseChange(qreal x, qreal y) {
+  emit mouseChangeChangedd(x, y);
 }
 
 // Create VAO and VBO
@@ -81,7 +87,7 @@ float vertices[] = {
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f};
 
-float quadVertices[] = {  // vertex attributes for a quad that fills the entire
+   float quadVertices[] = {  // vertex attributes for a quad that fills the entire
                           // screen in Normalized Device Coordinates.
     // positions   // texCoords
     -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f,
@@ -145,6 +151,7 @@ GLFWRenderer::GLFWRenderer()
   initializeOpenGLFunctions();
   m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
+  m_shader2 = new QOpenGLShaderProgram();
   m_skybox_shader = new QOpenGLShaderProgram();
   if (!m_program) {
     // Make sure a valid OpenGL context is current
@@ -169,6 +176,12 @@ GLFWRenderer::GLFWRenderer()
     m_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
                                                "./sphere.fs");
     m_shader->link();
+
+    m_shader2->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
+                                               "./sphere.vs");
+    m_shader2->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
+                                               "./sphere.fs");
+    m_shader2->link();
 
     m_skybox_shader->addCacheableShaderFromSourceFile(
         QOpenGLShader::Vertex, "./skybox.vs");
@@ -205,7 +218,22 @@ GLFWRenderer::GLFWRenderer()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
                           (void*)(2 * sizeof(float)));
 
-    
+    unsigned int quadVBO;
+    glGenVertexArrays(1, &m_vao_quad);
+    glGenBuffers(1, &quadVBO);
+
+    glBindVertexArray(m_vao_quad);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
+                 GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                          (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                          (void*)(2 * sizeof(float)));
+
     // skybox VAO
     unsigned int skyboxVBO;
     glGenVertexArrays(1, &m_skyboxVAO);
@@ -259,107 +287,100 @@ QOpenGLFramebufferObject* GLFWRenderer::createFramebufferObject(
 
 void GLFWRenderer::render() {
   float currentFrame = timer.elapsed();
-  deltaTime = (currentFrame - lastFrame)/50.0;
+  deltaTime = (currentFrame - lastFrame) / 500.0;
   lastFrame = currentFrame;
-  // Render to first FBO
-  /*
   {
     back_fbo->bind();
-    m_main_shader->bind();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     GLenum error = glGetError();
-    if (error != GL_NO_ERROR) 
+    if (error != GL_NO_ERROR)
       qDebug() << "OpenGL error:" << error;
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+
+    glDepthFunc(GL_LEQUAL);
+    m_skybox_shader->bind();
+    glBindVertexArray(m_skyboxVAO);
 
     QMatrix4x4 view{};
     QMatrix4x4 projection{};
     QMatrix4x4 model{};
 
     view = camera.GetViewMatrix();
-    projection.perspective(qRadiansToDegrees(camera.Zoom),
-                           (float)800 / (float)800,
-                           0.1f, 100.0f);
-    model.translate(QVector3D(0, 0, 0));
-
-    glBindVertexArray(m_vao);
-    m_main_shader->setUniformValue("view", view);
-    m_main_shader->setUniformValue("projection", projection);
-    m_main_shader->setUniformValue("model", model);
-    
-
-    //glDrawArrays(GL_TRIANGLES, 0, 36);
-
+    projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f,
+                           100.0f);
+    // model.rotate(-90.0f, 0, 0, 1);
+    m_skybox_shader->setUniformValue("view", view);
+    m_skybox_shader->setUniformValue("projection", projection);
+    m_skybox_shader->setUniformValue("model", model);
+    m_skybox_shader->setUniformValue("skybox", 0);
+    // skybox cube
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    m_skybox_shader->release();
     glViewport(0, 0, 1000, 1000);
-    m_main_shader->release();
+
+    QMatrix4x4 model2{};
+    glBindVertexArray(m_vao);
+    model2.scale(0.2f);
+    model2.rotate(30, 0, 1, 0);
+    model2.translate(0.5, 0, 0);
+    m_shader->bind();
+    m_shader->setUniformValue("view", view);
+    m_shader->setUniformValue("projection", projection);
+    m_shader->setUniformValue("model", model2);
+    m_shader->setUniformValue("cameraPos", camera.Position);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    m_shader->setUniformValue("skybox", 0);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    m_shader->release();
+
     back_fbo->release();
   }
-  */
+
   m_fbo->bind();
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-  GLenum error = glGetError();
-  if (error != GL_NO_ERROR)
-    qDebug() << "OpenGL error:" << error;
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-  // glViewport(0, 0, 1000, 1000);
-
-  glDepthFunc(GL_LEQUAL);
-  m_skybox_shader->bind();
-  glBindVertexArray(m_skyboxVAO);
+  glEnable(GL_DEPTH_TEST);
 
   QMatrix4x4 view{};
   QMatrix4x4 projection{};
   QMatrix4x4 model{};
-  
   view = camera.GetViewMatrix();
-  projection.perspective(camera.Zoom,
-                         (float)1000 / (float)1000, 0.1f, 100.0f);
-  //model.rotate(-90.0f, 0, 0, 1);
-  m_skybox_shader->setUniformValue("view", view);
-  m_skybox_shader->setUniformValue("projection", projection);
-  m_skybox_shader->setUniformValue("model", model);
-  m_skybox_shader->setUniformValue("skybox", 0);
-  // skybox cube
+  projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f, 100.0f);
+
+  m_main_shader->bind();
+  glDepthFunc(GL_LESS);
+  glBindVertexArray(m_vao2);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
+  m_main_shader->setUniformValue("screenTexture", 0);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);
-  glDepthFunc(GL_LESS);
-  m_skybox_shader->release();
-  glViewport(0, 0, 1000, 1000);
+  m_main_shader->release();
 
-  /*
-  error = glGetError();
-  if (error != GL_NO_ERROR)
-    qDebug() << "OpenGL error:" << error;
-  glEnable(GL_DEPTH_TEST);
+  m_shader2->bind();
   glDepthFunc(GL_LESS);
-
-  m_shader->bind();
-  
-  QMatrix4x4 model{};
   glBindVertexArray(m_vao);
-  m_shader->setUniformValue("view", view);
-  m_shader->setUniformValue("projection", projection);
-  m_shader->setUniformValue("model", model);
-  m_shader->setUniformValue("cameraPos", view*QVector3D());
+  QMatrix4x4 model3{};
+  model3.scale(0.2f);
+  model3.rotate(30, 0, 1, 0);
+  model3.translate(-0.7, 0, 0);
+  m_shader2->setUniformValue("view", view);
+  m_shader2->setUniformValue("projection", projection);
+  m_shader2->setUniformValue("model", model3);
+  m_shader2->setUniformValue("cameraPos", camera.Position);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-  m_shader->setUniformValue("skybox", 0);
-  //m_shader->setUniformValue("screenTexture", 0);
-
+  glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
+  m_shader2->setUniformValue("skybox", 0);
   glDrawArrays(GL_TRIANGLES, 0, 36);
-  m_shader->release();
-  */
+  m_shader2->release();
+
+
   glBindVertexArray(0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   m_fbo->release();
@@ -435,4 +456,9 @@ void GLFWRenderer::onKeyDownChanged(GLFWItem::CLICK_TYPE type) {
     default:
       break;
   }
+}
+
+
+void GLFWRenderer::onMouseChangeChanged(qreal x, qreal y) {
+  camera.ProcessMouseMovement(x, y);
 }
