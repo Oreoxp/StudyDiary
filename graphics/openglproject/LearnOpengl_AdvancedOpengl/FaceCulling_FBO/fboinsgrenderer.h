@@ -74,6 +74,8 @@ class GLFWRenderer : public QObject,
   QOpenGLShaderProgram* m_shader;
   QOpenGLShaderProgram* m_shader2;
   QOpenGLShaderProgram* m_skybox_shader; 
+  QOpenGLFramebufferObject* m_fbo_cube[6];
+  QOpenGLTexture* m_cube_map;
   GLuint m_vao;
   GLuint m_vao2;
   GLuint m_vao_quad;
