@@ -29,13 +29,13 @@ class GLFWItem : public QQuickFramebufferObject {
   Q_ENUM(CLICK_TYPE);
   Q_INVOKABLE void changeTrianglePos();
   Q_INVOKABLE void changeKeyDown(GLFWItem::CLICK_TYPE);
+  Q_INVOKABLE void mouseChange(qreal x, qreal y);
   Renderer* createRenderer() const override;
 
  signals:
+  void mouseChangeChangedd(qreal x, qreal y);
   void trianglePosChanged();
   void keyDownChanged(GLFWItem::CLICK_TYPE);
-
- private:
 };
 
 class GLFWRenderer : public QObject,
@@ -63,6 +63,7 @@ class GLFWRenderer : public QObject,
  public slots:
   void onTrianglePosChanged();
   void onKeyDownChanged(GLFWItem::CLICK_TYPE);
+  void onMouseChangeChanged(qreal x, qreal y);
 
  public:
   GLFWItem* m_item;
@@ -71,9 +72,11 @@ class GLFWRenderer : public QObject,
   QOpenGLFramebufferObject* back_fbo;
   QOpenGLShaderProgram* m_main_shader; 
   QOpenGLShaderProgram* m_shader;
+  QOpenGLShaderProgram* m_shader2;
   QOpenGLShaderProgram* m_skybox_shader; 
   GLuint m_vao;
   GLuint m_vao2;
+  GLuint m_vao_quad;
   GLuint m_skyboxVAO;
   GLuint cubemapTexture;
   GLuint m_vbo;
