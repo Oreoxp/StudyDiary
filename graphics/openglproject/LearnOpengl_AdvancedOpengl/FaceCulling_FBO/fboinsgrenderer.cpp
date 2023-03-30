@@ -44,48 +44,37 @@ void GLFWItem::mouseChange(qreal x, qreal y) {
 
 // Create VAO and VBO
 float vertices[] = {
-        // positions          // normals
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+    // positions          // normals
+    -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.5f,  -0.5f, -0.5f,
+    0.0f,  0.0f,  -1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f,
+    0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, -0.5f, 0.5f,  -0.5f,
+    0.0f,  0.0f,  -1.0f, -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.5f,  -0.5f, 0.5f,
+    0.0f,  0.0f,  1.0f,  0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  -0.5f, 0.5f,  0.5f,
+    0.0f,  0.0f,  1.0f,  -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  -0.5f, 0.5f,  -0.5f,
+    -1.0f, 0.0f,  0.0f,  -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  -0.5f, -0.5f, 0.5f,
+    -1.0f, 0.0f,  0.0f,  -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.5f,  0.5f,  -0.5f,
+    1.0f,  0.0f,  0.0f,  0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
+    0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.5f,  -0.5f, 0.5f,
+    1.0f,  0.0f,  0.0f,  0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.5f,  -0.5f, -0.5f,
+    0.0f,  -1.0f, 0.0f,  0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,
+    0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  -0.5f, -0.5f, 0.5f,
+    0.0f,  -1.0f, 0.0f,  -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f};
+    -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  -0.5f,
+    0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,
+    0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f};
+
 
    float quadVertices[] = {  // vertex attributes for a quad that fills the entire
                           // screen in Normalized Device Coordinates.
@@ -153,6 +142,23 @@ GLFWRenderer::GLFWRenderer()
   m_shader = new QOpenGLShaderProgram();
   m_shader2 = new QOpenGLShaderProgram();
   m_skybox_shader = new QOpenGLShaderProgram();
+  m_cube_map = new QOpenGLTexture(QOpenGLTexture::TargetCubeMap);
+  m_cube_map->create();
+  m_cube_map->setSize(1000, 1000);
+  m_cube_map->setFormat(QOpenGLTexture::RGBA8_UNorm);
+  m_cube_map->allocateStorage();
+
+  for (int i = 0; i < 6; ++i) {
+    m_fbo_cube[i] = new QOpenGLFramebufferObject(1000, 1000);
+    m_fbo_cube[i]->addColorAttachment(1000, 1000);
+    m_fbo_cube[i]->bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_cube_map->textureId(), 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    qDebug() << "Framebuffer is not complete!";
+    }
+    m_fbo_cube[i]->release();
+  }
+
   if (!m_program) {
     // Make sure a valid OpenGL context is current
     QOpenGLContext* ctx = QOpenGLContext::currentContext();
@@ -178,9 +184,9 @@ GLFWRenderer::GLFWRenderer()
     m_shader->link();
 
     m_shader2->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
-                                               "./sphere.vs");
+                                               "./sphereLast.vs");
     m_shader2->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
-                                               "./sphere.fs");
+                                               "./sphereLast.fs");
     m_shader2->link();
 
     m_skybox_shader->addCacheableShaderFromSourceFile(
@@ -285,14 +291,43 @@ QOpenGLFramebufferObject* GLFWRenderer::createFramebufferObject(
   return m_fbo;
 }
 
+
 void GLFWRenderer::render() {
   float currentFrame = timer.elapsed();
-  deltaTime = (currentFrame - lastFrame) / 500.0;
+  deltaTime = (currentFrame - lastFrame) / 100.0;
   lastFrame = currentFrame;
   {
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
     back_fbo->bind();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    QMatrix4x4 view{};
+    QMatrix4x4 projection{};
+    QMatrix4x4 model{};
+
+    view = camera.GetViewMatrix();
+    projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f,
+                           100.0f);
+    
+    QMatrix4x4 model2{};
+    /*glBindVertexArray(m_vao);
+    model2.scale(0.2f);
+    // model2.rotate(30, 0, 1, 0);
+    // model2.translate(0.5, -1, 0);
+     m_shader->bind();
+    m_shader->setUniformValue("view", view);
+    m_shader->setUniformValue("projection", projection);
+    m_shader->setUniformValue("model", model2);
+    m_shader->setUniformValue("cameraPos", camera.Position);
+    m_shader->setUniformValue("skybox", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    m_shader->release();
+    glBindVertexArray(0);*/
+
 
     GLenum error = glGetError();
     if (error != GL_NO_ERROR)
@@ -302,56 +337,79 @@ void GLFWRenderer::render() {
     m_skybox_shader->bind();
     glBindVertexArray(m_skyboxVAO);
 
-    QMatrix4x4 view{};
-    QMatrix4x4 projection{};
-    QMatrix4x4 model{};
-
-    view = camera.GetViewMatrix();
     projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f,
                            100.0f);
+    model.scale(2.0);
     // model.rotate(-90.0f, 0, 0, 1);
     m_skybox_shader->setUniformValue("view", view);
     m_skybox_shader->setUniformValue("projection", projection);
     m_skybox_shader->setUniformValue("model", model);
     m_skybox_shader->setUniformValue("skybox", 0);
-    // skybox cube
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+    m_skybox_shader->release();
     glBindVertexArray(0);
     glDepthFunc(GL_LESS);
-    m_skybox_shader->release();
     glViewport(0, 0, 1000, 1000);
-
-    QMatrix4x4 model2{};
-    glBindVertexArray(m_vao);
-    model2.scale(0.2f);
-    model2.rotate(30, 0, 1, 0);
-    model2.translate(0.5, 0, 0);
-    m_shader->bind();
-    m_shader->setUniformValue("view", view);
-    m_shader->setUniformValue("projection", projection);
-    m_shader->setUniformValue("model", model2);
-    m_shader->setUniformValue("cameraPos", camera.Position);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-    m_shader->setUniformValue("skybox", 0);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    m_shader->release();
 
     back_fbo->release();
   }
 
-  m_fbo->bind();
-  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
-
+  
   QMatrix4x4 view{};
   QMatrix4x4 projection{};
   QMatrix4x4 model{};
   view = camera.GetViewMatrix();
   projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f, 100.0f);
+
+  view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(1, 0, 0),
+                          QVector3D(0, -1, 0));
+  auto view1 = view;
+  view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(-1, 0, 0),
+                          QVector3D(0, -1, 0));
+  auto view2 = view;
+  view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(0, 1, 0),
+                          QVector3D(0, 0, 1));
+  auto view3 = view;
+  view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(0, -1, 0),
+                          QVector3D(0, 0, -1));
+  auto view4 = view;
+  view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(0, 0, 1),
+                          QVector3D(0, -1, 0));
+  auto view5 = view;
+  view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(0, 0, -1),
+                          QVector3D(0, -1, 0));
+  auto view6 = view;
+
+  QMatrix4x4 cube_views[6] = {view1, view2, view3, view4, view5, view6};
+
+  for (int i = 0; i < 6; ++i) {
+    m_fbo_cube[i]->bind();
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    // Bind and set up the shader for rendering the scene (e.g., m_main_shader).
+    m_main_shader->bind();
+    glDepthFunc(GL_LESS);
+    glBindVertexArray(m_vao2);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
+    m_main_shader->setUniformValue("screenTexture", 0);
+    m_main_shader->setUniformValue("view", cube_views[i]);
+    m_main_shader->setUniformValue("projection", projection);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+    m_main_shader->release();
+    m_fbo_cube[i]->release();
+  }
+
+
+  m_fbo->bind();
+  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
 
   m_main_shader->bind();
   glDepthFunc(GL_LESS);
@@ -363,7 +421,7 @@ void GLFWRenderer::render() {
   glBindVertexArray(0);
   m_main_shader->release();
 
-  m_shader2->bind();
+  /* m_shader2->bind();
   glDepthFunc(GL_LESS);
   glBindVertexArray(m_vao);
   QMatrix4x4 model3{};
@@ -375,11 +433,10 @@ void GLFWRenderer::render() {
   m_shader2->setUniformValue("model", model3);
   m_shader2->setUniformValue("cameraPos", camera.Position);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, back_fbo->texture());
-  m_shader2->setUniformValue("skybox", 0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, m_cube_map->textureId());
+  m_shader2->setUniformValue("environmentTexture", 0);
   glDrawArrays(GL_TRIANGLES, 0, 36);
-  m_shader2->release();
-
+  m_shader2->release();*/
 
   glBindVertexArray(0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
