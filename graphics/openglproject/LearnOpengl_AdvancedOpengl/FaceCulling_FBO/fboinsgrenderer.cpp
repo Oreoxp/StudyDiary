@@ -305,18 +305,17 @@ void GLFWRenderer::render() {
 
     QMatrix4x4 view{};
     QMatrix4x4 projection{};
-    QMatrix4x4 model{};
 
     view = camera.GetViewMatrix();
     projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f,
                            100.0f);
     
     QMatrix4x4 model2{};
-    /*glBindVertexArray(m_vao);
+    glBindVertexArray(m_vao);
     model2.scale(0.2f);
-    // model2.rotate(30, 0, 1, 0);
-    // model2.translate(0.5, -1, 0);
-     m_shader->bind();
+    model2.rotate(30, 0, 1, 0);
+    model2.translate(0.5, -1, 0);
+    m_shader->bind();
     m_shader->setUniformValue("view", view);
     m_shader->setUniformValue("projection", projection);
     m_shader->setUniformValue("model", model2);
@@ -326,7 +325,7 @@ void GLFWRenderer::render() {
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     m_shader->release();
-    glBindVertexArray(0);*/
+    glBindVertexArray(0);
 
 
     GLenum error = glGetError();
@@ -334,16 +333,11 @@ void GLFWRenderer::render() {
       qDebug() << "OpenGL error:" << error;
 
     glDepthFunc(GL_LEQUAL);
-    m_skybox_shader->bind();
     glBindVertexArray(m_skyboxVAO);
-
-    projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f,
-                           100.0f);
-    model.scale(2.0);
-    // model.rotate(-90.0f, 0, 0, 1);
+    m_skybox_shader->bind();
     m_skybox_shader->setUniformValue("view", view);
     m_skybox_shader->setUniformValue("projection", projection);
-    m_skybox_shader->setUniformValue("model", model);
+    m_skybox_shader->setUniformValue("cameraPos", camera.Position);
     m_skybox_shader->setUniformValue("skybox", 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
@@ -362,7 +356,7 @@ void GLFWRenderer::render() {
   QMatrix4x4 model{};
   view = camera.GetViewMatrix();
   projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f, 100.0f);
-
+  /*
   view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(1, 0, 0),
                           QVector3D(0, -1, 0));
   auto view1 = view;
@@ -404,7 +398,7 @@ void GLFWRenderer::render() {
     m_main_shader->release();
     m_fbo_cube[i]->release();
   }
-
+  */
 
   m_fbo->bind();
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
