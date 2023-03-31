@@ -141,6 +141,7 @@ GLFWRenderer::GLFWRenderer()
   m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
   m_shader2 = new QOpenGLShaderProgram();
+  m_shaderSolid = new QOpenGLShaderProgram();
   m_skybox_shader = new QOpenGLShaderProgram();
   m_cube_map = new QOpenGLTexture(QOpenGLTexture::TargetCubeMap);
   m_cube_map->create();
@@ -182,6 +183,12 @@ GLFWRenderer::GLFWRenderer()
     m_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
                                                "./sphere.fs");
     m_shader->link();
+
+    m_shaderSolid->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
+                                               "./sphereSolid.vs");
+    m_shaderSolid->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
+                                               "./sphereSolid.fs");
+    m_shaderSolid->link();
 
     m_shader2->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
                                                "./sphereLast.vs");
@@ -312,9 +319,9 @@ void GLFWRenderer::render() {
     
     QMatrix4x4 model2{};
     glBindVertexArray(m_vao);
-    model2.scale(0.2f);
+    model2.scale(0.3f);
     model2.rotate(30, 0, 1, 0);
-    model2.translate(0.5, -1, 0);
+    model2.translate(0.5, 0, -2);
     m_shader->bind();
     m_shader->setUniformValue("view", view);
     m_shader->setUniformValue("projection", projection);
@@ -327,6 +334,18 @@ void GLFWRenderer::render() {
     m_shader->release();
     glBindVertexArray(0);
 
+    QMatrix4x4 model3{};
+    glBindVertexArray(m_vao);
+    model3.scale(0.2f);
+    model3.rotate(30, 0, -1, 0);
+    model3.translate(0.2, 0, -1);
+    m_shaderSolid->bind();
+    m_shaderSolid->setUniformValue("view", view);
+    m_shaderSolid->setUniformValue("projection", projection);
+    m_shaderSolid->setUniformValue("model", model3);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    m_shaderSolid->release();
+    glBindVertexArray(0);
 
     GLenum error = glGetError();
     if (error != GL_NO_ERROR)
@@ -356,7 +375,6 @@ void GLFWRenderer::render() {
   QMatrix4x4 model{};
   view = camera.GetViewMatrix();
   projection.perspective(camera.Zoom, (float)1000 / (float)1000, 0.1f, 100.0f);
-  /*
   view.QMatrix4x4::lookAt(QVector3D(0, 0, 0), QVector3D(1, 0, 0),
                           QVector3D(0, -1, 0));
   auto view1 = view;
@@ -398,7 +416,6 @@ void GLFWRenderer::render() {
     m_main_shader->release();
     m_fbo_cube[i]->release();
   }
-  */
 
   m_fbo->bind();
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -415,13 +432,13 @@ void GLFWRenderer::render() {
   glBindVertexArray(0);
   m_main_shader->release();
 
-  /* m_shader2->bind();
+  m_shader2->bind();
   glDepthFunc(GL_LESS);
   glBindVertexArray(m_vao);
   QMatrix4x4 model3{};
   model3.scale(0.2f);
-  model3.rotate(30, 0, 1, 0);
-  model3.translate(-0.7, 0, 0);
+  model3.rotate(15, 0, 1, 0);
+  model3.translate(0.2, 0, -0.5);
   m_shader2->setUniformValue("view", view);
   m_shader2->setUniformValue("projection", projection);
   m_shader2->setUniformValue("model", model3);
@@ -430,7 +447,7 @@ void GLFWRenderer::render() {
   glBindTexture(GL_TEXTURE_CUBE_MAP, m_cube_map->textureId());
   m_shader2->setUniformValue("environmentTexture", 0);
   glDrawArrays(GL_TRIANGLES, 0, 36);
-  m_shader2->release();*/
+  m_shader2->release();
 
   glBindVertexArray(0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -511,5 +528,20 @@ void GLFWRenderer::onKeyDownChanged(GLFWItem::CLICK_TYPE type) {
 
 
 void GLFWRenderer::onMouseChangeChanged(qreal x, qreal y) {
-  camera.ProcessMouseMovement(x, y);
+  float xpos = static_cast<float>(x);
+  float ypos = static_cast<float>(y);
+  if (firstMouse) {
+    lastX = xpos;
+    lastY = ypos;
+    firstMouse = false;
+  }
+
+  float xoffset = xpos - lastX;
+  float yoffset =
+      lastY - ypos;  // reversed since y-coordinates go from bottom to top
+
+  lastX = xpos;
+  lastY = ypos;
+
+  camera.ProcessMouseMovement(xoffset, yoffset);
 }
