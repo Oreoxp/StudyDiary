@@ -72,6 +72,7 @@ class GLFWRenderer : public QObject,
   QOpenGLFramebufferObject* back_fbo;
   QOpenGLShaderProgram* m_main_shader; 
   QOpenGLShaderProgram* m_shader;
+  QOpenGLShaderProgram* m_shaderSolid;
   QOpenGLShaderProgram* m_shader2;
   QOpenGLShaderProgram* m_skybox_shader; 
   QOpenGLFramebufferObject* m_fbo_cube[6];
@@ -100,6 +101,9 @@ class GLFWRenderer : public QObject,
   Camera camera;
   float deltaTime = 0;
   float lastFrame = 0;
+  float lastX = 0;
+  float lastY = 0;
+  float firstMouse = false;
   /*Sphere m_sphere;*/
 };
 #endif

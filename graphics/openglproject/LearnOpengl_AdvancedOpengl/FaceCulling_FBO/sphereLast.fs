@@ -39,7 +39,7 @@ void main()
 
     vec3 finalColor = mix(refractedColor, reflectedColor, F);
 
-    // ... combine the final color with other shading components as needed ...
+    finalColor = vec3(finalColor.x, finalColor.y, finalColor.z);
 
     FragColor = vec4(finalColor, 1.0);
 }
