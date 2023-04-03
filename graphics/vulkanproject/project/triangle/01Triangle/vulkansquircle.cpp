@@ -615,24 +615,43 @@ void VulkanTriangle::run() {
 void VulkanTriangle::initVulkan() {
     createInstance();
     setupDebugMessenger();
+    pickPhysicalDevice();
+    createLogicalDevice();
 }
 
 void VulkanTriangle::mainLoop() {
 
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL
-debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-              VkDebugUtilsMessageTypeFlagsEXT messageType,
-              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-              void* pUserData) {
-    qDebug() << "validation layer: " << pCallbackData->pMessage;
-    return VK_FALSE;
+void VulkanTriangle::cleanup() {
+    vkDestroyDevice(device, nullptr);
+    DestroyDebugUtilsMessengerEXT(vkinstance, callback, nullptr);
+    vkDestroyInstance(vkinstance, nullptr);
 }
 
-void VulkanTriangle::cleanup() {
-    vkDestroyInstance(vkinstance, nullptr);
-    DestroyDebugUtilsMessengerEXT(vkinstance, callback, nullptr);
+//01 配置扩展
+std::vector<const char*> VulkanTriangle::getRequiredExtensions() {
+    std::vector<const char*> charextensions;
+    // 查询可用扩展数量
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    // 为扩展名分配内存
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+
+    // 查询扩展详细信息
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount,
+                                           extensions.data());
+
+    // 打印所有可用扩展
+    for (const auto& extension : extensions) {
+        qDebug() << "\t" << extension.extensionName;
+    }
+
+    if (enableValidationLayers) {
+        charextensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+    return charextensions;
 }
 
 bool VulkanTriangle::CheckValidationLayerSupport(){
@@ -660,30 +679,15 @@ bool VulkanTriangle::CheckValidationLayerSupport(){
     return true;
 }
 
-std::vector<const char*> VulkanTriangle::getRequiredExtensions() {
-    std::vector<const char*> charextensions;
-    // 查询可用扩展数量
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    // 为扩展名分配内存
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-
-    // 查询扩展详细信息
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount,
-                                           extensions.data());
-
-    // 打印所有可用扩展
-    for (const auto& extension : extensions) {
-        qDebug() << "\t" << extension.extensionName;
-    }
-
-    if (enableValidationLayers) {
-        charextensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-    return charextensions;
+//02 校验层
+static VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+              VkDebugUtilsMessageTypeFlagsEXT messageType,
+              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+              void* pUserData) {
+    qDebug() << "validation layer: " << pCallbackData->pMessage;
+    return VK_FALSE;
 }
-
 
 void VulkanTriangle::setupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
@@ -697,6 +701,8 @@ void VulkanTriangle::setupDebugMessenger() {
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
     createInfo.pUserData = nullptr;  // Optional
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
 
     if (CreateDebugUtilsMessengerEXT(vkinstance, &createInfo, nullptr,
                                      &callback) != VK_SUCCESS) {
@@ -729,7 +735,101 @@ void VulkanTriangle::DestroyDebugUtilsMessengerEXT(
     }
 }
 
+//03 选择物理设备
+void VulkanTriangle::pickPhysicalDevice() {
+    // 查询可用设备数量
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(vkinstance, &deviceCount, nullptr);
+    if (deviceCount == 0) {
+        qFatal("failed to find GPUs with Vulkan support!");
+    }
+    // 为设备名分配内存
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(vkinstance, &deviceCount, devices.data());
 
+    for(const auto & device : devices){
+        if (isDeviceSuitable(device)) {
+            physicalDevice = device;
+            break;
+        }
+    }
+
+    if(physicalDevice == VK_NULL_HANDLE){
+        qFatal("failed to find a suitable GPU!");
+    }
+
+}
+
+//03 判断设备是否可用
+bool VulkanTriangle::isDeviceSuitable(VkPhysicalDevice device) {
+    QueueFamilyIndices indices = findQueueFamilies(device);
+
+    return indices.isComplete();
+}
+
+//03 获取设备队列
+VulkanTriangle::QueueFamilyIndices VulkanTriangle::findQueueFamilies(
+    VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for(const auto & queueFamily : queueFamilies){
+        // 判断是否支持图形队列
+        if(queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT){
+            indices.graphicsFamily = i;
+        }
+
+        if(indices.isComplete()){
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+} 
+
+//04 创建逻辑设备
+void VulkanTriangle::createLogicalDevice(){
+    // 获取队列
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+    queueCreateInfo.queueCount = 1;
+
+    // 优先级
+    float queuePriority = 1.0f;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    // 创建逻辑设备
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.queueCreateInfoCount = 1;
+    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.enabledExtensionCount = 0;
+
+    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    createInfo.ppEnabledLayerNames = validationLayers.data();
+
+    if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS){
+        qFatal("failed to create logical device!");
+    }
+
+    // 获取队列
+    vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
+}
+
+//00 创建实例
 void VulkanTriangle::createInstance() {
     if (enableValidationLayers && !CheckValidationLayerSupport()) {
         qFatal("validation layers requested, but not available!");
@@ -751,6 +851,7 @@ void VulkanTriangle::createInstance() {
     VkInstanceCreateInfo creatInfo{};
     creatInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     creatInfo.pApplicationInfo = &appInfo;
+    creatInfo.flags = 0;
     
     //指定扩展
     auto extensionsVec = getRequiredExtensions();
