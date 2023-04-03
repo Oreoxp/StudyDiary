@@ -51,6 +51,15 @@ class VulkanTriangle : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
 public:
+struct QueueFamilyIndices {
+  int graphicsFamily = -1;
+
+  bool isComplete() {
+    return graphicsFamily >= 0;
+  }
+};
+
+public:
   void run();
   void initVulkan();
   void mainLoop();
@@ -60,6 +69,12 @@ private:
   bool CheckValidationLayerSupport();
   std::vector<const char*> getRequiredExtensions();
   void createInstance();
+
+  void pickPhysicalDevice();
+  bool isDeviceSuitable(VkPhysicalDevice device);
+  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+
+  void createLogicalDevice();
 
   void setupDebugMessenger();
   VkResult CreateDebugUtilsMessengerEXT(
@@ -76,5 +91,8 @@ private:
   VkDebugUtilsMessengerEXT callback;
   VkInstance vkinstance;
   QQuickWindow* m_window;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkDevice device;
+    VkQueue graphicsQueue;
 };
 #endif
