@@ -8,6 +8,7 @@
 #include <QVulkanInstance>
 #include <QVulkanFunctions>
 #include <QFile>
+#include <vulkan/vulkan.h>
 
 //SquircleRenderer 类：
 //    SquircleRenderer 类主要负责实现用于渲染squircle形状的Vulkan渲染过程。
@@ -161,7 +162,7 @@ void VulkanSquircle::sync()
         connect(window(), &QQuickWindow::beforeRenderPassRecording, m_renderer, &SquircleRenderer::mainPassRecordingStart, Qt::DirectConnection);
     }
     m_renderer->setViewportSize(window()->size() * window()->devicePixelRatio());
-    m_renderer->setT(m_t);
+    //m_renderer->setT(m_t);
     m_renderer->setWindow(window());
 }
 
@@ -274,6 +275,8 @@ static inline VkDeviceSize aligned(VkDeviceSize v, VkDeviceSize byteAlign)
 //始化SquircleRenderer类的Vulkan相关资源
 void SquircleRenderer::init(int framesInFlight)
 {
+    VulkanTriangle triangle{};
+    triangle.run();
     qDebug("init");
 
     Q_ASSERT(framesInFlight <= 3);
@@ -589,5 +592,187 @@ void SquircleRenderer::init(int framesInFlight)
     writeInfo.pBufferInfo = &bufInfo;
     m_devFuncs->vkUpdateDescriptorSets(m_dev, 1, &writeInfo, 0, nullptr);
 }
+
+
+
+
+const int WIDTH = 800;
+const int HEIGHT = 600;
+
+const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
+const bool enableValidationLayers = true;
+
+
+void VulkanTriangle::run() {
+    initVulkan();
+    mainLoop();
+    cleanup();
+}
+
+void VulkanTriangle::initVulkan() {
+    createInstance();
+    setupDebugMessenger();
+}
+
+void VulkanTriangle::mainLoop() {
+
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+              VkDebugUtilsMessageTypeFlagsEXT messageType,
+              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+              void* pUserData) {
+    qDebug() << "validation layer: " << pCallbackData->pMessage;
+    return VK_FALSE;
+}
+
+void VulkanTriangle::cleanup() {
+    vkDestroyInstance(vkinstance, nullptr);
+    DestroyDebugUtilsMessengerEXT(vkinstance, callback, nullptr);
+}
+
+bool VulkanTriangle::CheckValidationLayerSupport(){
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+        bool layerFound = false;
+
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+std::vector<const char*> VulkanTriangle::getRequiredExtensions() {
+    std::vector<const char*> charextensions;
+    // 查询可用扩展数量
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    // 为扩展名分配内存
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+
+    // 查询扩展详细信息
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount,
+                                           extensions.data());
+
+    // 打印所有可用扩展
+    for (const auto& extension : extensions) {
+        qDebug() << "\t" << extension.extensionName;
+    }
+
+    if (enableValidationLayers) {
+        charextensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+    return charextensions;
+}
+
+
+void VulkanTriangle::setupDebugMessenger() {
+    VkDebugUtilsMessengerCreateInfoEXT createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity =
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+    createInfo.pUserData = nullptr;  // Optional
+
+    if (CreateDebugUtilsMessengerEXT(vkinstance, &createInfo, nullptr,
+                                     &callback) != VK_SUCCESS) {
+        qFatal("failed to set up debug messenger!");
+    }
+}
+
+VkResult VulkanTriangle::CreateDebugUtilsMessengerEXT(
+    VkInstance instance,
+    const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkDebugUtilsMessengerEXT* pDebugMessenger) {
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void VulkanTriangle::DestroyDebugUtilsMessengerEXT(
+    VkInstance instance,
+    VkDebugUtilsMessengerEXT debugMessenger,
+    const VkAllocationCallbacks* pAllocator) {
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        func(instance, debugMessenger, pAllocator);
+    }
+}
+
+
+void VulkanTriangle::createInstance() {
+    if (enableValidationLayers && !CheckValidationLayerSupport()) {
+        qFatal("validation layers requested, but not available!");
+        return;
+    }
+    //    填写应用程序信息，这些信息的填写不是必须的，但填写的信
+    // 息可能会作为驱动程序的优化依据，让驱动程序进行一些特殊的优化。比
+    // 如，应用程序使用了某个引擎，驱动程序对这个引擎有一些特殊处理，这
+    // 时就可能有很大的优化提升
+    VkApplicationInfo appInfo{};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pEngineName = "NoEngine";
+    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.apiVersion = VK_API_VERSION_1_0;
+
+    // 告诉 Vulkan 的驱动程序需要使用的全局扩展和校验层
+    VkInstanceCreateInfo creatInfo{};
+    creatInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    creatInfo.pApplicationInfo = &appInfo;
+    
+    //指定扩展
+    auto extensionsVec = getRequiredExtensions();
+    creatInfo.enabledExtensionCount = static_cast<uint32_t>(extensionsVec.size());
+    creatInfo.ppEnabledExtensionNames = extensionsVec.data();
+
+
+    //指定校验层
+    if (enableValidationLayers) {
+        creatInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        creatInfo.ppEnabledLayerNames = validationLayers.data();
+    } else {
+        creatInfo.enabledLayerCount = 0;
+        creatInfo.ppEnabledLayerNames = nullptr;
+    }
+
+    //创建实例
+    VkResult result = vkCreateInstance(&creatInfo, nullptr, &vkinstance);
+    if (result != VK_SUCCESS) {
+        qFatal("failed to create instance!");
+    }
+}
+
 
 #include "vulkansquircle.moc"

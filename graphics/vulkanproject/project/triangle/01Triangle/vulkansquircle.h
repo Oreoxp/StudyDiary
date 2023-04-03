@@ -6,6 +6,7 @@
 
 #include <QtQuick/QQuickItem>
 #include <QtQuick/QQuickWindow>
+#include <vulkan/vulkan.h>
 
 class SquircleRenderer;
 
@@ -45,4 +46,35 @@ private:
     SquircleRenderer *m_renderer = nullptr;
 };
 
+
+class VulkanTriangle : public QQuickItem {
+    Q_OBJECT
+    QML_ELEMENT
+public:
+  void run();
+  void initVulkan();
+  void mainLoop();
+  void cleanup();
+
+private:
+  bool CheckValidationLayerSupport();
+  std::vector<const char*> getRequiredExtensions();
+  void createInstance();
+
+  void setupDebugMessenger();
+  VkResult CreateDebugUtilsMessengerEXT(
+      VkInstance instance,
+      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator,
+      VkDebugUtilsMessengerEXT* pDebugMessenger);
+  void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+                                     VkDebugUtilsMessengerEXT debugMessenger,
+                                     const VkAllocationCallbacks* pAllocator);
+
+
+ private:
+  VkDebugUtilsMessengerEXT callback;
+  VkInstance vkinstance;
+  QQuickWindow* m_window;
+};
 #endif
