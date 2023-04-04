@@ -50,49 +50,83 @@ private:
 class VulkanTriangle : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
-public:
-struct QueueFamilyIndices {
-  int graphicsFamily = -1;
+   public:
+    VulkanTriangle() = default;
 
-  bool isComplete() {
-    return graphicsFamily >= 0;
-  }
-};
+    struct QueueFamilyIndices {
+      int graphicsFamily = -1;
+      int presentFamily = -1;
 
-public:
-  void run();
-  void initVulkan();
-  void mainLoop();
-  void cleanup();
+      bool isComplete() { return graphicsFamily >= 0 && presentFamily >= 0; }
+    };
 
-private:
-  bool CheckValidationLayerSupport();
-  std::vector<const char*> getRequiredExtensions();
-  void createInstance();
+    struct SwapChainSupportDetails {
+      VkSurfaceCapabilitiesKHR capabilities;
+      std::vector<VkSurfaceFormatKHR> formats;
+      std::vector<VkPresentModeKHR> presentModes;
+    };
 
-  void pickPhysicalDevice();
-  bool isDeviceSuitable(VkPhysicalDevice device);
-  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+   public:
+    Q_INVOKABLE void run();
+    void initVulkan();
+    void mainLoop();
+    void cleanup();
 
-  void createLogicalDevice();
+   private:
+    bool CheckValidationLayerSupport();
+    std::vector<const char*> getRequiredExtensions();
+    void createInstance();
 
-  void setupDebugMessenger();
-  VkResult CreateDebugUtilsMessengerEXT(
-      VkInstance instance,
-      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-      const VkAllocationCallbacks* pAllocator,
-      VkDebugUtilsMessengerEXT* pDebugMessenger);
-  void DestroyDebugUtilsMessengerEXT(VkInstance instance,
-                                     VkDebugUtilsMessengerEXT debugMessenger,
-                                     const VkAllocationCallbacks* pAllocator);
+    void pickPhysicalDevice();
+    bool isDeviceSuitable(VkPhysicalDevice device);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
+    void createLogicalDevice();
 
- private:
-  VkDebugUtilsMessengerEXT callback;
-  VkInstance vkinstance;
-  QQuickWindow* m_window;
+    void createSurface();
+
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+        const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR chooseSwapPresentMode(
+        const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    void createSwapChain();
+
+    void setupDebugMessenger();
+    VkResult CreateDebugUtilsMessengerEXT(
+        VkInstance instance,
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkDebugUtilsMessengerEXT* pDebugMessenger);
+    void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+                                       VkDebugUtilsMessengerEXT debugMessenger,
+                                       const VkAllocationCallbacks* pAllocator);
+
+   private:
+    void itemChange(ItemChange change, const ItemChangeData& value) override {
+      if (change == ItemSceneChange && value.window) {
+        // This item has been added to a scene and is now associated with a
+        // window
+        run();
+      }
+
+      QQuickItem::itemChange(change, value);
+    }
+
+   private:
+    VkDebugUtilsMessengerEXT callback;
+    VkInstance vkinstance;
+    QQuickWindow* m_window;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
     VkQueue graphicsQueue;
+    VkSurfaceKHR surface;
+    VkQueue presentQueue;
+    VkSwapchainKHR swapChain;
+    std::vector<VkImage> swapChainImages;
+    VkFormat swapChainImageFormat;
+    VkExtent2D swapChainExtent;
 };
 #endif

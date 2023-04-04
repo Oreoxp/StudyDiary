@@ -4,15 +4,20 @@
 //! [1]
 import QtQuick
 import VulkanUnderQML
+import VulkanTriangle
 
 Item {
 
     width: 800
     height: 600
-
-    VulkanSquircle {
+    
+    VulkanTriangle {
+        id:vulkanTriangle;
         anchors.fill: parent
     }
+    //VulkanSquircle {
+    //    anchors.fill: parent
+    //}
 //! [1] //! [2]
     Rectangle {
         color: Qt.rgba(1, 1, 1, 0.7)
