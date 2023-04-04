@@ -9,6 +9,7 @@ int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
 
+    qmlRegisterType<VulkanTriangle>("VulkanTriangle", 1, 0, "VulkanTriangle");
     qmlRegisterType<VulkanSquircle>("VulkanUnderQML", 1, 0, "VulkanSquircle");
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
 
