@@ -14,6 +14,9 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
+#include <istream>
+#include <iostream>
+#include <fstream>
 
 //SquircleRenderer 类：
 //    SquircleRenderer 类主要负责实现用于渲染squircle形状的Vulkan渲染过程。
@@ -612,10 +615,29 @@ const std::vector<const char*> deviceExtensions = {
 
 const bool enableValidationLayers = true;
 
+VulkanTriangle::VulkanTriangle() {
+  connect(this, &QQuickItem::windowChanged, this,
+          &VulkanTriangle::handleWindowChanged);
+}
+
+void VulkanTriangle::handleWindowChanged(QQuickWindow* win) {
+  if (win) {
+     //run();
+    connect(window(), &QQuickWindow::beforeRendering, this,
+            &VulkanTriangle::run, Qt::QueuedConnection);
+    connect(window(), &QQuickWindow::beforeRenderPassRecording, this,
+            &VulkanTriangle::drawFrame, Qt::QueuedConnection);
+
+    // Ensure we start with cleared to black. The squircle's blend mode relies
+    // on this.
+    win->setColor(Qt::black);
+  }
+}
+
 void VulkanTriangle::run() {
     initVulkan();
-    mainLoop();
-    cleanup();
+    //mainLoop();
+    //cleanup();
 }
 
 void VulkanTriangle::initVulkan() {
@@ -625,13 +647,45 @@ void VulkanTriangle::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();  
+    createImageViews();
+    createRenderPass();
+    createGraphicsPipeline();
+    createFramebuffers();
+    createCommandPool();
+    createCommandBuffer();
+    createSemaphores();
+    createSyncObjects();
+    init_over_ = true;
 }
 
 void VulkanTriangle::mainLoop() {
-
+    //qml draw loop
+    while(1){
+        drawFrame();
+    }
 }
 
 void VulkanTriangle::cleanup() {
+    // 释放信号量
+    vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
+    vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
+    vkDestroyFence(device, inFlightFence, nullptr);
+    // 释放commandpool
+    vkDestroyCommandPool(device, commandPool, nullptr);
+    // 释放framebuffer
+    for (auto framebuffer : swapChainFramebuffers) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
+    // 释放pipeline
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    // 释放pipeline
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    // 释放renderpass
+    vkDestroyRenderPass(device, renderPass, nullptr);
+    // 释放imageview
+    for (auto imageView : swapChainImageViews) {
+        vkDestroyImageView(device, imageView, nullptr);
+    }
     vkDestroySwapchainKHR(device, swapChain, nullptr);
     vkDestroyDevice(device, nullptr);
     DestroyDebugUtilsMessengerEXT(vkinstance, callback, nullptr);
@@ -875,6 +929,7 @@ void VulkanTriangle::createLogicalDevice(){
 
     // 获取队列
     vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
+    vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
 }
 
 //05 创建表面
@@ -1038,10 +1093,8 @@ void VulkanTriangle::createSwapChain(){
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    }else{
+    } else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.queueFamilyIndexCount = 0; // Optional
-        createInfo.pQueueFamilyIndices = nullptr; // Optional
     }
 
     // 设置交换链的转换
@@ -1067,6 +1120,551 @@ void VulkanTriangle::createSwapChain(){
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
 }
+
+
+//07 创建图像视图
+void VulkanTriangle::createImageViews() {
+    swapChainImageViews.resize(swapChainImages.size());
+
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        VkImageViewCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        createInfo.image = swapChainImages[i];
+        // 设置图像视图的类型
+        // VK_IMAGE_VIEW_TYPE_1D：1D图像
+        // VK_IMAGE_VIEW_TYPE_2D：2D图像
+        // VK_IMAGE_VIEW_TYPE_3D：3D图像
+        // VK_IMAGE_VIEW_TYPE_CUBE：立方体图像
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = swapChainImageFormat;
+        // 设置图像视图的通道映射
+        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        // 设置图像视图的子资源范围
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+
+        if (vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
+            qFatal("failed to create image views!");
+        }
+    }
+}
+
+std::vector<char> readFile(const std::string& filename) {
+    // 以二进制方式打开文件
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        qFatal("failed to open file!");
+    }
+
+    // 获取文件大小
+    size_t fileSize = (size_t)file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    // 读取文件内容
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+
+    file.close();
+
+    return buffer;
+}
+
+//08 创建着色器模块
+VkShaderModule VulkanTriangle::createShaderModule(
+    const std::vector<char>& code) {
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+    VkShaderModule shaderModule;
+    if(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS){
+        qFatal("failed to create shader module!");
+    }
+
+    return shaderModule;
+}
+
+//08 创建渲染通道
+void VulkanTriangle::createGraphicsPipeline(){
+    // 读取着色器文件
+    auto vertShaderCode = readFile("./shader/triangle.vert.spv");
+    auto fragShaderCode = readFile("./shader/triangle.frag.spv");
+
+    // 创建着色器模块
+    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+    // 创建着色器阶段
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    // 设置着色器模块 
+    vertShaderStageInfo.module = vertShaderModule;
+    // 设置着色器入口函数  如果着色器模块中有多个入口函数，可以通过这个参数指定使用哪个入口函数
+    vertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+
+    // 设置着色器阶段
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+    // 设置顶点输入
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    // 设置顶点输入绑定
+    vertexInputInfo.vertexBindingDescriptionCount = 0;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+    // 设置顶点输入属性
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+    // 设置图元输入
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    // 设置图元拓扑
+    // VK_PRIMITIVE_TOPOLOGY_POINT_LIST：点列表
+    // VK_PRIMITIVE_TOPOLOGY_LINE_LIST：线列表
+    // VK_PRIMITIVE_TOPOLOGY_LINE_STRIP：线带
+    // VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST：三角形列表
+    // VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP：三角形带
+    // VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN：三角形扇
+    // ...
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    // 设置是否重用第一个顶点来构造后续的图元
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    // 设置视口
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)swapChainExtent.width;
+    viewport.height = (float)swapChainExtent.height;
+    // 设置深度范围
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    // 设置裁剪区域
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = swapChainExtent;
+
+    // 设置视口状态
+    VkPipelineViewportStateCreateInfo viewportState{};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    // 设置视口数量
+    viewportState.viewportCount = 1;
+    // 设置视口
+    viewportState.pViewports = &viewport;
+    // 设置裁剪区域数量
+    viewportState.scissorCount = 1;
+    // 设置裁剪区域
+    viewportState.pScissors = &scissor;
+
+    // 设置光栅化
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    // 设置是否开启多边形填充模式
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    // 设置是否开启线宽
+    rasterizer.lineWidth = 1.0f;
+    // 设置是否开启多边形背面剔除
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    // 设置是否开启多边形正面剔除
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    // 设置是否开启深度裁剪
+    rasterizer.depthClampEnable = VK_FALSE;
+    // 设置是否开启多边形偏移
+    rasterizer.depthBiasEnable = VK_FALSE;
+    // 设置多边形偏移系数
+    rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+    // 设置多边形偏移系数
+    rasterizer.depthBiasClamp = 0.0f; // Optional
+    // 设置多边形偏移系数
+    rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+
+    // 设置多重采样
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    // 设置采样数量
+    multisampling.sampleShadingEnable = VK_FALSE;
+    // 设置采样数量
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    // 设置采样数量
+    multisampling.minSampleShading = 1.0f; // Optional
+    // 设置采样掩码
+    multisampling.pSampleMask = nullptr; // Optional
+    // 设置是否开启多边形偏移
+    multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
+    // 设置是否开启多边形偏移
+    multisampling.alphaToOneEnable = VK_FALSE; // Optional
+
+
+    // 设置颜色混合
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+    
+    // 设置颜色混合状态
+    VkPipelineColorBlendStateCreateInfo colorBlending{};
+    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    // 设置是否开启颜色混合
+    colorBlending.logicOpEnable = VK_FALSE;
+    // 设置逻辑运算符
+    colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
+    // 设置混合附件数量
+    colorBlending.attachmentCount = 1;
+    // 设置混合附件
+    colorBlending.pAttachments = &colorBlendAttachment;
+    // 设置混合常量
+    colorBlending.blendConstants[0] = 0.0f; // Optional
+    colorBlending.blendConstants[1] = 0.0f; // Optional
+    colorBlending.blendConstants[2] = 0.0f; // Optional
+    colorBlending.blendConstants[3] = 0.0f; // Optional
+
+    // 设置动态状态
+    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
+                                      VK_DYNAMIC_STATE_SCISSOR};
+
+    // 设置动态状态
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    // 设置动态状态数量
+    dynamicState.dynamicStateCount = 2;
+    // 设置动态状态
+    dynamicState.pDynamicStates = dynamicStates;
+
+    // 设置管线布局
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    // 设置管线布局描述集数量
+    pipelineLayoutInfo.setLayoutCount = 0; // Optional
+    // 设置管线布局描述集
+    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+    // 设置管线布局推送常量数量
+    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+    // 设置管线布局推送常量
+    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+    
+    // 创建管线布局
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        qFatal("failed to create pipeline layout!");
+    }
+    
+    // 设置管线
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    // 设置管线阶段数量
+    pipelineInfo.stageCount = 2;
+    // 设置管线阶段
+    pipelineInfo.pStages = shaderStages;
+    // 设置顶点输入
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    // 设置输入拓扑
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    // 设置视口
+    pipelineInfo.pViewportState = &viewportState;
+    // 设置光栅化
+    pipelineInfo.pRasterizationState = &rasterizer;
+    // 设置多重采样
+    pipelineInfo.pMultisampleState = &multisampling;
+    // 设置颜色混合
+    pipelineInfo.pColorBlendState = &colorBlending;
+    // 设置动态状态
+    pipelineInfo.pDynamicState = &dynamicState;
+    // 设置管线布局
+    pipelineInfo.layout = pipelineLayout;
+    // 设置渲染通道
+    pipelineInfo.renderPass = renderPass;
+    // 设置子通道索引
+    pipelineInfo.subpass = 0;
+    // 设置基础管线
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+    // 设置基础管线索引
+    pipelineInfo.basePipelineIndex = -1; // Optional
+
+    // 创建管线
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+        qFatal("failed to create graphics pipeline!");
+    }
+
+
+    // 销毁着色器模块
+    vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+}
+
+//09 创建渲染通道
+void VulkanTriangle::createRenderPass(){
+    // 设置颜色附件
+    VkAttachmentDescription colorAttachment{};
+    // 设置颜色附件格式
+    colorAttachment.format = swapChainImageFormat;
+    // 设置颜色附件采样数量
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    // 设置颜色附件加载操作
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    // 设置颜色附件存储操作
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    // 设置颜色附件模板加载操作
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    // 设置颜色附件模板存储操作
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    // 设置颜色附件初始布局
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    // 设置颜色附件最终布局
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    // 设置引用颜色附件
+    VkAttachmentReference colorAttachmentRef{};
+    // 设置引用颜色附件索引
+    colorAttachmentRef.attachment = 0;
+    // 设置引用颜色附件布局
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    // 设置子通道
+    VkSubpassDescription subpass{};
+    // 设置子通道标志
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    // 设置子通道颜色附件数量
+    subpass.colorAttachmentCount = 1;
+    // 设置子通道颜色附件
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    // 设置渲染通道创建信息
+    VkRenderPassCreateInfo renderPassInfo{};
+    // 设置渲染通道结构体类型
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    // 设置渲染通道颜色附件数量
+    renderPassInfo.attachmentCount = 1;
+    // 设置渲染通道颜色附件
+    renderPassInfo.pAttachments = &colorAttachment;
+    // 设置渲染通道子通道数量
+    renderPassInfo.subpassCount = 1;
+    // 设置渲染通道子通道
+    renderPassInfo.pSubpasses = &subpass;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    // 创建渲染通道
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+        qFatal("failed to create render pass!");
+    }
+}
+
+const int MAX_FRAMES_IN_FLIGHT = 2;
+
+//10 创建帧缓冲
+void VulkanTriangle::createFramebuffers() {
+  swapChainFramebuffers.resize(swapChainImageViews.size());
+
+  for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+    VkImageView attachments[] = {swapChainImageViews[i]};
+
+    VkFramebufferCreateInfo framebufferInfo{};
+    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.renderPass = renderPass;
+    framebufferInfo.attachmentCount = 1;
+    framebufferInfo.pAttachments = attachments;
+    framebufferInfo.width = swapChainExtent.width;
+    framebufferInfo.height = swapChainExtent.height;
+    framebufferInfo.layers = 1;
+
+    if (vkCreateFramebuffer(device, &framebufferInfo, nullptr,
+                            &swapChainFramebuffers[i]) != VK_SUCCESS) {
+      qFatal("failed to create framebuffer!");
+    }
+  }
+}
+
+//11 创建命令池
+void VulkanTriangle::createCommandPool() {
+    // 设置队列族索引
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+
+    // 设置命令池创建信息
+    VkCommandPoolCreateInfo poolInfo{};
+    // 设置命令池结构体类型
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    // 设置命令池队列族索引
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+    // 设置命令池标志
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+    // 创建命令池
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+        qFatal("failed to create command pool!");
+    }
+}
+
+//12 创建命令缓冲
+void VulkanTriangle::createCommandBuffer(){
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS) {
+      qFatal("failed to allocate command buffers!");
+    }
+}
+
+void VulkanTriangle::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+      qFatal("failed to begin recording command buffer!");
+    }
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = swapChainExtent;
+
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float) swapChainExtent.width;
+        viewport.height = (float) swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+    vkCmdEndRenderPass(commandBuffer);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+      qFatal("failed to record command buffer!");
+    }
+}
+//13 创建同步对象
+void VulkanTriangle::createSemaphores(){
+    // 设置信号量创建信息
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    // 设置信号量结构体类型
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    // 创建信号量
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS) {
+
+        qFatal("failed to create semaphores!");
+    }
+}
+
+void VulkanTriangle::createSyncObjects() {
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
+        vkCreateFence(device, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
+      qFatal("failed to create synchronization objects for a frame!");
+    }
+
+}
+//14 绘制帧
+void VulkanTriangle::drawFrame() {
+  if (!init_over_) {
+    return;
+  }
+  window()->beginExternalCommands();
+  vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+  vkResetFences(device, 1, &inFlightFence);
+  uint32_t imageIndex;
+  vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore,
+                        VK_NULL_HANDLE, &imageIndex);
+
+  vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+  recordCommandBuffer(commandBuffer, imageIndex);
+
+  VkSubmitInfo submitInfo{};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+  VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+  VkPipelineStageFlags waitStages[] = {
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  submitInfo.waitSemaphoreCount = 1;
+  submitInfo.pWaitSemaphores = waitSemaphores;
+  submitInfo.pWaitDstStageMask = waitStages;
+
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &commandBuffer;
+
+  VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+  submitInfo.signalSemaphoreCount = 1;
+  submitInfo.pSignalSemaphores = signalSemaphores;
+
+  if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) !=
+      VK_SUCCESS) {
+    qFatal("failed to submit draw command buffer!");
+  }
+
+  VkPresentInfoKHR presentInfo{};
+  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+  presentInfo.waitSemaphoreCount = 1;
+  presentInfo.pWaitSemaphores = signalSemaphores;
+
+  VkSwapchainKHR swapChains[] = {swapChain};
+  presentInfo.swapchainCount = 1;
+  presentInfo.pSwapchains = swapChains;
+
+  presentInfo.pImageIndices = &imageIndex;
+
+  vkQueuePresentKHR(presentQueue, &presentInfo);
+  window()->endExternalCommands();
+}
+
 
 //00 创建实例
 void VulkanTriangle::createInstance() {

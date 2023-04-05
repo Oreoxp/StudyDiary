@@ -11,14 +11,15 @@ Item {
     width: 800
     height: 600
     
+
+     VulkanSquircle {
+         anchors.fill: parent
+     }    
     VulkanTriangle {
         id:vulkanTriangle;
         anchors.fill: parent
     }
-    //VulkanSquircle {
-    //    anchors.fill: parent
-    //}
-//! [1] //! [2]
+//!  [1] //! [2]
     Rectangle {
         color: Qt.rgba(1, 1, 1, 0.7)
         radius: 10
