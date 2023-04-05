@@ -51,7 +51,7 @@ class VulkanTriangle : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
    public:
-    VulkanTriangle() = default;
+    VulkanTriangle();
 
     struct QueueFamilyIndices {
       int graphicsFamily = -1;
@@ -66,6 +66,8 @@ class VulkanTriangle : public QQuickItem {
       std::vector<VkPresentModeKHR> presentModes;
     };
 
+   private slots:
+    void handleWindowChanged(QQuickWindow* win);
    public:
     Q_INVOKABLE void run();
     void initVulkan();
@@ -94,6 +96,25 @@ class VulkanTriangle : public QQuickItem {
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void createSwapChain();
 
+    void createImageViews();
+
+    void createGraphicsPipeline();
+    VkShaderModule createShaderModule(const std::vector<char>& code);
+
+    void createRenderPass();
+
+    void createFramebuffers();
+
+    void createCommandPool();
+
+    void createCommandBuffer();
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+    void drawFrame();
+
+    void createSemaphores();
+    void createSyncObjects();
+
     void setupDebugMessenger();
     VkResult CreateDebugUtilsMessengerEXT(
         VkInstance instance,
@@ -109,7 +130,11 @@ class VulkanTriangle : public QQuickItem {
       if (change == ItemSceneChange && value.window) {
         // This item has been added to a scene and is now associated with a
         // window
-        run();
+        //run();
+        //connect(window(), &QQuickWindow::beforeRendering, this,
+        //        &VulkanTriangle::run, Qt::DirectConnection);
+        //connect(window(), &QQuickWindow::beforeRenderPassRecording, this,
+        //        &VulkanTriangle::drawFrame, Qt::QueuedConnection);
       }
 
       QQuickItem::itemChange(change, value);
@@ -128,5 +153,16 @@ class VulkanTriangle : public QQuickItem {
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
+    std::vector<VkImageView> swapChainImageViews;
+    VkRenderPass renderPass;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline graphicsPipeline;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+    VkCommandPool commandPool;
+    VkCommandBuffer commandBuffer;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
+    bool init_over_ = false;
 };
 #endif
