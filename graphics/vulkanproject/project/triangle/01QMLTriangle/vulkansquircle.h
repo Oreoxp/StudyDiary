@@ -116,6 +116,8 @@ class VulkanTriangle : public QQuickItem {
     void createSyncObjects();
 
     void setupDebugMessenger();
+    void populateDebugMessengerCreateInfo(
+        VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     VkResult CreateDebugUtilsMessengerEXT(
         VkInstance instance,
         const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,

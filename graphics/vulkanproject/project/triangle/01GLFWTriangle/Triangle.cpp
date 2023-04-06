@@ -18,20 +18,20 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
+//设置最大同时运行帧数
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
+//需要的验证层
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"};
 
+//需要的设备扩展
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
 const bool enableValidationLayers = true;
-#endif
 
+//创建调试信息
 VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -46,6 +46,7 @@ VkResult CreateDebugUtilsMessengerEXT(
   }
 }
 
+//销毁调试信息
 void DestroyDebugUtilsMessengerEXT(VkInstance instance,
                                    VkDebugUtilsMessengerEXT debugMessenger,
                                    const VkAllocationCallbacks* pAllocator) {
@@ -56,18 +57,24 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
   }
 }
 
+//定义了队列族的索引，包含了图形队列和呈现队列
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
   std::optional<uint32_t> presentFamily;
 
+  //检查是否有图形队列和呈现队列
   bool isComplete() {
     return graphicsFamily.has_value() && presentFamily.has_value();
   }
 };
 
+//交换链支持的详细信息
 struct SwapChainSupportDetails {
+  //交换链的能力
   VkSurfaceCapabilitiesKHR capabilities;
+  //交换链支持的像素格式
   std::vector<VkSurfaceFormatKHR> formats;
+  //交换链支持的呈现模式
   std::vector<VkPresentModeKHR> presentModes;
 };
 
@@ -83,48 +90,76 @@ class HelloTriangleApplication {
  private:
   GLFWwindow* window;
 
+  //Vulkan实例
   VkInstance instance;
+  //调试信息
   VkDebugUtilsMessengerEXT debugMessenger;
+  //呈现表面
   VkSurfaceKHR surface;
 
+  //物理设备
   VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
   VkDevice device;
 
+  //图形队列和呈现队列
   VkQueue graphicsQueue;
   VkQueue presentQueue;
 
+  //交换链
   VkSwapchainKHR swapChain;
+  //交换链中的图像
   std::vector<VkImage> swapChainImages;
+  //交换链中的图像格式
   VkFormat swapChainImageFormat;
+  //交换链中的图像大小
   VkExtent2D swapChainExtent;
+  //交换链中的图像视图
   std::vector<VkImageView> swapChainImageViews;
+  //交换链中的帧缓冲
   std::vector<VkFramebuffer> swapChainFramebuffers;
 
+  //渲染通道
   VkRenderPass renderPass;
+  //图形管线布局
   VkPipelineLayout pipelineLayout;
+  //图形管线
   VkPipeline graphicsPipeline;
 
+  //命令池
   VkCommandPool commandPool;
+  //命令缓冲
   VkCommandBuffer commandBuffer;
 
+  //信号量
   VkSemaphore imageAvailableSemaphore;
   VkSemaphore renderFinishedSemaphore;
+  //栅栏
   VkFence inFlightFence;
 
+  //初始化窗口
   void initWindow() {
     glfwInit();
 
+    //不创建OpenGL上下文
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    //禁止窗口缩放
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
+    //创建窗口
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
   }
 
+  //初始化Vulkan
   void initVulkan() {
+    //创建Vulkan实例
     createInstance();
+    //设置调试信息
     setupDebugMessenger();
+    //创建呈现表面
     createSurface();
+    //选择物理设备
     pickPhysicalDevice();
+    //创建逻辑设备
     createLogicalDevice();
     createSwapChain();
     createImageViews();
@@ -180,41 +215,42 @@ class HelloTriangleApplication {
   }
 
   void createInstance() {
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
+    //检查是否有可用的验证层
+    if (!checkValidationLayerSupport()) {
       throw std::runtime_error(
           "validation layers requested, but not available!");
     }
 
+    //应用程序信息
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Hello Triangle";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    //Vulkan API版本
     appInfo.apiVersion = VK_API_VERSION_1_0;
 
+    //实例信息
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
 
+    //获取并启用扩展信息
     auto extensions = getRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
+    //启用验证层
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers) {
-      createInfo.enabledLayerCount =
-          static_cast<uint32_t>(validationLayers.size());
-      createInfo.ppEnabledLayerNames = validationLayers.data();
+    createInfo.enabledLayerCount =
+        static_cast<uint32_t>(validationLayers.size());
+    createInfo.ppEnabledLayerNames = validationLayers.data();
 
-      populateDebugMessengerCreateInfo(debugCreateInfo);
-      createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-    } else {
-      createInfo.enabledLayerCount = 0;
+    populateDebugMessengerCreateInfo(debugCreateInfo);
+    createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 
-      createInfo.pNext = nullptr;
-    }
-
+    //创建Vulkan实例
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
       throw std::runtime_error("failed to create instance!");
     }
@@ -248,6 +284,7 @@ class HelloTriangleApplication {
   }
 
   void createSurface() {
+    //使用GLFW创建呈现表面
     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) !=
         VK_SUCCESS) {
       throw std::runtime_error("failed to create window surface!");
@@ -255,6 +292,7 @@ class HelloTriangleApplication {
   }
 
   void pickPhysicalDevice() {
+    //获取可用的物理设备数量
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -262,9 +300,11 @@ class HelloTriangleApplication {
       throw std::runtime_error("failed to find GPUs with Vulkan support!");
     }
 
+    //加载可用的物理设备
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
+    //选择合适的物理设备
     for (const auto& device : devices) {
       if (isDeviceSuitable(device)) {
         physicalDevice = device;
@@ -278,13 +318,29 @@ class HelloTriangleApplication {
   }
 
   void createLogicalDevice() {
+    //    为选定的物理设备（例如 GPU）创建一个逻辑设备。逻辑设备是一个抽象，
+    //它表示物理设备上的资源和操作的抽象。创建逻辑设备后，可以使用它来分配内
+    //存、创建管道等
+
+    //    为了使用逻辑设备，必须指定要使用的队列族。队列族是一组队列，它们
+    //在同一时间执行相同类型的操作。例如，图形队列族通常用于执行图形操作，
+    //而计算队列族通常用于执行计算操作。在 Vulkan 中，队列族是设备级别的概念，
+    //因此必须在逻辑设备创建时指定。在创建逻辑设备时，必须指定要使用的队列族
+    //的数量和优先级。优先级用于确定在同一队列族中的多个队列之间分配工作的方式。
+
+    //    获取队列族(用于图形和呈现操作)
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
+    //存储队列创建信息结构
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    //存储唯一的队列族索引,不是顺序存储，是单个存储
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
                                               indices.presentFamily.value()};
 
+    //定义队列优先级
     float queuePriority = 1.0f;
+    //    遍历 uniqueQueueFamilies 集合中的每个队列族索引，然后为每个索引创建
+    //一个 VkDeviceQueueCreateInfo 结构并将其添加到 queueCreateInfos 向量中
     for (uint32_t queueFamily : uniqueQueueFamilies) {
       VkDeviceQueueCreateInfo queueCreateInfo{};
       queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -294,35 +350,43 @@ class HelloTriangleApplication {
       queueCreateInfos.push_back(queueCreateInfo);
     }
 
+    //    创建一个 VkPhysicalDeviceFeatures 结构，用于指定所需的物理设备特性。在此
+    //示例中，我们没有启用任何特定特性。
     VkPhysicalDeviceFeatures deviceFeatures{};
 
+    //    创建逻辑设备
     VkDeviceCreateInfo createInfo{};
+    // 设置结构类型。
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
+    // 设置队列创建信息结构的数量和数据指针。
     createInfo.queueCreateInfoCount =
         static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
+
+    //设置启用的设备特性指针。
     createInfo.pEnabledFeatures = &deviceFeatures;
 
+    //设置启用的设备扩展数量和名称。
     createInfo.enabledExtensionCount =
         static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    if (enableValidationLayers) {
-      createInfo.enabledLayerCount =
-          static_cast<uint32_t>(validationLayers.size());
-      createInfo.ppEnabledLayerNames = validationLayers.data();
-    } else {
-      createInfo.enabledLayerCount = 0;
-    }
+    //设置启用的验证层数量和名称
+    createInfo.enabledLayerCount =
+        static_cast<uint32_t>(validationLayers.size());
+    createInfo.ppEnabledLayerNames = validationLayers.data();
 
+    //    创建逻辑设备
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) !=
         VK_SUCCESS) {
       throw std::runtime_error("failed to create logical device!");
     }
 
+    // 获取图形队列句柄，并将其存储在 graphicsQueue 变量中。
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+    // 获取显示队列句柄，并将其存储在 presentQueue 变量中。
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
   }
 
@@ -799,39 +863,59 @@ class HelloTriangleApplication {
   }
 
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
+    //    查询给定物理设备（如 GPU）对交换链的支持。交换链是一种用于在
+    //渲染管道中高效显示图像的技术，通过在内存中的多个图像之间切换来提高性能和减少画面撕裂。
+
+    //   交换链的支持包括以下内容：
+    //    1.支持的像素格式
+    //    2.支持的显示模式
+    //    3.交换链图像的最大和最小尺寸
     SwapChainSupportDetails details;
 
+    //   查询交换链的基本功能，这些能力包括最小/最大图像数量、图像宽度/高度范围等。
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface,
                                               &details.capabilities);
 
+    //   查询表面格式的数量
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
                                          nullptr);
 
+    // 如果表面格式的数量大于 0，那么就获取表面格式的详细信息。
     if (formatCount != 0) {
       details.formats.resize(formatCount);
+    //   再次调用 vkGetPhysicalDeviceSurfaceFormatsKHR 函数，以填充实际的表面格式数据。
       vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
                                            details.formats.data());
     }
 
+    //   查询表面支持的显示模式的数量。
     uint32_t presentModeCount;
     vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface,
                                               &presentModeCount, nullptr);
-
+    //  如果表面支持的显示模式的数量大于 0，那么就获取表面支持的显示模式的详细信息。
     if (presentModeCount != 0) {
       details.presentModes.resize(presentModeCount);
+    //   再次调用 vkGetPhysicalDeviceSurfacePresentModesKHR 函数，以填充实际的表面支持的显示模式数据。
       vkGetPhysicalDeviceSurfacePresentModesKHR(
           device, surface, &presentModeCount, details.presentModes.data());
     }
 
+    //   返回查询到的交换链支持的详细信息。
     return details;
   }
 
   bool isDeviceSuitable(VkPhysicalDevice device) {
+    //    查询物理设备支持的队列族。队列族是执行特定类型操作的队列的集合，
+    //例如图形渲染或计算操作。这里获取的 indices 对象将包含设备上可用的
+    //图形和显示队列族的索引。
     QueueFamilyIndices indices = findQueueFamilies(device);
 
+    //    检查设备扩展是否可用。这里检查的是设备扩展，而不是实例扩展。
+    //与检查实例层类似，我们需要列出我们需要的扩展并检查它们是否可用。
     bool extensionsSupported = checkDeviceExtensionSupport(device);
 
+    //    检查交换链是否满足要求。我们需要确保交换链至少支持一个图像格式和一个呈现模式。
     bool swapChainAdequate = false;
     if (extensionsSupported) {
       SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
@@ -839,10 +923,16 @@ class HelloTriangleApplication {
                           !swapChainSupport.presentModes.empty();
     }
 
+    //    检查设备是否满足我们的需求。这里我们检查的是设备是否具有足够的功能来运行我们的应用程序。
+    //我们需要确保设备至少支持一个图形队列族和一个呈现队列族。
+    //我们还需要确保设备支持交换链所需的扩展。
+    //最后，我们需要确保交换链支持至少一个图像格式和一个呈现模式。
     return indices.isComplete() && extensionsSupported && swapChainAdequate;
   }
 
   bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    //这个函数检查device是否支持我们需要的扩展。我们需要列出我们需要的扩展并检查它们是否可用。
+
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
                                          nullptr);
@@ -864,20 +954,30 @@ class HelloTriangleApplication {
   QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
     QueueFamilyIndices indices;
 
+    //   获取物理设备的队列族数量
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
                                              nullptr);
 
+    //获取物理设备的队列族属性
+
+    // VkQueueFamilyProperties 结构体。这个结构体包含了关于队列族的信息，例如：
+    //队列个数（queueCount）：队列族中的队列数量。
+    //队列功能（queueFlags）：表明队列支持的操作，如图形、计算和传输等。
+    //时间戳有效位宽度（timestampValidBits）：队列族支持的时间戳的有效位宽。
+    //图像传输操作限制（minImageTransferGranularity）：队列族支持的最小图像传输操作粒度。
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
                                              queueFamilies.data());
 
+    //遍历队列族，找到支持VK_QUEUE_GRAPHICS_BIT的队列族
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
       if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
         indices.graphicsFamily = i;
       }
 
+      //检查队列族是否支持present操作
       VkBool32 presentSupport = false;
       vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
