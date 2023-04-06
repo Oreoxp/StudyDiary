@@ -1665,51 +1665,61 @@ void VulkanTriangle::drawFrame() {
   window()->endExternalCommands();
 }
 
+void VulkanTriangle::populateDebugMessengerCreateInfo(
+    VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+  createInfo = {};
+  createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+  createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+  createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+  createInfo.pfnUserCallback = debugCallback;
+}
 
 //00 创建实例
 void VulkanTriangle::createInstance() {
-    if (enableValidationLayers && !CheckValidationLayerSupport()) {
-        qFatal("validation layers requested, but not available!");
-        return;
-    }
-    //    填写应用程序信息，这些信息的填写不是必须的，但填写的信
-    // 息可能会作为驱动程序的优化依据，让驱动程序进行一些特殊的优化。比
-    // 如，应用程序使用了某个引擎，驱动程序对这个引擎有一些特殊处理，这
-    // 时就可能有很大的优化提升
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "NoEngine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+  if (enableValidationLayers && !CheckValidationLayerSupport()) {
+    qFatal("validation layers requested, but not available!");
+    return;
+  }
+  //    填写应用程序信息，这些信息的填写不是必须的，但填写的信
+  // 息可能会作为驱动程序的优化依据，让驱动程序进行一些特殊的优化。比
+  // 如，应用程序使用了某个引擎，驱动程序对这个引擎有一些特殊处理，这
+  // 时就可能有很大的优化提升
+  VkApplicationInfo appInfo{};
+  appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+  appInfo.pApplicationName = "Hello Triangle";
+  appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+  appInfo.pEngineName = "NoEngine";
+  appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+  appInfo.apiVersion = VK_API_VERSION_1_0;
 
-    // 告诉 Vulkan 的驱动程序需要使用的全局扩展和校验层
-    VkInstanceCreateInfo creatInfo{};
-    creatInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    creatInfo.pApplicationInfo = &appInfo;
-    creatInfo.flags = 0;
-    
-    //指定扩展
-    auto extensionsVec = getRequiredExtensions();
-    creatInfo.enabledExtensionCount = static_cast<uint32_t>(extensionsVec.size());
-    creatInfo.ppEnabledExtensionNames = extensionsVec.data();
+  // 告诉 Vulkan 的驱动程序需要使用的全局扩展和校验层
+  VkInstanceCreateInfo creatInfo{};
+  creatInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+  creatInfo.pApplicationInfo = &appInfo;
+  creatInfo.flags = 0;
 
+  // 指定扩展
+  auto extensionsVec = getRequiredExtensions();
+  creatInfo.enabledExtensionCount = static_cast<uint32_t>(extensionsVec.size());
+  creatInfo.ppEnabledExtensionNames = extensionsVec.data();
 
-    //指定校验层
-    if (enableValidationLayers) {
-        creatInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        creatInfo.ppEnabledLayerNames = validationLayers.data();
-    } else {
-        creatInfo.enabledLayerCount = 0;
-        creatInfo.ppEnabledLayerNames = nullptr;
-    }
+  // 指定校验层
+  VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+  creatInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+  creatInfo.ppEnabledLayerNames = validationLayers.data();
 
-    //创建实例
-    VkResult result = vkCreateInstance(&creatInfo, nullptr, &vkinstance);
-    if (result != VK_SUCCESS) {
-        qFatal("failed to create instance!");
-    }
+  populateDebugMessengerCreateInfo(debugCreateInfo);
+  creatInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+
+  // 创建实例
+  VkResult result = vkCreateInstance(&creatInfo, nullptr, &vkinstance);
+  if (result != VK_SUCCESS) {
+    qFatal("failed to create instance!");
+  }
 }
 
 
