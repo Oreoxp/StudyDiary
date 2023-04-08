@@ -79,10 +79,15 @@ void HelloTriangleApplication::initVulkan() {
   createImageViews();
   // 创建渲染通道
   createRenderPass();
+  // 创建图形管线
   createGraphicsPipeline();
+  // 创建帧缓冲
   createFramebuffers();
+  // 创建命令池
   createCommandPool();
+  // 创建命令缓冲
   createCommandBuffer();
+  // 创建信号量
   createSyncObjects();
 }
 
@@ -483,12 +488,17 @@ void HelloTriangleApplication::createRenderPass() {
 }
 
 void HelloTriangleApplication::createGraphicsPipeline() {
+  //    创建图形管线（Graphics Pipeline）。在Vulkan中，图形管线是一个用于定义如何
+  //进行渲染操作的对象。它包含了诸多渲染过程中涉及的状态和配置信息，例如着色器模块、
+  //视口状态、光栅化状态、颜色混合状态等。
   auto vertShaderCode = readFile("shader/triangle.vert.spv");
   auto fragShaderCode = readFile("shader/triangle.frag.spv");
 
+  //  使用着色器代码创建着色器模块（Shader Module）。
   VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
   VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
 
+  //为顶点和片段着色器设置管线阶段信息。
   VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
   vertShaderStageInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -506,23 +516,27 @@ void HelloTriangleApplication::createGraphicsPipeline() {
   VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
                                                     fragShaderStageInfo};
 
+  //设置顶点的输入状态
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
   vertexInputInfo.sType =
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
   vertexInputInfo.vertexBindingDescriptionCount = 0;
   vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
+  //设置输入装配状态
   VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
   inputAssembly.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
   inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   inputAssembly.primitiveRestartEnable = VK_FALSE;
 
+  //设置视口状态
   VkPipelineViewportStateCreateInfo viewportState{};
   viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewportState.viewportCount = 1;
   viewportState.scissorCount = 1;
 
+  //设置光栅化状态
   VkPipelineRasterizationStateCreateInfo rasterizer{};
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.depthClampEnable = VK_FALSE;
@@ -533,12 +547,14 @@ void HelloTriangleApplication::createGraphicsPipeline() {
   rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
+  //设置多重采样状态
   VkPipelineMultisampleStateCreateInfo multisampling{};
   multisampling.sType =
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
+  //设置颜色混合状态
   VkPipelineColorBlendAttachmentState colorBlendAttachment{};
   colorBlendAttachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -564,6 +580,7 @@ void HelloTriangleApplication::createGraphicsPipeline() {
   dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
   dynamicState.pDynamicStates = dynamicStates.data();
 
+  //设置管线布局，它描述着色器使用的资源布局，例如描述符集、推送常量等。
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount = 0;
@@ -574,6 +591,8 @@ void HelloTriangleApplication::createGraphicsPipeline() {
     throw std::runtime_error("failed to create pipeline layout!");
   }
 
+  //    创建图形管线，这一步将前面准备好的各种状态和信息整合在一起。同时指定
+  //管线所属的渲染通道（Render Pass）和子通道（Subpass）。
   VkGraphicsPipelineCreateInfo pipelineInfo{};
   pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
   pipelineInfo.stageCount = 2;
@@ -600,11 +619,18 @@ void HelloTriangleApplication::createGraphicsPipeline() {
 }
 
 void HelloTriangleApplication::createFramebuffers() {
+  //    为交换链中的每个图像创建一个帧缓冲对象。帧缓冲对象将渲染过程中
+  //生成的图像与渲染通道（Render Pass）关联起来，以便在渲染过程中使用。
   swapChainFramebuffers.resize(swapChainImageViews.size());
 
+  //遍历交换链中的每个图像视图，为其创建帧缓冲对象。
   for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+    //将当前图像视图添加到帧缓冲对象的附件列表中。
     VkImageView attachments[] = {swapChainImageViews[i]};
 
+    //  创建一个VkFramebufferCreateInfo结构，并填充相关信息，包括渲染通
+    //道、附件数量和类型（在本例中为交换链图像视图）、帧缓冲的宽度和高度以
+    //及层数。
     VkFramebufferCreateInfo framebufferInfo{};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferInfo.renderPass = renderPass;
@@ -614,6 +640,7 @@ void HelloTriangleApplication::createFramebuffers() {
     framebufferInfo.height = swapChainExtent.height;
     framebufferInfo.layers = 1;
 
+    //使用vkCreateFramebuffer函数创建帧缓冲对象，并将其存储在swapChainFramebuffers数组中。
     if (vkCreateFramebuffer(device, &framebufferInfo, nullptr,
                             &swapChainFramebuffers[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create framebuffer!");
@@ -622,13 +649,39 @@ void HelloTriangleApplication::createFramebuffers() {
 }
 
 void HelloTriangleApplication::createCommandPool() {
+  //    在 Vulkan 应用程序中创建一个命令池。命令池是一个存储命令缓冲区的容器，这些命令缓冲区
+  //用于记录渲染和计算操作。在这个例子中，我们正在创建一个与图形队列族关联的命令池。
+
+  //    命令池在Vulkan中具有重要作用，它们主要用于管理和分配命令缓冲区。命令缓冲区用于存储要
+  //在GPU上执行的命令序列，例如绘制操作、缓冲区更新、图像布局转换等。在Vulkan中，许多操作都
+  //通过命令缓冲区完成，因此命令池在整个渲染过程中扮演着关键角色。
+
+  //    命令池的主要功能和含义如下：
+  //  分配命令缓冲区：命令池负责为命令缓冲区分配内存。当需要一个新的命令缓冲区时，可以从命令
+  //池中分配一个。这种方法允许Vulkan实现对内存的高效管理，从而提高性能。
+  //  与特定队列族关联：每个命令池都与特定的队列族关联。这意味着从该命令池分配的命令缓冲区只
+  //能在与之关联的队列族中提交执行。这样做有助于确保正确的内存类型和访问模式，从而提高性能。
+  //  重置命令缓冲区：命令池允许在不重新分配内存的情况下重置其关联的命令缓冲区，这有助于减少
+  //内存分配和释放操作的开销，提高效率。通过重置命令缓冲区，我们可以在后续帧中重用它们，而无
+  //需为每一帧创建新的命令缓冲区。
+  //  线程局部存储：命令池可以为每个线程分配独立的命令缓冲区，从而实现多线程渲染。这样可以确
+  //保多个线程同时处理渲染任务，而不会相互干扰，从而提高渲染速度。
+  
+  //    总之，命令池在Vulkan中主要负责分配、管理和重置命令缓冲区，与特定队列族关联，并支持多
+  //线程渲染。这些功能有助于提高渲染性能、降低内存管理开销，并确保正确的资源访问模式。
+  
   QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
+  //定义一个结构，用于指定创建命令池所需的参数。
   VkCommandPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  //设置命令池的创建标志。在这里，我们使用 VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT，
+  //以允许单个命令缓冲区在已经提交给队列之后被重置，而不是在整个命令池被重置时才能重置。
   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  //设置命令池所关联的队列族索引。在这个例子中，我们使用图形队列族的索引。
   poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
+  //创建命令池。
   if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create command pool!");
@@ -636,10 +689,17 @@ void HelloTriangleApplication::createCommandPool() {
 }
 
 void HelloTriangleApplication::createCommandBuffer() {
+  //  命令缓冲区用于记录将要提交到设备队列执行的命令。这段代码中的函数创建了一个
+  //主要级别（primary level）的命令缓冲区。
+
+  //初始化 VkCommandBufferAllocateInfo 结构，它用于指定命令缓冲区的分配信息。
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  //设置命令池。在这个例子中，我们使用的是之前创建的命令池。
   allocInfo.commandPool = commandPool;
+  //设置命令缓冲区的级别。在这个例子中，我们使用的是主要级别的命令缓冲区。
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  //设置命令缓冲区的数量。在这个例子中，我们只需要一个命令缓冲区。
   allocInfo.commandBufferCount = 1;
 
   if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) !=
@@ -651,6 +711,8 @@ void HelloTriangleApplication::createCommandBuffer() {
 void HelloTriangleApplication::recordCommandBuffer(
     VkCommandBuffer commandBuffer,
     uint32_t imageIndex) {
+  //    命令缓冲区包含了绘制一个三角形所需的所有命令。该函数接受两个参数：一个 VkCommandBuffer 
+  //对象和一个 imageIndex，分别表示要记录的命令缓冲区和要绘制到的交换链图像的索引。
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -658,6 +720,8 @@ void HelloTriangleApplication::recordCommandBuffer(
     throw std::runtime_error("failed to begin recording command buffer!");
   }
 
+  //  初始化 VkRenderPassBeginInfo 结构，用于指定渲染通道的开始信息，包括渲染通道对象、
+  //帧缓冲区、渲染区域等。
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   renderPassInfo.renderPass = renderPass;
@@ -665,16 +729,20 @@ void HelloTriangleApplication::recordCommandBuffer(
   renderPassInfo.renderArea.offset = {0, 0};
   renderPassInfo.renderArea.extent = swapChainExtent;
 
+  //设置清除颜色
   VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
   renderPassInfo.clearValueCount = 1;
   renderPassInfo.pClearValues = &clearColor;
 
+  //使用 vkCmdBeginRenderPass 命令开始渲染通道。
   vkCmdBeginRenderPass(commandBuffer, &renderPassInfo,
                        VK_SUBPASS_CONTENTS_INLINE);
 
+  //使用 vkCmdBindPipeline 命令绑定之前创建的图形管线。
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     graphicsPipeline);
 
+  //设置视口（VkViewport）并使用 vkCmdSetViewport 命令将其应用到命令缓冲区。
   VkViewport viewport{};
   viewport.x = 0.0f;
   viewport.y = 0.0f;
@@ -684,21 +752,27 @@ void HelloTriangleApplication::recordCommandBuffer(
   viewport.maxDepth = 1.0f;
   vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
+  //设置剪裁矩形（VkRect2D），并使用 vkCmdSetScissor 命令将其应用到命令缓冲区。
   VkRect2D scissor{};
   scissor.offset = {0, 0};
   scissor.extent = swapChainExtent;
   vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+  //使用 vkCmdDraw 命令执行绘制操作。这里绘制一个三角形，所以顶点数量为3，实例数量为1。
   vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
+  //使用 vkCmdEndRenderPass 命令结束渲染通道。
   vkCmdEndRenderPass(commandBuffer);
 
+  //使用 vkEndCommandBuffer 函数结束命令缓冲区的记录。
   if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
   }
 }
 
 void HelloTriangleApplication::createSyncObjects() {
+  //  创建同步对象，包括信号量（semaphores）和栅栏（fences）。在 Vulkan 中，同步对象
+  //主要用于确保渲染操作按照正确的顺序执行，以及避免资源冲突和竞争条件。
   VkSemaphoreCreateInfo semaphoreInfo{};
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -706,6 +780,14 @@ void HelloTriangleApplication::createSyncObjects() {
   fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+  //  imageAvailableSemaphore：这个信号量用于确保图像在提交给渲染队列之前已经准备好了。
+  //它通常用于同步图像的获取操作和渲染操作之间的顺序。
+
+  //  renderFinishedSemaphore：这个信号量用于确保渲染操作完成后，图像才能进行显示。它通
+  //常用于同步渲染操作和图像显示操作之间的顺序。
+
+  //  inFlightFence：这个栅栏用于确保当前帧的渲染操作已经完成，才能开始下一帧的渲染。
+  //栅栏主要用于同步 CPU 和 GPU 之间的操作。
   if (vkCreateSemaphore(device, &semaphoreInfo, nullptr,
                         &imageAvailableSemaphore) != VK_SUCCESS ||
       vkCreateSemaphore(device, &semaphoreInfo, nullptr,
@@ -718,16 +800,28 @@ void HelloTriangleApplication::createSyncObjects() {
 }
 
 void HelloTriangleApplication::drawFrame() {
+  // 该函数会执行渲染过程的各个阶段，并确保它们正确地同步。
+
+  //    等待之前提交的渲染操作完成。这里使用 vkWaitForFences 函数等待栅栏
+  //信号，以确保 GPU 不会在前一个帧的渲染操作仍在进行时开始新的渲染操作。
   vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
   vkResetFences(device, 1, &inFlightFence);
 
+  //   使用 vkAcquireNextImageKHR 函数获取交换链中的下一个可用图像。该函数
+  //使用 imageAvailableSemaphore 信号量来确保图像准备就绪。
   uint32_t imageIndex;
   vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore,
                         VK_NULL_HANDLE, &imageIndex);
 
+  //    重置命令缓冲区，以便重新记录渲染命令。然后使用 recordCommandBuffer
+  //函数记录渲染命令。
   vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
   recordCommandBuffer(commandBuffer, imageIndex);
 
+  //    使用 vkQueueSubmit 函数将渲染命令提交给图形队列。这个函数需要指定等
+  //待信号量（imageAvailableSemaphore）、等待阶段
+  //（VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT）、命令缓冲区和信号信
+  //号量（renderFinishedSemaphore）。
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -750,6 +844,9 @@ void HelloTriangleApplication::drawFrame() {
     throw std::runtime_error("failed to submit draw command buffer!");
   }
 
+  //    在渲染完成后，使用 vkQueuePresentKHR 函数将渲染结果显示到屏幕上。
+  //这个函数需要等待 renderFinishedSemaphore 信号量，以确保在 GPU 完成
+  //渲染操作后才呈现结果。
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
