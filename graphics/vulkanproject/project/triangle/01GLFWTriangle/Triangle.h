@@ -41,54 +41,8 @@ class HelloTriangleApplication {
  public:
   void run();
 
- private:
-  GLFWwindow* window;
 
-  //Vulkan实例
-  VkInstance instance;
-  //调试信息
-  VkDebugUtilsMessengerEXT debugMessenger;
-  //呈现表面
-  VkSurfaceKHR surface;
-
-  //物理设备
-  VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-  VkDevice device;
-
-  //图形队列和呈现队列
-  VkQueue graphicsQueue;
-  VkQueue presentQueue;
-
-  //交换链
-  VkSwapchainKHR swapChain;
-  //交换链中的图像
-  std::vector<VkImage> swapChainImages;
-  //交换链中的图像格式
-  VkFormat swapChainImageFormat;
-  //交换链中的图像大小
-  VkExtent2D swapChainExtent;
-  //交换链中的图像视图
-  std::vector<VkImageView> swapChainImageViews;
-  //交换链中的帧缓冲
-  std::vector<VkFramebuffer> swapChainFramebuffers;
-
-  //渲染通道
-  VkRenderPass renderPass;
-  //图形管线布局
-  VkPipelineLayout pipelineLayout;
-  //图形管线
-  VkPipeline graphicsPipeline;
-
-  //命令池
-  VkCommandPool commandPool;
-  //命令缓冲
-  VkCommandBuffer commandBuffer;
-
-  //信号量
-  VkSemaphore imageAvailableSemaphore;
-  VkSemaphore renderFinishedSemaphore;
-  //栅栏
-  VkFence inFlightFence;
+private:
 
   //初始化窗口
   void initWindow();
@@ -99,6 +53,8 @@ class HelloTriangleApplication {
   void mainLoop();
 
   void cleanup();
+  
+  void cleanupSwapChain();
 
   void createInstance();
 
@@ -162,4 +118,59 @@ class HelloTriangleApplication {
                 VkDebugUtilsMessageTypeFlagsEXT messageType,
                 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                 void* pUserData);
+
+  void reCreateSwapChain();
+
+  static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
+ private:
+  GLFWwindow* window;
+
+  //Vulkan实例
+  VkInstance instance;
+  //调试信息
+  VkDebugUtilsMessengerEXT debugMessenger;
+  //呈现表面
+  VkSurfaceKHR surface;
+
+  //物理设备
+  VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+  VkDevice device;
+
+  //图形队列和呈现队列
+  VkQueue graphicsQueue;
+  VkQueue presentQueue;
+
+  //交换链
+  VkSwapchainKHR swapChain;
+  //交换链中的图像
+  std::vector<VkImage> swapChainImages;
+  //交换链中的图像格式
+  VkFormat swapChainImageFormat;
+  //交换链中的图像大小
+  VkExtent2D swapChainExtent;
+  //交换链中的图像视图
+  std::vector<VkImageView> swapChainImageViews;
+  //交换链中的帧缓冲
+  std::vector<VkFramebuffer> swapChainFramebuffers;
+
+  //渲染通道
+  VkRenderPass renderPass;
+  //图形管线布局
+  VkPipelineLayout pipelineLayout;
+  //图形管线
+  VkPipeline graphicsPipeline;
+
+  //命令池
+  VkCommandPool commandPool;
+  //命令缓冲
+  VkCommandBuffer commandBuffer;
+
+  //信号量
+  VkSemaphore imageAvailableSemaphore;
+  VkSemaphore renderFinishedSemaphore;
+  //栅栏
+  VkFence inFlightFence;
+
+  bool framebufferResized = false;
 };
