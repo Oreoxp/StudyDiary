@@ -54,11 +54,18 @@ void HelloTriangleApplication::initWindow() {
 
   // 不创建OpenGL上下文
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  // 禁止窗口缩放
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
   // 创建窗口
   window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+
+  // 设置窗口大小修改回调函数
+  glfwSetWindowUserPointer(window, this);
+  glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+}
+
+void HelloTriangleApplication::framebufferResizeCallback(GLFWwindow* window, int width, int height){
+  auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+  app->framebufferResized = true;
 }
 
 // 初始化Vulkan
@@ -101,25 +108,19 @@ void HelloTriangleApplication::mainLoop() {
 }
 
 void HelloTriangleApplication::cleanup() {
+  cleanupSwapChain();
+
+  vkDestroyPipeline(device, graphicsPipeline, nullptr);
+  vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+  vkDestroyRenderPass(device, renderPass, nullptr);
+
   vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
   vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
   vkDestroyFence(device, inFlightFence, nullptr);
 
   vkDestroyCommandPool(device, commandPool, nullptr);
 
-  for (auto framebuffer : swapChainFramebuffers) {
-    vkDestroyFramebuffer(device, framebuffer, nullptr);
-  }
-
-  vkDestroyPipeline(device, graphicsPipeline, nullptr);
-  vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-  vkDestroyRenderPass(device, renderPass, nullptr);
-
-  for (auto imageView : swapChainImageViews) {
-    vkDestroyImageView(device, imageView, nullptr);
-  }
-
-  vkDestroySwapchainKHR(device, swapChain, nullptr);
   vkDestroyDevice(device, nullptr);
 
   if (enableValidationLayers) {
@@ -132,6 +133,18 @@ void HelloTriangleApplication::cleanup() {
   glfwDestroyWindow(window);
 
   glfwTerminate();
+}
+
+void HelloTriangleApplication::cleanupSwapChain() {
+  for (auto framebuffer : swapChainFramebuffers) {
+    vkDestroyFramebuffer(device, framebuffer, nullptr);
+  }
+
+  for (auto imageView : swapChainImageViews) {
+    vkDestroyImageView(device, imageView, nullptr);
+  }
+
+  vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
 void HelloTriangleApplication::createInstance() {
@@ -800,18 +813,31 @@ void HelloTriangleApplication::createSyncObjects() {
 }
 
 void HelloTriangleApplication::drawFrame() {
+
   // 该函数会执行渲染过程的各个阶段，并确保它们正确地同步。
 
   //    等待之前提交的渲染操作完成。这里使用 vkWaitForFences 函数等待栅栏
   //信号，以确保 GPU 不会在前一个帧的渲染操作仍在进行时开始新的渲染操作。
   vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-  vkResetFences(device, 1, &inFlightFence);
-
+  uint32_t imageIndex;
   //   使用 vkAcquireNextImageKHR 函数获取交换链中的下一个可用图像。该函数
   //使用 imageAvailableSemaphore 信号量来确保图像准备就绪。
-  uint32_t imageIndex;
-  vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore,
-                        VK_NULL_HANDLE, &imageIndex);
+  VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX,
+                                          imageAvailableSemaphore,
+                                          VK_NULL_HANDLE, &imageIndex);
+  //    如果窗口大小发生变化，交换链将变得无效。在这种情况下，需要重新创建交换链。
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    reCreateSwapChain();
+    return;
+  } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    //    如果 vkAcquireNextImageKHR 函数返回 VK_ERROR_OUT_OF_DATE_KHR 错误，
+    //则交换链已经过时，需要重新创建交换链。如果返回 VK_SUBOPTIMAL_KHR 错误，
+    //则交换链仍然可用，但是不再完全符合预期。
+    throw std::runtime_error("failed to acquire swap chain image!");
+  }
+  
+
+  vkResetFences(device, 1, &inFlightFence);
 
   //    重置命令缓冲区，以便重新记录渲染命令。然后使用 recordCommandBuffer
   //函数记录渲染命令。
@@ -859,7 +885,46 @@ void HelloTriangleApplication::drawFrame() {
 
   presentInfo.pImageIndices = &imageIndex;
 
-  vkQueuePresentKHR(presentQueue, &presentInfo);
+  result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+  //    如果窗口大小发生变化，交换链将变得无效。在这种情况下，需要重新创建交换链。
+  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
+      framebufferResized) {
+    framebufferResized = false;
+    reCreateSwapChain();
+  } else if (result != VK_SUCCESS) {
+  //    如果 vkQueuePresentKHR 函数返回 VK_ERROR_OUT_OF_DATE_KHR 错误，
+  //则交换链已经过时，需要重新创建交换链。如果返回 VK_SUBOPTIMAL_KHR 错误，
+  //则交换链仍然可用，但是不再完全符合预期。
+    throw std::runtime_error("failed to present swap chain image!");
+  }
+}
+
+void HelloTriangleApplication::reCreateSwapChain() {
+  int width = 0, height = 0;
+  glfwGetFramebufferSize(window, &width, &height);
+  while (width == 0 || height == 0) {
+    glfwGetFramebufferSize(window, &width, &height);
+    glfwWaitEvents();
+  }
+
+  // 1. 等待设备空闲
+  vkDeviceWaitIdle(device);
+
+  // 2. 释放交换链相关资源
+  cleanupSwapChain();
+
+  // 3. 重新创建交换链
+  //我们重新创建了交换
+  //链。图形视图是直接依赖于交换链图像的，所以也需要被重建图像视图。渲
+  //染流程依赖于交换链图像的格式，虽然像窗口大小改变不会引起使用的交
+  //换链图像格式改变，但我们还是应该对它进行处理。视口和裁剪矩形在管
+  //线创建时被指定，窗口大小改变，这些设置也需要修改，所以我们也需要
+  //重建管线。实际上，我们可以通过使用动态状态来设置视口和裁剪矩形来
+  //避免重建管线。帧缓冲和指令缓冲直接依赖于交换链图像，也需要重建。
+  createSwapChain();
+  createImageViews();
+  createFramebuffers();
 }
 
 VkShaderModule HelloTriangleApplication::createShaderModule(
@@ -903,8 +968,7 @@ VkPresentModeKHR HelloTriangleApplication::chooseSwapPresentMode(
 
 VkExtent2D HelloTriangleApplication::chooseSwapExtent(
     const VkSurfaceCapabilitiesKHR& capabilities) {
-  if (capabilities.currentExtent.width !=
-      std::numeric_limits<uint32_t>::max()) {
+  if (capabilities.currentExtent.width != UINT32_MAX) {
     return capabilities.currentExtent;
   } else {
     int width, height;
@@ -913,12 +977,12 @@ VkExtent2D HelloTriangleApplication::chooseSwapExtent(
     VkExtent2D actualExtent = {static_cast<uint32_t>(width),
                                static_cast<uint32_t>(height)};
 
-    actualExtent.width =
-        std::clamp(actualExtent.width, capabilities.minImageExtent.width,
-                   capabilities.maxImageExtent.width);
-    actualExtent.height =
-        std::clamp(actualExtent.height, capabilities.minImageExtent.height,
-                   capabilities.maxImageExtent.height);
+    actualExtent.width = std::max(
+        capabilities.minImageExtent.width,
+        std::min(capabilities.maxImageExtent.width, actualExtent.width));
+    actualExtent.height = std::max(
+        capabilities.minImageExtent.height,
+        std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
     return actualExtent;
   }
