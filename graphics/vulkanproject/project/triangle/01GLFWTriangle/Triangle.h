@@ -29,6 +29,13 @@ struct QueueFamilyIndices {
   }
 };
 
+//MVP矩阵
+struct UniformBufferObject {
+  glm::mat4 model;
+  glm::mat4 view;
+  glm::mat4 proj;
+};
+
 //交换链支持的详细信息
 struct SwapChainSupportDetails {
   //交换链的能力
@@ -177,6 +184,12 @@ private:
 
  void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) ;
 
+ void createDescriptorSetLayout();
+
+  void createUniformBuffers();
+
+  void updateUniformBuffer(uint32_t currentImage);
+
  static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
  private:
@@ -220,13 +233,13 @@ private:
   //命令池
   VkCommandPool commandPool;
   //命令缓冲
-  VkCommandBuffer commandBuffer;
+  std::vector<VkCommandBuffer> commandBuffers;
 
   //信号量
-  VkSemaphore imageAvailableSemaphore;
-  VkSemaphore renderFinishedSemaphore;
+  std::vector<VkSemaphore> imageAvailableSemaphores;
+  std::vector<VkSemaphore> renderFinishedSemaphores;
   //栅栏
-  VkFence inFlightFence;
+  std::vector<VkFence> inFlightFences;
 
   bool framebufferResized = false;
 
@@ -235,4 +248,11 @@ private:
 
   VkDeviceMemory vertexBufferMemory;
   VkDeviceMemory indexBufferMemory;
+
+  VkDescriptorSetLayout descriptorSetLayout;
+  
+  std::vector<VkBuffer> uniformBuffers;
+  std::vector<VkDeviceMemory> uniformBuffersMemory;
+  std::vector<void*> uniformBuffersMapped;
+  uint32_t currentFrame = 0;
 };

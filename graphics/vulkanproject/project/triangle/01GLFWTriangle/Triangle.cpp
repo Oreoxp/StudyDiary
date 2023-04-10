@@ -1,4 +1,9 @@
 ﻿#include "Triangle.h"
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -97,6 +102,8 @@ void HelloTriangleApplication::initVulkan() {
   createImageViews();
   // 创建渲染通道
   createRenderPass();
+  // 创建描述集布局
+  createDescriptorSetLayout();
   // 创建图形管线
   createGraphicsPipeline();
   // 创建帧缓冲
@@ -107,6 +114,8 @@ void HelloTriangleApplication::initVulkan() {
   createVertexBuffer();
   // 创建索引缓冲
   createIndexBuffer();
+  // 创建统一缓冲
+  createUniformBuffers();
   // 创建命令缓冲
   createCommandBuffer();
   // 创建信号量
@@ -125,6 +134,13 @@ void HelloTriangleApplication::mainLoop() {
 void HelloTriangleApplication::cleanup() {
   cleanupSwapChain();
 
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      vkDestroyBuffer(device, uniformBuffers[i], nullptr);
+      vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+  }
+
+  vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
   vkDestroyBuffer(device, vertexBuffer, nullptr);
   vkFreeMemory(device, vertexBufferMemory, nullptr);
 
@@ -136,9 +152,11 @@ void HelloTriangleApplication::cleanup() {
 
   vkDestroyRenderPass(device, renderPass, nullptr);
 
-  vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
-  vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
-  vkDestroyFence(device, inFlightFence, nullptr);
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+      vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+      vkDestroyFence(device, inFlightFences[i], nullptr);
+  }
 
   vkDestroyCommandPool(device, commandPool, nullptr);
 
@@ -632,8 +650,8 @@ void HelloTriangleApplication::createGraphicsPipeline() {
   //设置管线布局，它描述着色器使用的资源布局，例如描述符集、推送常量等。
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 0;
-  pipelineLayoutInfo.pushConstantRangeCount = 0;
+  pipelineLayoutInfo.setLayoutCount = 1;
+  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
   if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
                              &pipelineLayout) != VK_SUCCESS) {
@@ -845,6 +863,68 @@ void HelloTriangleApplication::createIndexBuffer(){
   vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
  }
 
+void HelloTriangleApplication::createDescriptorSetLayout() {
+  VkDescriptorSetLayoutBinding uboLayoutBinding{};
+  //   1.绑定点：这是一个32位无符号整数，用于标识绑定的描述符。这个值可以用来访问描述符数组中的元素。
+  uboLayoutBinding.binding = 0;
+  //   2.描述符类型：这是一个VkDescriptorType值，用于指定描述符的类型。
+  uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  //   3.描述符数量：这是一个无符号整数，指定了描述符数组中的描述符数量。如果我们想要使用一个描述符数组，
+  uboLayoutBinding.descriptorCount = 1;
+
+  //   4.着色器阶段：这是一个VkShaderStageFlags掩码，指定了哪些着色器阶段可以访问描述符。
+  //   我们可以使用VK_SHADER_STAGE_VERTEX_BIT和VK_SHADER_STAGE_FRAGMENT_BIT来指定顶点和片段着色器。
+  uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  //   5.描述符绑定：这是一个VkSampler对象的数组，用于指定描述符中使用的纹理采样器。如果描述符不是一个纹理描述符，
+  //   这个值应该被忽略。
+  uboLayoutBinding.pImmutableSamplers = nullptr;
+
+  VkDescriptorSetLayoutCreateInfo layoutInfo{};
+  layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layoutInfo.bindingCount = 1;
+  layoutInfo.pBindings = &uboLayoutBinding;
+
+  if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
+                                  &descriptorSetLayout) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor set layout!");
+  }
+}
+
+
+void HelloTriangleApplication::createUniformBuffers() {
+  VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+  uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+  uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+  uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 uniformBuffers[i], uniformBuffersMemory[i]);
+
+    vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0,
+                &uniformBuffersMapped[i]);
+  }
+}
+
+void HelloTriangleApplication::updateUniformBuffer(uint32_t currentImage) {
+  static auto startTime = std::chrono::high_resolution_clock::now();
+  auto currentTime = std::chrono::high_resolution_clock::now();
+  float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+  UniformBufferObject ubo{};
+  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                         glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+  //    由于我们使用的是右手坐标系，因此需要将Y轴翻转。
+  ubo.proj[1][1] *= -1;
+
+  //将uniform buffer object中的数据复制到当前的uniform buffer中
+  memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+}
 
 uint32_t HelloTriangleApplication::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties){
   //    在Vulkan中，内存是通过VkDeviceMemory对象来表示的。这些对象并不直接代表物理内存，而
@@ -901,6 +981,7 @@ void HelloTriangleApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlag
 }
 
 void HelloTriangleApplication::createCommandBuffer() {
+  commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
   //  命令缓冲区用于记录将要提交到设备队列执行的命令。这段代码中的函数创建了一个
   //主要级别（primary level）的命令缓冲区。
 
@@ -912,9 +993,9 @@ void HelloTriangleApplication::createCommandBuffer() {
   //设置命令缓冲区的级别。在这个例子中，我们使用的是主要级别的命令缓冲区。
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   //设置命令缓冲区的数量。在这个例子中，我们只需要一个命令缓冲区。
-  allocInfo.commandBufferCount = 1;
+  allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
-  if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) !=
+  if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to allocate command buffers!");
   }
@@ -996,6 +1077,9 @@ void HelloTriangleApplication::recordCommandBuffer(
 }
 
 void HelloTriangleApplication::createSyncObjects() {
+  imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+  renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+  inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
   //  创建同步对象，包括信号量（semaphores）和栅栏（fences）。在 Vulkan 中，同步对象
   //主要用于确保渲染操作按照正确的顺序执行，以及避免资源冲突和竞争条件。
   VkSemaphoreCreateInfo semaphoreInfo{};
@@ -1013,30 +1097,29 @@ void HelloTriangleApplication::createSyncObjects() {
 
   //  inFlightFence：这个栅栏用于确保当前帧的渲染操作已经完成，才能开始下一帧的渲染。
   //栅栏主要用于同步 CPU 和 GPU 之间的操作。
-  if (vkCreateSemaphore(device, &semaphoreInfo, nullptr,
-                        &imageAvailableSemaphore) != VK_SUCCESS ||
-      vkCreateSemaphore(device, &semaphoreInfo, nullptr,
-                        &renderFinishedSemaphore) != VK_SUCCESS ||
-      vkCreateFence(device, &fenceInfo, nullptr, &inFlightFence) !=
-          VK_SUCCESS) {
-    throw std::runtime_error(
-        "failed to create synchronization objects for a frame!");
+
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+          vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+          vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+          throw std::runtime_error("failed to create synchronization objects for a frame!");
+      }
   }
 }
 
 void HelloTriangleApplication::drawFrame() {
-
+  vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
   // 该函数会执行渲染过程的各个阶段，并确保它们正确地同步。
 
   //    等待之前提交的渲染操作完成。这里使用 vkWaitForFences 函数等待栅栏
   //信号，以确保 GPU 不会在前一个帧的渲染操作仍在进行时开始新的渲染操作。
-  vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+  vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
+                  UINT64_MAX);
   uint32_t imageIndex;
   //   使用 vkAcquireNextImageKHR 函数获取交换链中的下一个可用图像。该函数
   //使用 imageAvailableSemaphore 信号量来确保图像准备就绪。
-  VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX,
-                                          imageAvailableSemaphore,
-                                          VK_NULL_HANDLE, &imageIndex);
+  VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, 
+                      imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
   //    如果窗口大小发生变化，交换链将变得无效。在这种情况下，需要重新创建交换链。
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
     reCreateSwapChain();
@@ -1048,13 +1131,17 @@ void HelloTriangleApplication::drawFrame() {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
   
+  //更新 Uniform 缓冲区
+  updateUniformBuffer(currentFrame);
 
-  vkResetFences(device, 1, &inFlightFence);
+  vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
   //    重置命令缓冲区，以便重新记录渲染命令。然后使用 recordCommandBuffer
   //函数记录渲染命令。
-  vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-  recordCommandBuffer(commandBuffer, imageIndex);
+  vkResetCommandBuffer(commandBuffers[currentFrame],
+                       /*VkCommandBufferResetFlagBits*/ 0);
+  recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+
 
   //    使用 vkQueueSubmit 函数将渲染命令提交给图形队列。这个函数需要指定等
   //待信号量（imageAvailableSemaphore）、等待阶段
@@ -1063,7 +1150,7 @@ void HelloTriangleApplication::drawFrame() {
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-  VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+  VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
   VkPipelineStageFlags waitStages[] = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   submitInfo.waitSemaphoreCount = 1;
@@ -1071,13 +1158,14 @@ void HelloTriangleApplication::drawFrame() {
   submitInfo.pWaitDstStageMask = waitStages;
 
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &commandBuffer;
+  submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
-  VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+  VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
-  if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) !=
+  if (vkQueueSubmit(graphicsQueue, 1, &submitInfo,
+                    inFlightFences[currentFrame]) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer!");
   }
@@ -1110,6 +1198,7 @@ void HelloTriangleApplication::drawFrame() {
   //则交换链仍然可用，但是不再完全符合预期。
     throw std::runtime_error("failed to present swap chain image!");
   }
+  currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void HelloTriangleApplication::reCreateSwapChain() {
