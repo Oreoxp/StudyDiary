@@ -12,8 +12,10 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
+#include <array>
 #include <optional>
 #include <vulkan\vulkan.h>
+#include <glm/glm.hpp>
 
 
 //定义了队列族的索引，包含了图形队列和呈现队列
@@ -35,6 +37,48 @@ struct SwapChainSupportDetails {
   std::vector<VkSurfaceFormatKHR> formats;
   //交换链支持的呈现模式
   std::vector<VkPresentModeKHR> presentModes;
+};
+
+struct Vertex {
+  glm::vec2 pos;
+  glm::vec3 color;
+
+  static VkVertexInputBindingDescription getBindingDescription() {
+    VkVertexInputBindingDescription bindingDescription{};
+    bindingDescription.binding = 0;
+    bindingDescription.stride = sizeof(Vertex);
+    //VK_VERTEX_INPUT_RATE_VERTEX: 每个顶点之后移动到下一个数据输入
+    //VK_VERTEX_INPUT_RATE_INSTANCE: 每个实例之后移动到下一个数据输入
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    return bindingDescription;
+  }
+  
+  static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+    //位置属性
+    //binding: 告诉Vulkan每个顶点数据来自哪个绑定(binding)
+    //location: 告诉Vulkan在着色器中的哪个位置(location)读取顶点数据
+    //format: 告诉Vulkan如何解析顶点数据
+    //    vec2：VK_FORMAT_R32G32_SINT，32位带符号整数的2组分量向量
+    //    uvec4：VK_FORMAT_R32G32B32A32_UINT，32位无符号整数的4组分量向量
+    //    double：VK_FORMAT_R64_SFLOAT，双精度（64位）浮点数
+    //offset: 参数隐含定义了属性数据的字节大小，offset参数指定从每个顶点数据开始的字节数，要读取
+    //的字节数。绑定一次加载一个Vertex，位置属性（pos）在此结构的开头偏移量为0字节。这是使用
+    //offsetof宏自动计算的。
+    attributeDescriptions[0].binding = 0;
+    attributeDescriptions[0].location = 0;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+    attributeDescriptions[0].offset = offsetof(Vertex, pos);
+    //颜色属性
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+
+    return attributeDescriptions;
+  }
 };
 
 class HelloTriangleApplication {
@@ -121,6 +165,10 @@ private:
 
   void reCreateSwapChain();
 
+  void createVertexBuffer();
+
+  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
   static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
  private:
@@ -173,4 +221,8 @@ private:
   VkFence inFlightFence;
 
   bool framebufferResized = false;
+
+  VkBuffer vertexBuffer;
+
+  VkDeviceMemory vertexBufferMemory;
 };
