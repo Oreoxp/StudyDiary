@@ -16,9 +16,16 @@ const std::vector<const char*> deviceExtensions = {
 
 const bool enableValidationLayers = true;
 
-const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-                                      {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                      {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+const std::vector<Vertex> vertices = {
+{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+0, 1, 2, 2, 3, 0
+};
 
 // 创建调试信息
 VkResult CreateDebugUtilsMessengerEXT(
@@ -98,6 +105,8 @@ void HelloTriangleApplication::initVulkan() {
   createCommandPool();
   // 创建顶点缓冲
   createVertexBuffer();
+  // 创建索引缓冲
+  createIndexBuffer();
   // 创建命令缓冲
   createCommandBuffer();
   // 创建信号量
@@ -115,8 +124,13 @@ void HelloTriangleApplication::mainLoop() {
 
 void HelloTriangleApplication::cleanup() {
   cleanupSwapChain();
+
   vkDestroyBuffer(device, vertexBuffer, nullptr);
   vkFreeMemory(device, vertexBufferMemory, nullptr);
+
+  vkDestroyBuffer(device, indexBuffer, nullptr);
+  vkFreeMemory(device, indexBufferMemory, nullptr);
+
   vkDestroyPipeline(device, graphicsPipeline, nullptr);
   vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
@@ -727,52 +741,25 @@ void HelloTriangleApplication::createCommandPool() {
 void HelloTriangleApplication::createVertexBuffer(){
   //    顶点缓冲区是一块内存，用于存储顶点数据。在这个例子中，我们将使用它来存储三角形的顶点
   //数据。顶点缓冲区的创建过程如下：
-  //  1.创建一个缓冲区对象。
-  VkBufferCreateInfo bufferInfo{};
-  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  bufferInfo.size = 4 + sizeof(vertices[0]) * vertices.size();
-  //设置缓冲区的用途。在这个例子中，我们将使用它来存储顶点数据。
-  bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-  //设置缓冲区的共享模式。在这个例子中，我们将使用它来存储顶点数据。
-  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+ 
+  VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-  //创建缓冲区对象。
-  if (vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to create vertex buffer!");
-  }
-
-  //    2.分配内存。
-  VkMemoryRequirements memRequirements;
-  vkGetBufferMemoryRequirements(device, vertexBuffer, &memRequirements);
-
-  VkMemoryAllocateInfo allocInfo{};
-  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  //设置内存分配的大小。在这个例子中，我们将使用它来存储顶点数据。
-  allocInfo.allocationSize = bufferInfo.size;
-  //设置内存分配的类型。在这个例子中，我们将使用它来存储顶点数据。
-  allocInfo.memoryTypeIndex = findMemoryType(
-      memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-  //分配内存。
-  if (vkAllocateMemory(device, &allocInfo, nullptr, &vertexBufferMemory) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate vertex buffer memory!");
-  }
-
-  //    3.将缓冲区与内存绑定。
-  vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+  VkBuffer stagingBuffer;
+  VkDeviceMemory stagingBufferMemory;
+  createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+               stagingBuffer, stagingBufferMemory);
 
   //    4.将顶点数据复制到缓冲区中。
   void *data;
   //将缓冲区的内存映射到CPU可访问的内存中。
   //这个函数允许我们访问由偏移量和大小定义的指定内存资源的一部分。这里的偏移和大小分别为0和bufferInfo.size。
   //也可以指定特殊值VK_WHOLE_SIZE来映射所有内存。倒数第二个参数可以用于指定标志，但是在当前的API中还没有可
-  //用的标志。必须将其设置为值0。最后一个参数指定映射内存的指针的输出。
-  vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-  //将顶点数据复制到缓冲区中。
-  memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+  // 用的标志。必须将其设置为值0。最后一个参数指定映射内存的指针的输出。
+  vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+  // 将顶点数据复制到缓冲区中。
+  memcpy(data, vertices.data(), (size_t)bufferSize);
 
   //现在只需将顶点数据复制到映射内存中，并使用vkUnmapMemory再次取消映射。不幸的是，驱动程序可能不会立即将数
   //据复制到缓冲区内存中，例如由于缓存。还可能写入缓冲区的内容尚未在映射内存中可见。有两种方法可以解决这个问题：
@@ -783,9 +770,80 @@ void HelloTriangleApplication::createVertexBuffer(){
 
   //刷新内存范围或使用一致性内存堆意味着驱动程序将知道我们对缓冲区的写入，但这并不意味着它们已经在GPU上可见。
   //数据传输到GPU是在后台完成的操作，规范只告诉我们，它保证在下一次调用vkQueueSubmit时完成。
-  //取消内存映射。
-  vkUnmapMemory(device, vertexBufferMemory);
+  // 取消内存映射。
+  vkUnmapMemory(device, stagingBufferMemory);
+
+  //我们将使用两个新的缓冲区用途标志：
+  //  VK_BUFFER_USAGE_TRANSFER_SRC_BIT：缓冲区可用作内存传输操作的源。
+  //  VK_BUFFER_USAGE_TRANSFER_DST_BIT：缓冲区可用作内存传输操作的目标。
+  createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+                         , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+
+  // 从暂存缓冲区复制顶点数据到设备缓冲区
+  copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+  // 释放暂存缓冲区
+  vkDestroyBuffer(device, stagingBuffer, nullptr);
+  vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
+
+
+void HelloTriangleApplication::createIndexBuffer(){
+  VkBuffer stagingBuffer;
+  VkDeviceMemory stagingBufferMemory;
+  createBuffer(sizeof(indices[0]) * indices.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+               stagingBuffer, stagingBufferMemory);
+  
+  void *data;
+  vkMapMemory(device, stagingBufferMemory, 0, sizeof(indices[0]) * indices.size(), 0, &data);
+  memcpy(data, indices.data(), (size_t)(sizeof(indices[0]) * indices.size()));
+  vkUnmapMemory(device, stagingBufferMemory);
+
+  createBuffer(sizeof(indices[0]) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+                         , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+  
+  copyBuffer(stagingBuffer, indexBuffer, sizeof(indices[0]) * indices.size());
+
+  vkDestroyBuffer(device, stagingBuffer, nullptr);
+  vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+ void HelloTriangleApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+  VkCommandBufferAllocateInfo allocInfo{};
+  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocInfo.commandPool = commandPool;
+  allocInfo.commandBufferCount = 1;
+
+  VkCommandBuffer commandBuffer;
+  vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+
+  VkCommandBufferBeginInfo beginInfo{};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+  vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+  VkBufferCopy copyRegion{};
+  copyRegion.size = size;
+  vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+  vkEndCommandBuffer(commandBuffer);
+
+  //    5.将命令缓冲区提交到队列中。
+  VkSubmitInfo submitInfo{};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &commandBuffer;
+
+  vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(graphicsQueue);
+
+
+  vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+ }
 
 
 uint32_t HelloTriangleApplication::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties){
@@ -811,6 +869,35 @@ uint32_t HelloTriangleApplication::findMemoryType(uint32_t typeFilter, VkMemoryP
     }
   }
   throw std::runtime_error("failed to find suitable memory type!");
+}
+
+void HelloTriangleApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                  VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                  VkDeviceMemory& bufferMemory){
+  //    1.创建缓冲区。
+  VkBufferCreateInfo bufferInfo{};
+  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  bufferInfo.size = size;
+  bufferInfo.usage = usage;
+  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create buffer!");
+  }
+  //    2.分配缓冲区内存。
+  VkMemoryRequirements memRequirements;
+  vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+  VkMemoryAllocateInfo allocInfo{};
+  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocInfo.allocationSize = memRequirements.size;
+  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+  if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+    throw std::runtime_error("failed to allocate buffer memory!");
+  }
+  //    3.将缓冲区与内存绑定。 
+  vkBindBufferMemory(device, buffer, bufferMemory, 0); 
 }
 
 void HelloTriangleApplication::createCommandBuffer() {
@@ -867,13 +954,14 @@ void HelloTriangleApplication::recordCommandBuffer(
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     graphicsPipeline);
 
-  //使用 vkCmdBindVertexBuffers 命令绑定顶点缓冲区。
-  VkBuffer vertexBuffers[] = {vertexBuffer};
-  VkDeviceSize offsets[] = {0};
   //vkCmdBindVertexBuffers 函数用于将顶点缓冲区绑定到绑定点上.除了命令缓冲区
   //之外，前两个参数指定要为其指定顶点缓冲区的偏移量和绑定数。最后两个参数指定
-  //要绑定的顶点缓冲区数组以及开始读取顶点数据的字节偏移量。
+  // 要绑定的顶点缓冲区数组以及开始读取顶点数据的字节偏移量。
+  VkBuffer vertexBuffers[] = {vertexBuffer};
+  VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+  //使用 vkCmdBindIndexBuffer 命令将索引缓冲区绑定到绑定点上。
+  vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
 
   //设置视口（VkViewport）并使用 vkCmdSetViewport 命令将其应用到命令缓冲区。
@@ -892,8 +980,11 @@ void HelloTriangleApplication::recordCommandBuffer(
   scissor.extent = swapChainExtent;
   vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-  //使用 vkCmdDraw 命令执行绘制操作。这里绘制一个三角形，所以顶点数量为3，实例数量为1。
-  vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+  //前两个参数指定索引数量和实例数量。我们不使用实例，因此只需指定1个实例。索引
+  //数表示将传递给顶点着色器的顶点数。下一个参数指定索引缓冲区中的偏移量，使用
+  //值1会导致图形卡从第二个索引开始读取。倒数第二个参数指定添加到索引缓冲区中的
+  //索引的偏移量。最后一个参数指定实例的偏移量，我们不使用它。
+  vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
   //使用 vkCmdEndRenderPass 命令结束渲染通道。
   vkCmdEndRenderPass(commandBuffer);

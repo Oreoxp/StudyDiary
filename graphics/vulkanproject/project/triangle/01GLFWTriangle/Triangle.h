@@ -167,9 +167,17 @@ private:
 
   void createVertexBuffer();
 
+  void createIndexBuffer();
+
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-  static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+  void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                    VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                    VkDeviceMemory& bufferMemory);
+
+ void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) ;
+
+ static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
  private:
   GLFWwindow* window;
@@ -223,6 +231,8 @@ private:
   bool framebufferResized = false;
 
   VkBuffer vertexBuffer;
+  VkBuffer indexBuffer;
 
   VkDeviceMemory vertexBufferMemory;
+  VkDeviceMemory indexBufferMemory;
 };
