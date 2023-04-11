@@ -190,6 +190,10 @@ private:
 
   void updateUniformBuffer(uint32_t currentImage);
 
+  void createDescriptorPool();
+
+  void createDescriptorSets();
+
  static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
  private:
@@ -255,4 +259,7 @@ private:
   std::vector<VkDeviceMemory> uniformBuffersMemory;
   std::vector<void*> uniformBuffersMapped;
   uint32_t currentFrame = 0;
+
+  VkDescriptorPool descriptorPool;
+  std::vector<VkDescriptorSet> descriptorSets;
 };
