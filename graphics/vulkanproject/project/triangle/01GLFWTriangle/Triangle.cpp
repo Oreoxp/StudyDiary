@@ -5,6 +5,9 @@
 
 #include <chrono>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
