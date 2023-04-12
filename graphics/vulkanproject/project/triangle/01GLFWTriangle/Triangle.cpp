@@ -80,6 +80,7 @@ void HelloTriangleApplication::initWindow() {
   // 设置窗口大小修改回调函数
   glfwSetWindowUserPointer(window, this);
   glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+  lastTime = glfwGetTime();
 }
 
 void HelloTriangleApplication::framebufferResizeCallback(GLFWwindow* window, int width, int height){
@@ -133,6 +134,19 @@ void HelloTriangleApplication::mainLoop() {
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     drawFrame();
+    
+    // 计算并显示帧率
+    frameCount++;
+    currentTime = glfwGetTime();
+    if (currentTime - lastTime >= 1.0) {
+        // 每秒更新一次帧率
+        std::string windowTitle = "GLFW + Vulkan - FPS: " + std::to_string(frameCount);
+        std::cout << windowTitle << std::endl;
+
+        // 重置帧计数器
+        frameCount = 0;
+        lastTime = currentTime;
+    }
   }
 
   vkDeviceWaitIdle(device);

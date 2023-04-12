@@ -261,6 +261,10 @@ private:
   std::vector<void*> uniformBuffersMapped;
   uint32_t currentFrame = 0;
 
+  int frameCount = 0;
+  double lastTime ;
+  double currentTime;
+
   VkDescriptorPool descriptorPool;
   std::vector<VkDescriptorSet> descriptorSets;
 };
