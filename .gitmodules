@@ -1,0 +1,3 @@
+[submodule "graphics/vulkanproject/vulkan_examples/vulkan_examples"]
+	path = graphics/vulkanproject/vulkan_examples/vulkan_examples
+	url = https://github.com/Oreoxp/VulkanExamples.git
