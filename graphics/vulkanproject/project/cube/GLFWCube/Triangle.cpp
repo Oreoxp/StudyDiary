@@ -25,15 +25,19 @@ const std::vector<const char*> deviceExtensions = {
 const bool enableValidationLayers = true;
 
 const std::vector<Vertex> vertices = {
-{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-};
+    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+    {{-0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
-const std::vector<uint16_t> indices = {
-0, 1, 2, 2, 3, 0
-};
+const std::vector<uint16_t> s_indices = {0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1,
+                                       5, 4, 7, 7, 6, 5, 4, 0, 3, 3, 7, 4,
+                                       3, 2, 6, 6, 7, 3, 4, 5, 1, 1, 0, 4};
+
 
 // 创建调试信息
 VkResult CreateDebugUtilsMessengerEXT(
@@ -632,9 +636,19 @@ void HelloTriangleApplication::createGraphicsPipeline() {
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+  rasterizer.cullMode = VK_CULL_MODE_NONE;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-  rasterizer.depthBiasEnable = VK_FALSE;
+  rasterizer.depthBiasEnable = VK_TRUE;
+
+  //设置深度状态
+  VkPipelineDepthStencilStateCreateInfo depthStencil{};
+  depthStencil.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  depthStencil.depthTestEnable = VK_FALSE;
+  depthStencil.depthWriteEnable = VK_FALSE;
+  depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+  depthStencil.depthBoundsTestEnable = VK_FALSE;
+  depthStencil.stencilTestEnable = VK_FALSE;
 
   //设置多重采样状态
   VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -693,6 +707,7 @@ void HelloTriangleApplication::createGraphicsPipeline() {
   pipelineInfo.pMultisampleState = &multisampling;
   pipelineInfo.pColorBlendState = &colorBlending;
   pipelineInfo.pDynamicState = &dynamicState;
+  pipelineInfo.pDepthStencilState = &depthStencil;
   pipelineInfo.layout = pipelineLayout;
   pipelineInfo.renderPass = renderPass;
   pipelineInfo.subpass = 0;
@@ -831,20 +846,26 @@ void HelloTriangleApplication::createVertexBuffer(){
 void HelloTriangleApplication::createIndexBuffer(){
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
-  createBuffer(sizeof(indices[0]) * indices.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+  createBuffer(sizeof(s_indices[0]) * s_indices.size(),
+               VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                stagingBuffer, stagingBufferMemory);
   
   void *data;
-  vkMapMemory(device, stagingBufferMemory, 0, sizeof(indices[0]) * indices.size(), 0, &data);
-  memcpy(data, indices.data(), (size_t)(sizeof(indices[0]) * indices.size()));
+  vkMapMemory(device, stagingBufferMemory, 0,
+              sizeof(s_indices[0]) * s_indices.size(), 0, &data);
+  memcpy(data, s_indices.data(),
+         (size_t)(sizeof(s_indices[0]) * s_indices.size()));
   vkUnmapMemory(device, stagingBufferMemory);
 
-  createBuffer(sizeof(indices[0]) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+  createBuffer(
+      sizeof(s_indices[0]) * s_indices.size(),
+      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
                          , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
   
-  copyBuffer(stagingBuffer, indexBuffer, sizeof(indices[0]) * indices.size());
+  copyBuffer(stagingBuffer, indexBuffer,
+             sizeof(s_indices[0]) * s_indices.size());
 
   vkDestroyBuffer(device, stagingBuffer, nullptr);
   vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -989,7 +1010,8 @@ void HelloTriangleApplication::updateUniformBuffer(uint32_t currentImage) {
   float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
   UniformBufferObject ubo{};
-  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f),
+                          glm::vec3(0.0f, 0.0f, 1.0f));
   ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                          glm::vec3(0.0f, 0.0f, 1.0f));
   ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
@@ -1142,7 +1164,7 @@ void HelloTriangleApplication::recordCommandBuffer(
   //数表示将传递给顶点着色器的顶点数。下一个参数指定索引缓冲区中的偏移量，使用
   //值1会导致图形卡从第二个索引开始读取。倒数第二个参数指定添加到索引缓冲区中的
   //索引的偏移量。最后一个参数指定实例的偏移量，我们不使用它。
-  vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+  vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(s_indices.size()), 1, 0, 0, 0);
 
   //使用 vkCmdEndRenderPass 命令结束渲染通道。
   vkCmdEndRenderPass(commandBuffer);
