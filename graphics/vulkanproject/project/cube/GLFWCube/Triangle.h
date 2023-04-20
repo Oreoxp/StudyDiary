@@ -1,270 +1,374 @@
-﻿#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+﻿/*
+* Vulkan Example - Using different pipelines in one single renderpass
+*
+* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
+*
+* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
+*/
 
-#include <algorithm>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <optional>
-#include <set>
-#include <stdexcept>
-#include <vector>
-#include <array>
-#include <optional>
-#include <vulkan\vulkan.h>
-#include <glm/glm.hpp>
+#include "base/vulkanexamplebase.h"
+#include "base/VulkanglTFModel.h"
 
+#define ENABLE_VALIDATION true
 
-//定义了队列族的索引，包含了图形队列和呈现队列
-struct QueueFamilyIndices {
-  std::optional<uint32_t> graphicsFamily;
-  std::optional<uint32_t> presentFamily;
+class VulkanExample: public VulkanExampleBase
+{
+public:
+	vkglTF::Model scene;
 
-  //检查是否有图形队列和呈现队列
-  bool isComplete() {
-    return graphicsFamily.has_value() && presentFamily.has_value();
-  }
+	vks::Buffer uniformBuffer;
+
+	// 与着色器相同的统一缓冲区布局
+	struct UBOVS {
+		glm::mat4 projection;
+		glm::mat4 modelView;
+		glm::vec4 lightPos = glm::vec4(0.0f, 2.0f, 1.0f, 0.0f);
+	} uboVS;
+
+	VkPipelineLayout pipelineLayout;
+	VkDescriptorSet descriptorSet;
+	VkDescriptorSetLayout descriptorSetLayout;
+
+	struct {
+		VkPipeline phong;
+		VkPipeline wireframe;
+		VkPipeline toon;
+	} pipelines;
+
+	VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
+	{
+		title = "Pipeline state objects";
+		camera.type = Camera::CameraType::lookat;
+		camera.setPosition(glm::vec3(0.0f, 0.0f, -10.5f));
+		camera.setRotation(glm::vec3(-25.0f, 15.0f, 0.0f));
+		camera.setRotationSpeed(0.5f);
+		camera.setPerspective(60.0f, (float)(width / 3.0f) / (float)height, 0.1f, 256.0f);
+	}
+
+	~VulkanExample()
+	{
+		// 清理已使用的Vulkan资源
+		// 注意：继承的析构函数会清理存储在基类中的资源
+		vkDestroyPipeline(device, pipelines.phong, nullptr);
+		if (enabledFeatures.fillModeNonSolid)
+		{
+			vkDestroyPipeline(device, pipelines.wireframe, nullptr);
+		}
+		vkDestroyPipeline(device, pipelines.toon, nullptr);
+
+		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
+		uniformBuffer.destroy();
+	}
+
+	// 启用此示例所需的物理设备特性
+	virtual void getEnabledFeatures()
+	{
+		// 需要使用“非实体”（非实心）填充模式来显示线框。
+		if (deviceFeatures.fillModeNonSolid) {
+			enabledFeatures.fillModeNonSolid = VK_TRUE;
+		};
+
+		// 当线宽大于1.0f时，必须存在宽线（wide lines）
+		if (deviceFeatures.wideLines) {
+			enabledFeatures.wideLines = VK_TRUE;
+		}
+	}
+
+	void buildCommandBuffers()
+	{
+		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
+
+		VkClearValue clearValues[2];
+		clearValues[0].color = defaultClearColor;
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
+		renderPassBeginInfo.renderPass = renderPass;
+		renderPassBeginInfo.renderArea.offset.x = 0;
+		renderPassBeginInfo.renderArea.offset.y = 0;
+		renderPassBeginInfo.renderArea.extent.width = width;
+		renderPassBeginInfo.renderArea.extent.height = height;
+		renderPassBeginInfo.clearValueCount = 2;
+		renderPassBeginInfo.pClearValues = clearValues;
+
+		for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+		{
+			// Set target frame buffer
+			renderPassBeginInfo.framebuffer = frameBuffers[i];
+
+			VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+
+			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
+			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+
+			VkRect2D scissor = vks::initializers::rect2D(width, height,	0, 0);
+			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
+
+			vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
+			scene.bindBuffers(drawCmdBuffers[i]);
+
+			// Left : Solid colored
+			viewport.width = (float)width / 3.0;
+			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.phong);
+			vkCmdSetLineWidth(drawCmdBuffers[i], 1.0f);
+			scene.draw(drawCmdBuffers[i]);
+
+			// Center : Toon
+			viewport.x = (float)width / 3.0;
+			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.toon);
+			// Line width > 1.0f only if wide lines feature is supported
+			if (enabledFeatures.wideLines) {
+				vkCmdSetLineWidth(drawCmdBuffers[i], 2.0f);
+			}
+			scene.draw(drawCmdBuffers[i]);
+
+			if (enabledFeatures.fillModeNonSolid)
+			{
+				// Right : Wireframe
+				viewport.x = (float)width / 3.0 + (float)width / 3.0;
+				vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+				vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+				scene.draw(drawCmdBuffers[i]);
+			}
+
+			drawUI(drawCmdBuffers[i]);
+
+			vkCmdEndRenderPass(drawCmdBuffers[i]);
+
+			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+		}
+	}
+
+	void loadAssets()
+	{
+		const uint32_t glTFLoadingFlags = vkglTF::FileLoadingFlags::PreTransformVertices | vkglTF::FileLoadingFlags::PreMultiplyVertexColors | vkglTF::FileLoadingFlags::FlipY;
+		scene.loadFromFile(getAssetPath() + "models/venus.gltf", vulkanDevice, queue, glTFLoadingFlags);
+	}
+
+	void setupDescriptorPool()
+	{
+		std::vector<VkDescriptorPoolSize> poolSizes =
+		{
+			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
+		};
+
+		VkDescriptorPoolCreateInfo descriptorPoolInfo =
+			vks::initializers::descriptorPoolCreateInfo(
+				poolSizes.size(),
+				poolSizes.data(),
+				2);
+
+		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &descriptorPool));
+	}
+
+	void setupDescriptorSetLayout()
+	{
+		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
+		{
+			// Binding 0 : Vertex shader uniform buffer
+			vks::initializers::descriptorSetLayoutBinding(
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				VK_SHADER_STAGE_VERTEX_BIT,
+				0)
+		};
+
+		VkDescriptorSetLayoutCreateInfo descriptorLayout =
+			vks::initializers::descriptorSetLayoutCreateInfo(
+				setLayoutBindings.data(),
+				setLayoutBindings.size());
+
+		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayout));
+
+		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
+			vks::initializers::pipelineLayoutCreateInfo(
+				&descriptorSetLayout,
+				1);
+
+		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+	}
+
+	void setupDescriptorSet()
+	{
+		VkDescriptorSetAllocateInfo allocInfo =
+			vks::initializers::descriptorSetAllocateInfo(
+				descriptorPool,
+				&descriptorSetLayout,
+				1);
+
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet));
+
+		std::vector<VkWriteDescriptorSet> writeDescriptorSets =
+		{
+			// Binding 0 : Vertex shader uniform buffer
+			vks::initializers::writeDescriptorSet(
+				descriptorSet,
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				0,
+				&uniformBuffer.descriptor)
+		};
+
+		vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, NULL);
+	}
+
+	void preparePipelines()
+	{
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+		VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+		VkPipelineColorBlendAttachmentState blendAttachmentState = vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+		VkPipelineColorBlendStateCreateInfo colorBlendState = vks::initializers::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+		VkPipelineDepthStencilStateCreateInfo depthStencilState = vks::initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+		VkPipelineViewportStateCreateInfo viewportState = vks::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
+		VkPipelineMultisampleStateCreateInfo multisampleState = vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+		std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH, };
+		VkPipelineDynamicStateCreateInfo dynamicState = vks::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables);
+		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+
+		VkGraphicsPipelineCreateInfo pipelineCI = vks::initializers::pipelineCreateInfo(pipelineLayout, renderPass);
+		pipelineCI.pInputAssemblyState = &inputAssemblyState;
+		pipelineCI.pRasterizationState = &rasterizationState;
+		pipelineCI.pColorBlendState = &colorBlendState;
+		pipelineCI.pMultisampleState = &multisampleState;
+		pipelineCI.pViewportState = &viewportState;
+		pipelineCI.pDepthStencilState = &depthStencilState;
+		pipelineCI.pDynamicState = &dynamicState;
+		pipelineCI.stageCount = shaderStages.size();
+		pipelineCI.pStages = shaderStages.data();
+		pipelineCI.pVertexInputState  = vkglTF::Vertex::getPipelineVertexInputState({vkglTF::VertexComponent::Position, vkglTF::VertexComponent::Normal, vkglTF::VertexComponent::Color});
+
+		// Create the graphics pipeline state objects
+
+		// We are using this pipeline as the base for the other pipelines (derivatives)
+		// Pipeline derivatives can be used for pipelines that share most of their state
+		// Depending on the implementation this may result in better performance for pipeline
+		// switching and faster creation time
+		pipelineCI.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+
+		// Textured pipeline
+		// Phong shading pipeline
+		shaderStages[0] = loadShader(getShadersPath() + "pipelines/phong.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader(getShadersPath() + "pipelines/phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.phong));
+
+		// All pipelines created after the base pipeline will be derivatives
+		pipelineCI.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+		// Base pipeline will be our first created pipeline
+		pipelineCI.basePipelineHandle = pipelines.phong;
+		// It's only allowed to either use a handle or index for the base pipeline
+		// As we use the handle, we must set the index to -1 (see section 9.5 of the specification)
+		pipelineCI.basePipelineIndex = -1;
+
+		// Toon shading pipeline
+		shaderStages[0] = loadShader(getShadersPath() + "pipelines/toon.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader(getShadersPath() + "pipelines/toon.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.toon));
+
+		// Pipeline for wire frame rendering
+		// Non solid rendering is not a mandatory Vulkan feature
+		if (enabledFeatures.fillModeNonSolid)
+		{
+			rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
+			shaderStages[0] = loadShader(getShadersPath() + "pipelines/wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = loadShader(getShadersPath() + "pipelines/wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+			VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.wireframe));
+		}
+	}
+
+	// Prepare and initialize uniform buffer containing shader uniforms
+	void prepareUniformBuffers()
+	{
+		// Create the vertex shader uniform buffer block
+		VK_CHECK_RESULT(vulkanDevice->createBuffer(
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			&uniformBuffer,
+			sizeof(uboVS)));
+
+		// Map persistent
+		VK_CHECK_RESULT(uniformBuffer.map());
+
+		updateUniformBuffers();
+	}
+
+	void updateUniformBuffers()
+	{
+		uboVS.projection = camera.matrices.perspective;
+		uboVS.modelView = camera.matrices.view;
+		memcpy(uniformBuffer.mapped, &uboVS, sizeof(uboVS));
+	}
+
+	void draw()
+	{
+		VulkanExampleBase::prepareFrame();
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
+		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+
+		VulkanExampleBase::submitFrame();
+	}
+
+	void prepare()
+	{
+		VulkanExampleBase::prepare();
+		loadAssets();
+		prepareUniformBuffers();
+		setupDescriptorSetLayout();
+		preparePipelines();
+		setupDescriptorPool();
+		setupDescriptorSet();
+		buildCommandBuffers();
+		prepared = true;
+	}
+
+	virtual void render()
+	{
+		if (!prepared)
+			return;
+		draw();
+		if (camera.updated) {
+			updateUniformBuffers();
+		}
+	}
+
+	virtual void viewChanged()
+	{
+		camera.setPerspective(60.0f, (float)(width / 3.0f) / (float)height, 0.1f, 256.0f);
+		updateUniformBuffers();
+	}
+
+	virtual void OnUpdateUIOverlay(vks::UIOverlay *overlay)
+	{
+		if (!enabledFeatures.fillModeNonSolid) {
+			if (overlay->header("Info")) {
+				overlay->text("Non solid fill modes not supported!");
+			}
+		}
+	}
 };
 
-//MVP矩阵
-struct UniformBufferObject {
-  glm::vec2 foo;
-  alignas(16) glm::mat4 model;
-  glm::mat4 view;
-  glm::mat4 proj;
-};
-
-//交换链支持的详细信息
-struct SwapChainSupportDetails {
-  //交换链的能力
-  VkSurfaceCapabilitiesKHR capabilities;
-  //交换链支持的像素格式
-  std::vector<VkSurfaceFormatKHR> formats;
-  //交换链支持的呈现模式
-  std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct Vertex {
-  glm::vec3 pos;
-  glm::vec3 color;
-
-  static VkVertexInputBindingDescription getBindingDescription() {
-    VkVertexInputBindingDescription bindingDescription{};
-    bindingDescription.binding = 0;
-    bindingDescription.stride = sizeof(Vertex);
-    //VK_VERTEX_INPUT_RATE_VERTEX: 每个顶点之后移动到下一个数据输入
-    //VK_VERTEX_INPUT_RATE_INSTANCE: 每个实例之后移动到下一个数据输入
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    return bindingDescription;
-  }
-  
-  static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-    //位置属性
-    //binding: 告诉Vulkan每个顶点数据来自哪个绑定(binding)
-    //location: 告诉Vulkan在着色器中的哪个位置(location)读取顶点数据
-    //format: 告诉Vulkan如何解析顶点数据
-    //    vec2：VK_FORMAT_R32G32_SINT，32位带符号整数的2组分量向量
-    //    uvec4：VK_FORMAT_R32G32B32A32_UINT，32位无符号整数的4组分量向量
-    //    double：VK_FORMAT_R64_SFLOAT，双精度（64位）浮点数
-    //offset: 参数隐含定义了属性数据的字节大小，offset参数指定从每个顶点数据开始的字节数，要读取
-    //的字节数。绑定一次加载一个Vertex，位置属性（pos）在此结构的开头偏移量为0字节。这是使用
-    //offsetof宏自动计算的。
-    attributeDescriptions[0].binding = 0;
-    attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(Vertex, pos);
-    //颜色属性
-    attributeDescriptions[1].binding = 0;
-    attributeDescriptions[1].location = 1;
-    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-
-    return attributeDescriptions;
-  }
-};
-
-class HelloTriangleApplication {
- public:
-  void run();
-
-
-private:
-
-  //初始化窗口
-  void initWindow();
-
-  //初始化Vulkan
-  void initVulkan();
-
-  void mainLoop();
-
-  void cleanup();
-  
-  void cleanupSwapChain();
-
-  void createInstance();
-
-  void populateDebugMessengerCreateInfo(
-      VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-  void setupDebugMessenger();
-
-  void createSurface();
-
-  void pickPhysicalDevice();
-
-  void createLogicalDevice();
-
-  void createSwapChain();
-
-  void createImageViews();
-
-  void createRenderPass();
-
-  void createGraphicsPipeline();
-
-  void createFramebuffers();
-
-  void createCommandPool();
-
-  void createCommandBuffer();
-
-  void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
-  void createSyncObjects();
-
-  void drawFrame();
-
-  VkShaderModule createShaderModule(const std::vector<char>& code);
-
-  VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-      const std::vector<VkSurfaceFormatKHR>& availableFormats);
-
-  VkPresentModeKHR chooseSwapPresentMode(
-      const std::vector<VkPresentModeKHR>& availablePresentModes);
-
-  VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-
-  SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-
-  bool isDeviceSuitable(VkPhysicalDevice device);
-
-  bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-
-  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-
-  std::vector<const char*> getRequiredExtensions();
-
-  bool checkValidationLayerSupport();
-
-  static std::vector<char> readFile(const std::string& filename);
-
-  static VKAPI_ATTR VkBool32 VKAPI_CALL
-  debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                VkDebugUtilsMessageTypeFlagsEXT messageType,
-                const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                void* pUserData);
-
-  void reCreateSwapChain();
-
-  void createVertexBuffer();
-
-  void createIndexBuffer();
-
-  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-  void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                    VkMemoryPropertyFlags properties, VkBuffer& buffer,
-                    VkDeviceMemory& bufferMemory);
-
- void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) ;
-
- void createDescriptorSetLayout();
-
-  void createUniformBuffers();
-
-  void updateUniformBuffer(uint32_t currentImage);
-
-  void createDescriptorPool();
-
-  void createDescriptorSets();
-
- static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
- private:
-  GLFWwindow* window;
-
-  //Vulkan实例
-  VkInstance instance;
-  //调试信息
-  VkDebugUtilsMessengerEXT debugMessenger;
-  //呈现表面
-  VkSurfaceKHR surface;
-
-  //物理设备
-  VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-  VkDevice device;
-
-  //图形队列和呈现队列
-  VkQueue graphicsQueue;
-  VkQueue presentQueue;
-
-  //交换链
-  VkSwapchainKHR swapChain;
-  //交换链中的图像
-  std::vector<VkImage> swapChainImages;
-  //交换链中的图像格式
-  VkFormat swapChainImageFormat;
-  //交换链中的图像大小
-  VkExtent2D swapChainExtent;
-  //交换链中的图像视图
-  std::vector<VkImageView> swapChainImageViews;
-  //交换链中的帧缓冲
-  std::vector<VkFramebuffer> swapChainFramebuffers;
-
-  //渲染通道
-  VkRenderPass renderPass;
-  //图形管线布局
-  VkPipelineLayout pipelineLayout;
-  //图形管线
-  VkPipeline graphicsPipeline;
-
-  //命令池
-  VkCommandPool commandPool;
-  //命令缓冲
-  std::vector<VkCommandBuffer> commandBuffers;
-
-  //信号量
-  std::vector<VkSemaphore> imageAvailableSemaphores;
-  std::vector<VkSemaphore> renderFinishedSemaphores;
-  //栅栏
-  std::vector<VkFence> inFlightFences;
-
-  bool framebufferResized = false;
-
-  VkBuffer vertexBuffer;
-  VkBuffer indexBuffer;
-
-  VkDeviceMemory vertexBufferMemory;
-  VkDeviceMemory indexBufferMemory;
-
-  VkDescriptorSetLayout descriptorSetLayout;
-  
-  std::vector<VkBuffer> uniformBuffers;
-  std::vector<VkDeviceMemory> uniformBuffersMemory;
-  std::vector<void*> uniformBuffersMapped;
-  uint32_t currentFrame = 0;
-
-  int frameCount = 0;
-  double lastTime ;
-  double currentTime;
-
-  VkDescriptorPool descriptorPool;
-  std::vector<VkDescriptorSet> descriptorSets;
-};
+VulkanExample* vulkanExample;
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        if (vulkanExample != NULL) {
+                vulkanExample->handleMessages(hWnd, uMsg, wParam, lParam);
+        }
+        return (DefWindowProc(hWnd, uMsg, wParam, lParam));
+}
+																
+int startVulkan()														
+{																												
+	{							
+		vulkanExample = new VulkanExample();														
+		vulkanExample->initVulkan();																
+		vulkanExample->setupWindow(nullptr, WndProc);														
+		vulkanExample->prepare();																	
+		vulkanExample->renderLoop();																
+		delete(vulkanExample);																		
+	}																								
+	return 0;																						
+}
