@@ -1,0 +1,520 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveNugetPackages>false</ResolveNugetPackages>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{8D7C981C-B3DD-3789-8FE3-53C7DA29CDF1}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\vk\VulkanExamples\external;D:\github\vk\VulkanExamples\external\glm;D:\github\vk\VulkanExamples\external\gli;D:\github\vk\VulkanExamples\external\imgui;D:\github\vk\VulkanExamples\external\tinygltf;D:\github\vk\VulkanExamples\external\ktx\include;D:\github\vk\VulkanExamples\external\ktx\other_include;D:\github\vk\VulkanExamples\base;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\vk\VulkanExamples\external;D:\github\vk\VulkanExamples\external\glm;D:\github\vk\VulkanExamples\external\gli;D:\github\vk\VulkanExamples\external\imgui;D:\github\vk\VulkanExamples\external\tinygltf;D:\github\vk\VulkanExamples\external\ktx\include;D:\github\vk\VulkanExamples\external\ktx\other_include;D:\github\vk\VulkanExamples\base;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\vk\VulkanExamples\external;D:\github\vk\VulkanExamples\external\glm;D:\github\vk\VulkanExamples\external\gli;D:\github\vk\VulkanExamples\external\imgui;D:\github\vk\VulkanExamples\external\tinygltf;D:\github\vk\VulkanExamples\external\ktx\include;D:\github\vk\VulkanExamples\external\ktx\other_include;D:\github\vk\VulkanExamples\base;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\vk\VulkanExamples\external;D:\github\vk\VulkanExamples\external\glm;D:\github\vk\VulkanExamples\external\gli;D:\github\vk\VulkanExamples\external\imgui;D:\github\vk\VulkanExamples\external\tinygltf;D:\github\vk\VulkanExamples\external\ktx\include;D:\github\vk\VulkanExamples\external\ktx\other_include;D:\github\vk\VulkanExamples\base;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\github\vk\VulkanExamples\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/github/vk/VulkanExamples/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/github/vk/VulkanExamples -BD:/github/vk/VulkanExamples/build --check-stamp-file D:/github/vk/VulkanExamples/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompilerABI.c;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompilerABI.cpp;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCompilerIdDetection.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompileFeatures.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerABI.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerId.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindBinUtils.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseLibraryArchitecture.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystem.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCompilerCommon.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Bruce-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-C-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SDCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TinyCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CompilerId\VS-10.vcxproj.in;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindVulkan.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Internal\FeatureTesting.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-Determine-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\WindowsPaths.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCXXCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeRCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\github\vk\VulkanExamples\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/github/vk/VulkanExamples/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/github/vk/VulkanExamples -BD:/github/vk/VulkanExamples/build --check-stamp-file D:/github/vk/VulkanExamples/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompilerABI.c;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompilerABI.cpp;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCompilerIdDetection.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompileFeatures.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerABI.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerId.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindBinUtils.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseLibraryArchitecture.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystem.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCompilerCommon.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Bruce-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-C-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SDCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TinyCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CompilerId\VS-10.vcxproj.in;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindVulkan.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Internal\FeatureTesting.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-Determine-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\WindowsPaths.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCXXCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeRCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\github\vk\VulkanExamples\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/github/vk/VulkanExamples/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/github/vk/VulkanExamples -BD:/github/vk/VulkanExamples/build --check-stamp-file D:/github/vk/VulkanExamples/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompilerABI.c;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompilerABI.cpp;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCompilerIdDetection.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompileFeatures.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerABI.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerId.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindBinUtils.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseLibraryArchitecture.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystem.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCompilerCommon.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Bruce-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-C-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SDCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TinyCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CompilerId\VS-10.vcxproj.in;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindVulkan.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Internal\FeatureTesting.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-Determine-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\WindowsPaths.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCXXCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeRCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\github\vk\VulkanExamples\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/github/vk/VulkanExamples/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/github/vk/VulkanExamples -BD:/github/vk/VulkanExamples/build --check-stamp-file D:/github/vk/VulkanExamples/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCCompilerABI.c;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXCompilerABI.cpp;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeCompilerIdDetection.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompileFeatures.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerABI.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineCompilerId.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeDetermineSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeFindBinUtils.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeParseLibraryArchitecture.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCCompiler.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystem.cmake.in;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestCompilerCommon.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CMakeTestRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Bruce-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-C-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IBMClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\LCC-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SDCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\TinyCC-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-C-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\CompilerId\VS-10.vcxproj.in;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindVulkan.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Internal\FeatureTesting.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-Determine-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\Platform\WindowsPaths.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeCXXCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeRCCompiler.cmake;D:\github\vk\VulkanExamples\build\CMakeFiles\3.24.0-rc4\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\github\vk\VulkanExamples\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\ZERO_CHECK.proj">
+      <Project>{B3E1F5A8-5356-3B67-82FC-D8FECFCDECDD}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\base\base.vcxproj">
+      <Project>{98BF9697-3CCF-3321-89F3-E91183B65A43}</Project>
+      <Name>base</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\bloom.vcxproj">
+      <Project>{B9FEE525-7430-3D9B-917B-F37092F12AA0}</Project>
+      <Name>bloom</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\computecloth.vcxproj">
+      <Project>{18D1554A-98CA-34F0-86A2-32DF33BB4B0C}</Project>
+      <Name>computecloth</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\computecullandlod.vcxproj">
+      <Project>{A1753F2B-7046-355E-AAB7-0EC4BA967A3F}</Project>
+      <Name>computecullandlod</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\computeheadless.vcxproj">
+      <Project>{217B234E-EBD6-3747-94CA-FDD3F5FB4CF6}</Project>
+      <Name>computeheadless</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\computenbody.vcxproj">
+      <Project>{2875D422-5D25-3B7B-B6D3-6961C5D67662}</Project>
+      <Name>computenbody</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\computeparticles.vcxproj">
+      <Project>{1FEC7B4C-6DE0-3582-981D-616CE6A18905}</Project>
+      <Name>computeparticles</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\computeraytracing.vcxproj">
+      <Project>{FAB472AA-31C0-3D7B-A948-A4D5396AA98D}</Project>
+      <Name>computeraytracing</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\computeshader.vcxproj">
+      <Project>{92004E05-EAFC-3946-B1D3-544C3C682B4B}</Project>
+      <Name>computeshader</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\conditionalrender.vcxproj">
+      <Project>{3BEEA45B-9D7F-3398-A16A-6DD6F2151660}</Project>
+      <Name>conditionalrender</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\conservativeraster.vcxproj">
+      <Project>{E5C29835-2A38-32F2-A907-548A7CB06C7B}</Project>
+      <Name>conservativeraster</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\debugmarker.vcxproj">
+      <Project>{CEEF88FD-6468-31F7-A1F9-1DBA7DB18DFA}</Project>
+      <Name>debugmarker</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\deferred.vcxproj">
+      <Project>{5AEF3886-9D19-394E-9D32-7859CBD6EA51}</Project>
+      <Name>deferred</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\deferredmultisampling.vcxproj">
+      <Project>{5579DC20-6EEF-3939-8FF2-6C0F23DAC9A8}</Project>
+      <Name>deferredmultisampling</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\deferredshadows.vcxproj">
+      <Project>{AC6C9232-3A3D-326C-A305-D9092B664537}</Project>
+      <Name>deferredshadows</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\descriptorbuffer.vcxproj">
+      <Project>{5B849D08-926C-3BC2-B78E-1C59EB290D84}</Project>
+      <Name>descriptorbuffer</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\descriptorindexing.vcxproj">
+      <Project>{815234B3-DCA8-34E8-A013-2E5A1150A4C8}</Project>
+      <Name>descriptorindexing</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\descriptorsets.vcxproj">
+      <Project>{2A1AFF3D-1781-3608-9F2F-98A76F16B62A}</Project>
+      <Name>descriptorsets</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\displacement.vcxproj">
+      <Project>{0D9D12A9-04D6-3082-AAE1-7BB5DF45FC87}</Project>
+      <Name>displacement</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\distancefieldfonts.vcxproj">
+      <Project>{94B4FDB1-B949-30ED-881F-EBFBD959F0DE}</Project>
+      <Name>distancefieldfonts</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\dynamicrendering.vcxproj">
+      <Project>{57CC5A47-2E9A-34B9-9880-314A9AFE673A}</Project>
+      <Name>dynamicrendering</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\dynamicstate.vcxproj">
+      <Project>{3727711A-C707-3E3C-B145-E07427904C4B}</Project>
+      <Name>dynamicstate</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\dynamicuniformbuffer.vcxproj">
+      <Project>{FF1FE365-9915-3BB9-8391-E9A274412A6E}</Project>
+      <Name>dynamicuniformbuffer</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\gears.vcxproj">
+      <Project>{5DFF4810-F6E4-356C-B91A-6F5491CC93C2}</Project>
+      <Name>gears</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\geometryshader.vcxproj">
+      <Project>{D502F9CF-C54C-301D-814F-2F9813FF008F}</Project>
+      <Name>geometryshader</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\gltfloading.vcxproj">
+      <Project>{810D7961-3759-3561-8885-6F4D09E94E9B}</Project>
+      <Name>gltfloading</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\gltfscenerendering.vcxproj">
+      <Project>{784CE5A9-7CE8-3B5B-A55A-621D9AD954B2}</Project>
+      <Name>gltfscenerendering</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\gltfskinning.vcxproj">
+      <Project>{08980E35-C01D-3918-9748-B5E7D10FC96C}</Project>
+      <Name>gltfskinning</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\graphicspipelinelibrary.vcxproj">
+      <Project>{9214AB62-4814-371A-B295-BA652FC469ED}</Project>
+      <Name>graphicspipelinelibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\hdr.vcxproj">
+      <Project>{A52C9977-A45A-3467-B62E-E29B6895488F}</Project>
+      <Name>hdr</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\imgui.vcxproj">
+      <Project>{E284C484-6926-3A4F-9B2B-C13DDEC66E35}</Project>
+      <Name>imgui</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\indirectdraw.vcxproj">
+      <Project>{54CBC809-1D96-3FC7-BA44-401E28A2D253}</Project>
+      <Name>indirectdraw</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\inlineuniformblocks.vcxproj">
+      <Project>{BF68B2E9-EDF7-30CB-94F4-9A001BD7D091}</Project>
+      <Name>inlineuniformblocks</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\inputattachments.vcxproj">
+      <Project>{7D559E8F-C3BD-33ED-BEA5-C3E44A097A74}</Project>
+      <Name>inputattachments</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\instancing.vcxproj">
+      <Project>{5EEFAE1B-71F6-33BC-B2A1-0A9A0875BDF7}</Project>
+      <Name>instancing</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\meshshader.vcxproj">
+      <Project>{13E01AE1-2230-3CAF-8A70-67B2B37B32C1}</Project>
+      <Name>meshshader</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\multisampling.vcxproj">
+      <Project>{44547FF1-F1B8-38ED-98DD-A653C282B7B6}</Project>
+      <Name>multisampling</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\multithreading.vcxproj">
+      <Project>{A66267E0-5F7B-3F48-9A29-2BA35A25027F}</Project>
+      <Name>multithreading</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\multiview.vcxproj">
+      <Project>{D12CB466-86C2-3130-806D-BEA1C0182889}</Project>
+      <Name>multiview</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\negativeviewportheight.vcxproj">
+      <Project>{E917EE6A-8E47-3BA3-BB6E-3B6FD53858C3}</Project>
+      <Name>negativeviewportheight</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\occlusionquery.vcxproj">
+      <Project>{5B47BEBC-6758-3A79-BF01-BBC6CAC07286}</Project>
+      <Name>occlusionquery</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\offscreen.vcxproj">
+      <Project>{F5490CAB-2E28-3C37-A97A-7EC876F96D1F}</Project>
+      <Name>offscreen</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\oit.vcxproj">
+      <Project>{12E72DD3-467C-3EDA-987C-8F0CA45A24B3}</Project>
+      <Name>oit</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\parallaxmapping.vcxproj">
+      <Project>{820814D7-5CCC-357B-8203-8C40E4BC6852}</Project>
+      <Name>parallaxmapping</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\particlefire.vcxproj">
+      <Project>{E97BEF63-F15D-36CA-AA43-1A639B51CEAF}</Project>
+      <Name>particlefire</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\pbrbasic.vcxproj">
+      <Project>{58CF9670-165E-349E-A333-16F972A39185}</Project>
+      <Name>pbrbasic</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\pbribl.vcxproj">
+      <Project>{47034950-E49B-369F-840A-E711D0C2DF4E}</Project>
+      <Name>pbribl</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\pbrtexture.vcxproj">
+      <Project>{17E18D39-1C5F-36FE-A95A-F671A38D740B}</Project>
+      <Name>pbrtexture</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\pipelines.vcxproj">
+      <Project>{116F9C2F-D444-3F77-AB00-322DA6CBC828}</Project>
+      <Name>pipelines</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\pipelinestatistics.vcxproj">
+      <Project>{9AE77CE9-7E58-395F-B6C3-262331E13C9F}</Project>
+      <Name>pipelinestatistics</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\pushconstants.vcxproj">
+      <Project>{2E86E737-AC62-3B0B-BA65-2DEDB9A13702}</Project>
+      <Name>pushconstants</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\pushdescriptors.vcxproj">
+      <Project>{2E69FAB8-8CF7-3DA0-91BC-86D098309293}</Project>
+      <Name>pushdescriptors</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\radialblur.vcxproj">
+      <Project>{91AA2E71-F0A8-32C7-901D-56C15AA61CA2}</Project>
+      <Name>radialblur</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\rayquery.vcxproj">
+      <Project>{A721BE95-7146-38FA-9A40-C68CA9FAD25E}</Project>
+      <Name>rayquery</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\raytracingbasic.vcxproj">
+      <Project>{76ECE03F-5F42-3FD6-AE51-547B10FA172E}</Project>
+      <Name>raytracingbasic</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\raytracingcallable.vcxproj">
+      <Project>{CE86553E-A6A3-3351-93A0-B56BFBEEEE94}</Project>
+      <Name>raytracingcallable</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\raytracingreflections.vcxproj">
+      <Project>{29BC9FB7-5454-3EA4-93F4-96C1FF2B02D3}</Project>
+      <Name>raytracingreflections</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\raytracingsbtdata.vcxproj">
+      <Project>{19C74A0F-D053-3FB8-830F-B2CF6402FB04}</Project>
+      <Name>raytracingsbtdata</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\raytracingshadows.vcxproj">
+      <Project>{7C2F9E8F-6C97-3A0D-8E8B-F2975CBA8938}</Project>
+      <Name>raytracingshadows</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\raytracingtextures.vcxproj">
+      <Project>{B896F9F4-54C4-3A2D-8F2E-23955EE6748E}</Project>
+      <Name>raytracingtextures</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\renderheadless.vcxproj">
+      <Project>{1BA8F855-35AC-3DDC-9769-6CAB1F833D1D}</Project>
+      <Name>renderheadless</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\screenshot.vcxproj">
+      <Project>{62F2DF81-A213-351F-8B11-4C0BFEB8D39A}</Project>
+      <Name>screenshot</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\shadowmapping.vcxproj">
+      <Project>{1229A2EC-99A8-317B-B5D7-FC4B2B18F8A7}</Project>
+      <Name>shadowmapping</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\shadowmappingcascade.vcxproj">
+      <Project>{7B45D833-E219-3C92-880E-13B516512721}</Project>
+      <Name>shadowmappingcascade</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\shadowmappingomni.vcxproj">
+      <Project>{72E9BA54-520E-33DE-8D35-E082595D0750}</Project>
+      <Name>shadowmappingomni</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\specializationconstants.vcxproj">
+      <Project>{1DD5E7A0-F82D-3187-8831-1F3896666C72}</Project>
+      <Name>specializationconstants</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\sphericalenvmapping.vcxproj">
+      <Project>{7660B689-04A5-3AA9-B774-EEAA249BB768}</Project>
+      <Name>sphericalenvmapping</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\ssao.vcxproj">
+      <Project>{E62853B3-8D56-3308-A525-31F10FB140DD}</Project>
+      <Name>ssao</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\stencilbuffer.vcxproj">
+      <Project>{53F8394B-B847-30D8-927A-44AC9A1DF318}</Project>
+      <Name>stencilbuffer</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\subpasses.vcxproj">
+      <Project>{E1C6DE38-EBE8-383A-BCDD-34AA10D6D144}</Project>
+      <Name>subpasses</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\terraintessellation.vcxproj">
+      <Project>{B29563B5-C978-367C-BB4B-B68A781FD7F4}</Project>
+      <Name>terraintessellation</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\tessellation.vcxproj">
+      <Project>{254EBA41-CFB3-300A-A082-0092B580B1E2}</Project>
+      <Name>tessellation</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\textoverlay.vcxproj">
+      <Project>{5400619F-0A2C-364F-ABE3-58084A56B88E}</Project>
+      <Name>textoverlay</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\texture.vcxproj">
+      <Project>{A33EC670-150F-30B8-92BB-D8AB29174705}</Project>
+      <Name>texture</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\texture3d.vcxproj">
+      <Project>{B9B15F02-B536-32FF-A25A-9455F7D553C1}</Project>
+      <Name>texture3d</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\texturearray.vcxproj">
+      <Project>{DBD4C29C-3BC3-3A7D-A59F-8EAC9B2C6776}</Project>
+      <Name>texturearray</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\texturecubemap.vcxproj">
+      <Project>{E44DAA4E-4755-370D-8AEA-29E9FEEA6EC6}</Project>
+      <Name>texturecubemap</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\texturecubemaparray.vcxproj">
+      <Project>{14084177-02E1-3F24-864E-A8900E476AF5}</Project>
+      <Name>texturecubemaparray</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\texturemipmapgen.vcxproj">
+      <Project>{AAB49744-6370-3B3A-B17C-386957B64F48}</Project>
+      <Name>texturemipmapgen</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\texturesparseresidency.vcxproj">
+      <Project>{2FA4F3E0-499B-3B57-A8D5-27FADEF3F6E7}</Project>
+      <Name>texturesparseresidency</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\triangle.vcxproj">
+      <Project>{2B722462-29A5-303A-9E00-53B9CC1C7BEA}</Project>
+      <Name>triangle</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\variablerateshading.vcxproj">
+      <Project>{0BAB3B69-2FF5-3FF0-B717-CE75E502CA01}</Project>
+      <Name>variablerateshading</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\vertexattributes.vcxproj">
+      <Project>{B33AF0EF-D8A5-3373-8370-4440285B240A}</Project>
+      <Name>vertexattributes</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\viewportarray.vcxproj">
+      <Project>{E70ECFEB-D674-326F-893F-A9D505666700}</Project>
+      <Name>viewportarray</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\vk\VulkanExamples\build\examples\vulkanscene.vcxproj">
+      <Project>{759A7811-5DE5-337A-AAD8-A482A6428F13}</Project>
+      <Name>vulkanscene</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
