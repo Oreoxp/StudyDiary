@@ -1,104 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <fstream>
-#include <vector>
-#include <exception>
+#include "triangle.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include <vulkan/vulkan.h>
-#include "vulkanexamplebase.h"
-
-// Set to "true" to enable Vulkan's validation layers (see vulkandebug.cpp for details)
-#define ENABLE_VALIDATION true
-// Set to "true" to use staging buffers for uploading vertex and index data to device local memory
-// See "prepareVertices" for details on what's staging and on why to use it
-#define USE_STAGING true
-
-class VulkanExample : public VulkanExampleBase
-{
-public:
-	// Vertex layout used in this example
-	struct Vertex {
-		float position[3];
-		float color[3];
-	};
-
-	// Vertex buffer and attributes
-	struct {
-		VkDeviceMemory memory; // Handle to the device memory for this buffer
-		VkBuffer buffer;       // Handle to the Vulkan buffer object that the memory is bound to
-	} vertices;
-
-	// Index buffer
-	struct {
-		VkDeviceMemory memory;
-		VkBuffer buffer;
-		uint32_t count;
-	} indices;
-
-	// Uniform buffer block object
-	struct {
-		VkDeviceMemory memory;
-		VkBuffer buffer;
-		VkDescriptorBufferInfo descriptor;
-	}  uniformBufferVS;
-
-	//为简单起见，我们使用与着色器中相同的统一块布局:
-	//
-	//	layout(set = 0, binding = 0) uniform UBO
-	//	{
-	//		mat4 projectionMatrix;
-	//		mat4 modelMatrix;
-	//		mat4 viewMatrix;
-	//	} ubo;
-	//
-  //  这样我们就可以将 ubo 数据 memcopy 到 ubo
-  //  注意：您应该使用与 GPU 对齐的数据类型以避免手动填充（vec4、mat4）
-	struct {
-		glm::mat4 projectionMatrix;
-		glm::mat4 modelMatrix;
-		glm::mat4 viewMatrix;
-	} uboVS;
-
-  // 管道布局用于管道访问描述符集
-  // 它定义了管道使用的着色器阶段和着色器资源之间的接口（不绑定任何实际数据）
-  // 管道布局可以在多个管道之间共享，只要它们的接口匹配
-	VkPipelineLayout pipelineLayout;
-
-	// Pipelines (often called "pipeline state objects") are used to bake all states that affect a pipeline
-	// While in OpenGL every state can be changed at (almost) any time, Vulkan requires to layout the graphics (and compute) pipeline states upfront
-	// So for each combination of non-dynamic pipeline states you need a new pipeline (there are a few exceptions to this not discussed here)
-	// Even though this adds a new dimension of planning ahead, it's a great opportunity for performance optimizations by the driver
-	VkPipeline pipeline;
-
-	// The descriptor set layout describes the shader binding layout (without actually referencing descriptor)
-	// Like the pipeline layout it's pretty much a blueprint and can be used with different descriptor sets as long as their layout matches
-	VkDescriptorSetLayout descriptorSetLayout;
-
-	// The descriptor set stores the resources bound to the binding points in a shader
-	// It connects the binding points of the different shaders with the buffers and images used for those bindings
-	VkDescriptorSet descriptorSet;
-
-
-	// Synchronization primitives
-	// Synchronization is an important concept of Vulkan that OpenGL mostly hid away. Getting this right is crucial to using Vulkan.
-
-	// Semaphores
-	// Used to coordinate operations within the graphics queue and ensure correct command ordering
-	VkSemaphore presentCompleteSemaphore;
-	VkSemaphore renderCompleteSemaphore;
-
-	// Fences
-	// Used to check the completion of queue operations (e.g. command buffer execution)
-	std::vector<VkFence> queueCompleteFences;
-
-	VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
+	VulkanExample::VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION)
 	{
 		title = "Vulkan Example - Basic indexed triangle";
 		// To keep things simple, we don't use the UI overlay
@@ -111,7 +13,7 @@ public:
 		// Values not set here are initialized in the base class constructor
 	}
 
-	~VulkanExample()
+	VulkanExample::~VulkanExample()
 	{
 		// Clean up used Vulkan resources
 		// Note: Inherited destructor cleans up resources stored in base class
@@ -143,7 +45,7 @@ public:
 	// This is necessary as implementations can offer an arbitrary number of memory types with different
 	// memory properties.
 	// You can check http://vulkan.gpuinfo.org/ for details on different memory configurations
-  uint32_t getMemoryTypeIndex(uint32_t typeBits,
+  uint32_t VulkanExample::getMemoryTypeIndex(uint32_t typeBits,
                               VkMemoryPropertyFlags properties) {
           // Iterate over all memory types available for the device used
           // in this example
@@ -163,7 +65,7 @@ public:
   }
 
 	// Create the Vulkan synchronization primitives used in this example
-	void prepareSynchronizationPrimitives()
+	void VulkanExample::prepareSynchronizationPrimitives()
 	{
 		// Semaphores (Used for correct command ordering)
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
@@ -190,7 +92,7 @@ public:
 
 	// Get a new command buffer from the command pool
 	// If begin is true, the command buffer is also started so we can start adding commands
-	VkCommandBuffer getCommandBuffer(bool begin)
+	VkCommandBuffer VulkanExample::getCommandBuffer(bool begin)
 	{
 		VkCommandBuffer cmdBuffer;
 
@@ -214,7 +116,7 @@ public:
 
 	// End the command buffer and submit it to the queue
 	// Uses a fence to ensure command buffer has finished executing before deleting it
-	void flushCommandBuffer(VkCommandBuffer commandBuffer)
+	void VulkanExample::flushCommandBuffer(VkCommandBuffer commandBuffer)
 	{
 		assert(commandBuffer != VK_NULL_HANDLE);
 
@@ -244,7 +146,7 @@ public:
 	// Build separate command buffers for every framebuffer image
 	// Unlike in OpenGL all rendering commands are recorded once into command buffers that are then resubmitted to the queue
 	// This allows to generate work upfront and from multiple threads, one of the biggest advantages of Vulkan
-	void buildCommandBuffers()
+	void VulkanExample::buildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufInfo = {};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -320,7 +222,7 @@ public:
 		}
 	}
 
-	void draw()
+	void VulkanExample::draw()
 	{
 		// SRS - on other platforms use original bare code with local semaphores/fences for illustrative purposes
 		// Get next image in the swap chain (back/front buffer)
@@ -362,7 +264,7 @@ public:
 
 	// Prepare vertex and index buffers for an indexed triangle
 	// Also uploads them to device local memory using staging and initializes vertex input and attribute binding to match the vertex shader
-	void prepareVertices(bool useStagingBuffers)
+	void VulkanExample::prepareVertices(bool useStagingBuffers)
 	{
 		// A note on memory management in Vulkan in general:
 		//	This is a very complex topic and while it's fine for an example application to small individual memory allocations that is not
@@ -531,7 +433,7 @@ public:
 		}
 	}
 
-	void setupDescriptorPool()
+	void VulkanExample::setupDescriptorPool()
 	{
 		// We need to tell the API the number of max. requested descriptors per type
 		VkDescriptorPoolSize typeCounts[1];
@@ -556,7 +458,7 @@ public:
 		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &descriptorPool));
 	}
 
-	void setupDescriptorSetLayout()
+	void VulkanExample::setupDescriptorSetLayout()
 	{
 		// Setup layout of descriptors used in this example
 		// Basically connects the different shader stages to descriptors for binding uniform buffers, image samplers, etc.
@@ -588,7 +490,7 @@ public:
 		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 	}
 
-	void setupDescriptorSet()
+	void VulkanExample::setupDescriptorSet()
 	{
 		// Allocate a new descriptor set from the global descriptor pool
 		VkDescriptorSetAllocateInfo allocInfo = {};
@@ -619,7 +521,7 @@ public:
 
 	// Create the depth (and stencil) buffer attachments used by our framebuffers
 	// Note: Override of virtual function in the base class and called from within VulkanExampleBase::prepare
-	void setupDepthStencil()
+	void VulkanExample::setupDepthStencil()
 	{
 		// Create an optimal image used as the depth stencil attachment
 		VkImageCreateInfo image = {};
@@ -669,7 +571,7 @@ public:
 
 	// Create a frame buffer for each swap chain image
 	// Note: Override of virtual function in the base class and called from within VulkanExampleBase::prepare
-	void setupFrameBuffer()
+	void VulkanExample::setupFrameBuffer()
 	{
 		// Create a frame buffer for every image in the swapchain
 		frameBuffers.resize(swapChain.imageCount);
@@ -698,7 +600,7 @@ public:
 	// This allows the driver to know up-front what the rendering will look like and is a good opportunity to optimize especially on tile-based renderers (with multiple subpasses)
 	// Using sub pass dependencies also adds implicit layout transitions for the attachment used, so we don't need to add explicit image memory barriers to transform them
 	// Note: Override of virtual function in the base class and called from within VulkanExampleBase::prepare
-	void setupRenderPass()
+	void VulkanExample::setupRenderPass()
 	{
 		// This example will use a single render pass with one subpass
 
@@ -788,7 +690,7 @@ public:
 	// Vulkan loads its shaders from an immediate binary representation called SPIR-V
 	// Shaders are compiled offline from e.g. GLSL using the reference glslang compiler
 	// This function loads such a shader from a binary file and returns a shader module structure
-	VkShaderModule loadSPIRVShader(std::string filename)
+	VkShaderModule VulkanExample::loadSPIRVShader(std::string filename)
 	{
 		size_t shaderSize;
 		char* shaderCode = NULL;
@@ -827,7 +729,7 @@ public:
 		}
 	}
 
-	void preparePipelines()
+	void VulkanExample::preparePipelines()
 	{
 		// Create the graphics pipeline used in this example
 		// Vulkan uses the concept of rendering pipelines to encapsulate fixed states, replacing OpenGL's complex state machine
@@ -991,7 +893,7 @@ public:
 		vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 	}
 
-	void prepareUniformBuffers()
+	void VulkanExample::prepareUniformBuffers()
 	{
 		// Prepare and initialize a uniform buffer block containing shader uniforms
 		// Single uniforms like in OpenGL are no longer present in Vulkan. All Shader uniforms are passed via uniform buffer blocks
@@ -1033,7 +935,7 @@ public:
 		updateUniformBuffers();
 	}
 
-	void updateUniformBuffers()
+	void VulkanExample::updateUniformBuffers()
 	{
 		// Pass matrices to the shaders
 		uboVS.projectionMatrix = camera.matrices.perspective;
@@ -1049,7 +951,7 @@ public:
 		vkUnmapMemory(device, uniformBufferVS.memory);
 	}
 
-	void prepare()
+	void VulkanExample::prepare()
 	{
 		VulkanExampleBase::prepare();
 		prepareSynchronizationPrimitives();
@@ -1063,40 +965,16 @@ public:
 		prepared = true;
 	}
 
-	virtual void render()
+	void VulkanExample::render()
 	{
 		if (!prepared)
 			return;
 		draw();
 	}
 
-	virtual void viewChanged()
+	void VulkanExample::viewChanged()
 	{
 		// This function is called by the base example class each time the view is changed by user input
 		updateUniformBuffers();
 	}
-};
 
-// OS specific macros for the example main entry points
-// Most of the code base is shared for the different supported operating systems, but stuff like message handling differs
-
-VulkanExample *vulkanExample;
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (vulkanExample != NULL)
-	{
-		vulkanExample->handleMessages(hWnd, uMsg, wParam, lParam);
-	}
-	return (DefWindowProc(hWnd, uMsg, wParam, lParam));
-}
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
-{
-	for (size_t i = 0; i < __argc; i++) { VulkanExample::args.push_back(__argv[i]); };
-	vulkanExample = new VulkanExample();
-	vulkanExample->initVulkan();
-	vulkanExample->setupWindow(hInstance, WndProc);
-	vulkanExample->prepare();
-	vulkanExample->renderLoop();
-	delete(vulkanExample);
-	return 0;
-}
