@@ -66,9 +66,7 @@ class VulkanExample : public VulkanExampleBase {
     glm::mat4 viewMatrix;
   } uboVS;
 
-  // �ܵ��������ڹܵ�������������
-  // �������˹ܵ�ʹ�õ���ɫ���׶κ���ɫ����Դ֮��Ľӿڣ������κ�ʵ�����ݣ�
-  // �ܵ����ֿ����ڶ���ܵ�֮�乲����ֻҪ���ǵĽӿ�ƥ��
+
   VkPipelineLayout pipelineLayout;
 
   // Pipelines (often called "pipeline state objects") are used to bake all
