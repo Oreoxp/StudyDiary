@@ -12,7 +12,7 @@ VulkanExample::VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION) {
   // Values not set here are initialized in the base class constructor
 }
 
-VulkanExample::~VulkanExample() {
+VulkanExample::~VulkanExample() { 
   // Clean up used Vulkan resources
   // Note: Inherited destructor cleans up resources stored in base class
   vkDestroyPipeline(device, pipeline, nullptr);
