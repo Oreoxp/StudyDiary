@@ -13,7 +13,8 @@
 
 #include <vulkan/vulkan.h>
 #include "vulkanexamplebase.h"
-
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 // Set to "true" to enable Vulkan's validation layers (see vulkandebug.cpp for details)
 #define ENABLE_VALIDATION true
 // Set to "true" to use staging buffers for uploading vertex and index data to device local memory
@@ -176,6 +177,8 @@ class VulkanExample : public VulkanExampleBase {
   // glslang compiler This function loads such a shader from a binary file and
   // returns a shader module structure
   VkShaderModule loadSPIRVShader(std::string filename);
+
+  stbi_uc* loadTexture(std::string filename);
 
   void preparePipelines();
 
