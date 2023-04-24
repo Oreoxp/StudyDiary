@@ -6,7 +6,7 @@ VulkanExample::VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION) {
   settings.overlay = false;
   // Setup a default look-at camera
   camera.type = Camera::CameraType::lookat;
-  camera.setPosition(glm::vec3(0.0f, 0.0f, -2.5f));
+  camera.setPosition(glm::vec3(0.0f, 0.0f, -4.5f));
   camera.setRotation(glm::vec3(0.0f));
   camera.setPerspective(60.0f, (float)width / (float)height, 1.0f, 256.0f);
   // Values not set here are initialized in the base class constructor
@@ -301,14 +301,33 @@ void VulkanExample::prepareVertices(bool useStagingBuffers) {
 
   // 装填顶点数据
   std::vector<Vertex> vertexBuffer = {
-      {{1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+      // Front face
+      {{-1.0f, -1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+      {{1.0f, -1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+      {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+      {{-1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
+
+      // Back face
+      {{-1.0f, -1.0f, -1.0f}, {1.0f, 0.0f, 1.0f}},
+      {{1.0f, -1.0f, -1.0f}, {0.0f, 1.0f, 1.0f}},
+      {{1.0f, 1.0f, -1.0f}, {1.0f, 0.0f, 1.0f}},
+      {{-1.0f, 1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}}};
   uint32_t vertexBufferSize =
       static_cast<uint32_t>(vertexBuffer.size()) * sizeof(Vertex);
 
   // 装填索引数据
-  std::vector<uint32_t> indexBuffer = {0, 1, 2};
+  std::vector<uint32_t> indexBuffer = {// Front face
+                                       0, 1, 2, 2, 3, 0,
+                                       // Right face
+                                       1, 5, 6, 6, 2, 1,
+                                       // Back face
+                                       7, 6, 5, 5, 4, 7,
+                                       // Left face
+                                       4, 0, 3, 3, 7, 4,
+                                       // Top face
+                                       3, 2, 6, 6, 7, 3,
+                                       // Bottom face
+                                       4, 5, 1, 1, 0, 4};
   indices.count = static_cast<uint32_t>(indexBuffer.size());
   uint32_t indexBufferSize = indices.count * sizeof(uint32_t);
 
@@ -347,90 +366,115 @@ void VulkanExample::prepareVertices(bool useStagingBuffers) {
     // 表示缓冲区将作为复制操作的源缓冲区
     vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     // 创建主机可见缓冲区以将顶点数据复制到（暂存缓冲区）
+    //  使用vertexBufferInfo创建一个主机可见的缓冲区，并将其句柄存储在stagingBuffers.vertices.buffer中。
+    //  这个缓冲区将作为暂存缓冲区，用于将顶点数据从主机内存复制到设备内存。
     VK_CHECK_RESULT(vkCreateBuffer(device, &vertexBufferInfo, nullptr,
                                     &stagingBuffers.vertices.buffer));
+    // 使用 vkGetBufferMemoryRequirements 函数查询 stagingBuffers.vertices.buffer 的内存需求，并将结果存储
+    // 在 memReqs 中。设置 memAlloc.allocationSize 为 memReqs.size，表示需要分配的内存大小。
     vkGetBufferMemoryRequirements(device, stagingBuffers.vertices.buffer,
                                   &memReqs);
     memAlloc.allocationSize = memReqs.size;
-    // 请求一个主机可见内存类型，可以用来复制我们的数据做
-    // 还要求它是连贯的，以便在取消映射缓冲区后写入对 GPU 可见
+    // 使用 getMemoryTypeIndex 函数为 memAlloc.memoryTypeIndex 选择一个合适的内存类型，该内存类型需具有
+    // VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT和VK_MEMORY_PROPERTY_HOST_COHERENT_BIT属性。这表示内存应该是*主机
+    // 可见的*，以便我们可以直接写入数据，并且*内存应该是连续的*，以便写入操作在取消映射后立即对 GPU 可见。
     memAlloc.memoryTypeIndex = getMemoryTypeIndex(
         memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // 使用 vkAllocateMemory 为暂存缓冲区分配内存，并将其句柄存储在 stagingBuffers.vertices.memory 中
     VK_CHECK_RESULT(vkAllocateMemory(device, &memAlloc, nullptr,
                                       &stagingBuffers.vertices.memory));
-    // 映射和复制
+    // 使用 vkMapMemory 映射 stagingBuffers.vertices.memory 到主机地址空间，并将映射后的指针存储在 data 中。
     VK_CHECK_RESULT(vkMapMemory(device, stagingBuffers.vertices.memory, 0,
                                 memAlloc.allocationSize, 0, &data));
+    // 将顶点数据从 vertexBuffer 复制到映射的内存区域。
     memcpy(data, vertexBuffer.data(), vertexBufferSize);
+    // 然后使用 vkUnmapMemory 取消映射内存。
     vkUnmapMemory(device, stagingBuffers.vertices.memory);
+    // 使用 vkBindBufferMemory 将 stagingBuffers.vertices.memory 绑定到 stagingBuffers.vertices.buffer。
     VK_CHECK_RESULT(vkBindBufferMemory(device, stagingBuffers.vertices.buffer,
                                         stagingBuffers.vertices.memory, 0));
 
-    // 创建一个设备本地缓冲区，（主机本地）顶点数据将被复制到该缓冲区并将用于渲染
+    // 创建一个设备本地缓冲区，该缓冲区将用于渲染。将 vertexBufferInfo.usage 设置为 
+    // VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT，表示缓
+    // 冲区将作为顶点缓冲区和复制操作的目标缓冲区使用。
     vertexBufferInfo.usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    // 使用 vertexBufferInfo 创建一个设备本地缓冲区，并将其句柄存储在 vertices.buffer 中。
     VK_CHECK_RESULT(
         vkCreateBuffer(device, &vertexBufferInfo, nullptr, &vertices.buffer));
+    // 使用vkGetBufferMemoryRequirements函数查询vertices.buffer的内存需求，并将结果存储在memReqs中。
     vkGetBufferMemoryRequirements(device, vertices.buffer, &memReqs);
+    // 设置memAlloc.allocationSize为memReqs.size，表示需要分配的内存大小。
     memAlloc.allocationSize = memReqs.size;
+    // 使用 getMemoryTypeIndex 函数为 memAlloc.memoryTypeIndex 选择一个合适的内存类型，该内存类型需具有 
+    // VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT 属性。这表示内存应该是设备本地的，以便在 GPU 上高效访问。
     memAlloc.memoryTypeIndex = getMemoryTypeIndex(
         memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    // 使用 vkAllocateMemory 为设备本地缓冲区分配内存，并将其句柄存储在 vertices.memory 中。
     VK_CHECK_RESULT(
         vkAllocateMemory(device, &memAlloc, nullptr, &vertices.memory));
+    // 使用 vkBindBufferMemory 将 vertices.memory 绑定到 vertices.buffer。
     VK_CHECK_RESULT(
         vkBindBufferMemory(device, vertices.buffer, vertices.memory, 0));
 
-    // Index buffer
-    VkBufferCreateInfo indexbufferInfo = {};
-    indexbufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    indexbufferInfo.size = indexBufferSize;
-    indexbufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    // Copy index data to a buffer visible to the host (staging buffer)
-    VK_CHECK_RESULT(vkCreateBuffer(device, &indexbufferInfo, nullptr,
-                                    &stagingBuffers.indices.buffer));
+
+    // 先创建暂存缓冲区
+    VkBufferCreateInfo indicesBufferInfo = {};
+    indicesBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    indicesBufferInfo.size = indexBufferSize;
+    indicesBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+    VK_CHECK_RESULT(vkCreateBuffer(device, &indicesBufferInfo, nullptr,
+                                   &stagingBuffers.indices.buffer));
+
+    // 获取缓冲区数据
     vkGetBufferMemoryRequirements(device, stagingBuffers.indices.buffer,
                                   &memReqs);
     memAlloc.allocationSize = memReqs.size;
     memAlloc.memoryTypeIndex = getMemoryTypeIndex(
         memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    // 为暂存缓冲区分配内存
     VK_CHECK_RESULT(vkAllocateMemory(device, &memAlloc, nullptr,
-                                      &stagingBuffers.indices.memory));
+                                     &stagingBuffers.indices.memory));
+    // 将顶点数据从 vertexBuffer 复制到映射的内存区域。
     VK_CHECK_RESULT(vkMapMemory(device, stagingBuffers.indices.memory, 0,
-                                indexBufferSize, 0, &data));
+                                memAlloc.allocationSize, 0, &data));
     memcpy(data, indexBuffer.data(), indexBufferSize);
     vkUnmapMemory(device, stagingBuffers.indices.memory);
+    // 将分配的内存绑定到暂存缓冲区
     VK_CHECK_RESULT(vkBindBufferMemory(device, stagingBuffers.indices.buffer,
-                                        stagingBuffers.indices.memory, 0));
+                                       stagingBuffers.indices.memory, 0));
 
-    // Create destination buffer with device only visibility
-    indexbufferInfo.usage =
+    // 创建设备本地缓冲区
+    indicesBufferInfo.usage =
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     VK_CHECK_RESULT(
-        vkCreateBuffer(device, &indexbufferInfo, nullptr, &indices.buffer));
-    vkGetBufferMemoryRequirements(device, indices.buffer, &memReqs);
+        vkCreateBuffer(device, &indicesBufferInfo, nullptr, &indices.buffer));
+    // 获取缓冲区数据
+    vkGetBufferMemoryRequirements(device, stagingBuffers.indices.buffer,
+                                  &memReqs);
     memAlloc.allocationSize = memReqs.size;
     memAlloc.memoryTypeIndex = getMemoryTypeIndex(
         memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    // 为本地缓冲区分配内存
     VK_CHECK_RESULT(
         vkAllocateMemory(device, &memAlloc, nullptr, &indices.memory));
+    // 将分配的内存绑定到本地缓冲区
     VK_CHECK_RESULT(
         vkBindBufferMemory(device, indices.buffer, indices.memory, 0));
 
-    // Buffer copies have to be submitted to a queue, so we need a command
-    // buffer for them Note: Some devices offer a dedicated transfer queue
-    // (with only the transfer bit set) that may be faster when doing lots of
-    // copies
-    VkCommandBuffer copyCmd = getCommandBuffer(true);
 
-    // Put buffer region copies into command buffer
+    VkCommandBuffer copyCmd = getCommandBuffer(true);
     VkBufferCopy copyRegion = {};
 
     // Vertex buffer
     copyRegion.size = vertexBufferSize;
-    vkCmdCopyBuffer(copyCmd, stagingBuffers.vertices.buffer, vertices.buffer,
-                    1, &copyRegion);
+    vkCmdCopyBuffer(copyCmd, stagingBuffers.vertices.buffer, vertices.buffer, 1,
+                    &copyRegion);
     // Index buffer
     copyRegion.size = indexBufferSize;
     vkCmdCopyBuffer(copyCmd, stagingBuffers.indices.buffer, indices.buffer, 1,
@@ -883,6 +927,38 @@ VkShaderModule VulkanExample::loadSPIRVShader(std::string filename) {
   }
 }
 
+stbi_uc* VulkanExample::loadTexture(std::string filename) {
+  size_t shaderSize;
+  char* shaderCode = NULL;
+
+  std::ifstream is(filename, std::ios::binary | std::ios::in | std::ios::ate);
+
+  if (is.is_open()) {
+    shaderSize = is.tellg();
+    is.seekg(0, std::ios::beg);
+    // Copy file contents into a buffer
+    shaderCode = new char[shaderSize];
+    is.read(shaderCode, shaderSize);
+    is.close();
+    assert(shaderSize > 0);
+  }
+  if (shaderCode) {
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data =
+        stbi_load("./container.jpg", &width, &height, &nrChannels, 0);
+    if (!data) {
+      throw std::runtime_error("Failed to load texture image!");
+    }
+    delete[] shaderCode;
+    return data;
+  } else {
+    std::cerr << "Error: Could not open shader file \"" << filename << "\""
+              << std::endl;
+    return VK_NULL_HANDLE;
+  }
+}
+
 void VulkanExample::preparePipelines() {
   // Create the graphics pipeline used in this example
   // Vulkan uses the concept of rendering pipelines to encapsulate fixed
@@ -1071,12 +1147,11 @@ void VulkanExample::preparePipelines() {
 }
 
 void VulkanExample::prepareUniformBuffers() {
-  // Prepare and initialize a uniform buffer block containing shader uniforms
-  // Single uniforms like in OpenGL are no longer present in Vulkan. All
-  // Shader uniforms are passed via uniform buffer blocks
+  // 准备并初始化包含着色器制服的统一缓冲区块 Vulkan 中不再存在像 OpenGL
+  // 中那样的单一制服。 所有 Shader 制服都通过统一缓冲块传递
   VkMemoryRequirements memReqs;
 
-  // Vertex shader uniform buffer block
+  // 顶点着色器统一缓冲块
   VkBufferCreateInfo bufferInfo = {};
   VkMemoryAllocateInfo allocInfo = {};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1086,21 +1161,19 @@ void VulkanExample::prepareUniformBuffers() {
 
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   bufferInfo.size = sizeof(uboVS);
-  // This buffer will be used as a uniform buffer
+  //该缓冲区将用作统一缓冲区
   bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
   // Create a new buffer
   VK_CHECK_RESULT(
       vkCreateBuffer(device, &bufferInfo, nullptr, &uniformBufferVS.buffer));
-  // Get memory requirements including size, alignment and memory type
+  // 获取内存要求，包括大小、对齐方式和内存类型
   vkGetBufferMemoryRequirements(device, uniformBufferVS.buffer, &memReqs);
   allocInfo.allocationSize = memReqs.size;
-  // Get the memory type index that supports host visible memory access
-  // Most implementations offer multiple memory types and selecting the
-  // correct one to allocate memory from is crucial We also want the buffer to
-  // be host coherent so we don't have to flush (or sync after every update.
-  // Note: This may affect performance so you might not want to do this in a
-  // real world application that updates buffers on a regular base
+  // 获取支持主机可见内存访问的内存类型索引
+  // 大多数实现提供多种内存类型，选择正确的内存类型来分配内存至关重要
+  // 我们还希望缓冲区与主机一致，这样我们就不必刷新（或在每次 更新。
+  // 注意：这可能会影响性能，因此您可能不希望在定期更新缓冲区的实际应用程序中执行此操作
   allocInfo.memoryTypeIndex = getMemoryTypeIndex(
       memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -1111,8 +1184,7 @@ void VulkanExample::prepareUniformBuffers() {
   VK_CHECK_RESULT(vkBindBufferMemory(device, uniformBufferVS.buffer,
                                       uniformBufferVS.memory, 0));
 
-  // Store information in the uniform's descriptor that is used by the
-  // descriptor set
+  // 将信息存储在描述符集使用的制服描述符中
   uniformBufferVS.descriptor.buffer = uniformBufferVS.buffer;
   uniformBufferVS.descriptor.offset = 0;
   uniformBufferVS.descriptor.range = sizeof(uboVS);
@@ -1121,10 +1193,12 @@ void VulkanExample::prepareUniformBuffers() {
 }
 
 void VulkanExample::updateUniformBuffers() {
+  glm::mat4 model(1.0f);
+  model = glm::rotate(model, glm::radians(45.0f), {0.0f, 1.0f, 0.0f});
   // Pass matrices to the shaders
   uboVS.projectionMatrix = camera.matrices.perspective;
   uboVS.viewMatrix = camera.matrices.view;
-  uboVS.modelMatrix = glm::mat4(1.0f);
+  uboVS.modelMatrix = model;
 
   // Map uniform buffer and update it
   uint8_t* pData;
