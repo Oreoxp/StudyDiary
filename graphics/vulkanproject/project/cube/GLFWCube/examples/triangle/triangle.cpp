@@ -1,4 +1,4 @@
-#include "triangle.h"
+﻿#include "triangle.h"
 
 VulkanExample::VulkanExample() : VulkanExampleBase(ENABLE_VALIDATION) {
   title = "Vulkan Example - Basic indexed triangle";
@@ -292,17 +292,14 @@ void VulkanExample::draw() {
   }
 }
 
-// Prepare vertex and index buffers for an indexed triangle
-// Also uploads them to device local memory using staging and initializes
-// vertex input and attribute binding to match the vertex shader
+// 为索引三角形准备顶点和索引缓冲区
+// 还使用暂存将它们上传到设备本地内存并初始化顶点输入和属性绑定以匹配顶点着色器
 void VulkanExample::prepareVertices(bool useStagingBuffers) {
-  // A note on memory management in Vulkan in general:
-  //	This is a very complex topic and while it's fine for an example
-  //application to small individual memory allocations that is not 	what should
-  //be done a real-world application, where you should allocate large chunks
-  //of memory at once instead.
+  // 关于 Vulkan 内存管理的一般说明：
+  // 这是一个非常复杂的主题，虽然对于一个示例应用程序来说，小的单独内存分配是可
+  // 以的，但在现实世界的应用程序中，你应该一次性分配大块内存。
 
-  // Setup vertices
+  // 装填顶点数据
   std::vector<Vertex> vertexBuffer = {
       {{1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
       {{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
@@ -310,7 +307,7 @@ void VulkanExample::prepareVertices(bool useStagingBuffers) {
   uint32_t vertexBufferSize =
       static_cast<uint32_t>(vertexBuffer.size()) * sizeof(Vertex);
 
-  // Setup indices
+  // 装填索引数据
   std::vector<uint32_t> indexBuffer = {0, 1, 2};
   indices.count = static_cast<uint32_t>(indexBuffer.size());
   uint32_t indexBufferSize = indices.count * sizeof(uint32_t);
@@ -321,51 +318,48 @@ void VulkanExample::prepareVertices(bool useStagingBuffers) {
 
   void* data;
 
-  if (useStagingBuffers) {
-    // Static data like vertex and index buffer should be stored on the device
-    // memory for optimal (and fastest) access by the GPU
+  if (useStagingBuffers) {//使用暂存缓冲区（GPU内存映射到）
+    // 顶点和索引缓冲区等静态数据应存储在设备内存中，以便 GPU
+    // 进行最佳（和最快）访问
     //
-    // To achieve this we use so-called "staging buffers" :
-    // - Create a buffer that's visible to the host (and can be mapped)
-    // - Copy the data to this buffer
-    // - Create another buffer that's local on the device (VRAM) with the same
-    // size
-    // - Copy the data from the host to the device using a command buffer
-    // - Delete the host visible (staging) buffer
-    // - Use the device local buffers for rendering
+    // 为了实现这一点，我们使用所谓的“暂存缓冲区”：
+    // - 创建一个主机可见的缓冲区（并且可以映射）
+    // - 将数据复制到此缓冲区
+    // - 在设备 (VRAM) 上创建另一个具有相同大小的本地缓冲区
+    // - 使用命令缓冲区将数据从主机复制到设备
+    // - 删除主机可见（暂存）缓冲区
+    // - 使用设备本地缓冲区进行渲染
 
     struct StagingBuffer {
-      VkDeviceMemory memory;
-      VkBuffer buffer;
+      VkDeviceMemory memory;//分配给缓冲区的内存
+      VkBuffer buffer;//实际的缓冲区对象
     };
 
     struct {
-      StagingBuffer vertices;
-      StagingBuffer indices;
+      StagingBuffer vertices;//顶点暂存缓冲区
+      StagingBuffer indices;//索引暂存缓冲区
     } stagingBuffers;
 
-    // Vertex buffer
+    // 顶点 buffer
     VkBufferCreateInfo vertexBufferInfo = {};
     vertexBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     vertexBufferInfo.size = vertexBufferSize;
-    // Buffer is used as the copy source
+    // 表示缓冲区将作为复制操作的源缓冲区
     vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    // Create a host-visible buffer to copy the vertex data to (staging
-    // buffer)
+    // 创建主机可见缓冲区以将顶点数据复制到（暂存缓冲区）
     VK_CHECK_RESULT(vkCreateBuffer(device, &vertexBufferInfo, nullptr,
                                     &stagingBuffers.vertices.buffer));
     vkGetBufferMemoryRequirements(device, stagingBuffers.vertices.buffer,
                                   &memReqs);
     memAlloc.allocationSize = memReqs.size;
-    // Request a host visible memory type that can be used to copy our data do
-    // Also request it to be coherent, so that writes are visible to the GPU
-    // right after unmapping the buffer
+    // 请求一个主机可见内存类型，可以用来复制我们的数据做
+    // 还要求它是连贯的，以便在取消映射缓冲区后写入对 GPU 可见
     memAlloc.memoryTypeIndex = getMemoryTypeIndex(
         memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     VK_CHECK_RESULT(vkAllocateMemory(device, &memAlloc, nullptr,
                                       &stagingBuffers.vertices.memory));
-    // Map and copy
+    // 映射和复制
     VK_CHECK_RESULT(vkMapMemory(device, stagingBuffers.vertices.memory, 0,
                                 memAlloc.allocationSize, 0, &data));
     memcpy(data, vertexBuffer.data(), vertexBufferSize);
@@ -373,8 +367,7 @@ void VulkanExample::prepareVertices(bool useStagingBuffers) {
     VK_CHECK_RESULT(vkBindBufferMemory(device, stagingBuffers.vertices.buffer,
                                         stagingBuffers.vertices.memory, 0));
 
-    // Create a device local buffer to which the (host local) vertex data will
-    // be copied and which will be used for rendering
+    // 创建一个设备本地缓冲区，（主机本地）顶点数据将被复制到该缓冲区并将用于渲染
     vertexBufferInfo.usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     VK_CHECK_RESULT(
