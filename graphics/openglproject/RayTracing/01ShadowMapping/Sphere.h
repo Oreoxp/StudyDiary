@@ -5,7 +5,7 @@
 
 class Sphere {
 public:
-    Sphere();
+    Sphere(QString vs = "./resource/sphereLast.vs", QString fs = "./resource/sphereLast.fs");
     void Draw();
     void bind();
     void setUniformValue(const char* name, QMatrix4x4 value);

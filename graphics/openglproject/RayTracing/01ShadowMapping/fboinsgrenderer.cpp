@@ -150,7 +150,8 @@ GLFWRenderer::GLFWRenderer()
       m_vao(0),
       m_vbo(0),
       m_program(0),
-      camera(QVector3D(0.0f, 0.0f, 3.0f)) {
+      camera(QVector3D(0.0f, 0.0f, 3.0f)),
+      m_sphere_light("./resource/light_sphere.vs", "./resource/light_sphere.fs") {
   initializeOpenGLFunctions();
   m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
@@ -169,16 +170,11 @@ GLFWRenderer::GLFWRenderer()
       qWarning() << "Invalid OpenGL context";
       return;
     }
-    m_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
-                                               "./sphere.vs");
-    m_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
-                                               "./sphere.fs");
-    m_shader->link();
 
     m_bottom_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Vertex,
-      "./bottom.vs");
+      "./resource/bottom.vs");
     m_bottom_shader->addCacheableShaderFromSourceFile(QOpenGLShader::Fragment,
-      "./bottom.fs");
+      "./resource/bottom.fs");
     m_bottom_shader->link();
   }
 
@@ -295,7 +291,7 @@ void GLFWRenderer::render() {
   model2.scale(2.0f);
   model2.rotate(60.0f,
     { 1.0,0.0,0 });
-  model2.translate(0, 0, -0.5);
+  model2.translate(0, -0.8, -0.5);
   glBindVertexArray(m_bottom_vao);
   m_bottom_shader->setUniformValue("view", view);
   m_bottom_shader->setUniformValue("projection", projection);
@@ -304,12 +300,36 @@ void GLFWRenderer::render() {
   glBindVertexArray(0);
   m_bottom_shader->release();
 
+  //light
+  m_sphere_light.bind();
+  glDepthFunc(GL_LESS);
+  glBindVertexArray(m_vao);
+  QMatrix4x4 model_light{};
+  // Compute the center of model2
+  QVector3D model2_center = model2 * QVector3D(0, 0, 0);
+  // Set the initial position of the model_light
+  model_light.translate(model2_center);
+  model_light.translate(0, 0, 0); // Move the light away from the model2_center along the model2 normal
+  model_light.translate(-model2_center);
+  // Rotate the model_light around the model2's center normal
+  model_light.translate(model2_center);
+  model_light.rotate(30.0f * timer.elapsed() / 200, QVector3D(0.0, -1.0, 0.5)); // Rotate around model2's center normal
+  model_light.translate(-model2_center);
+  model_light.scale(0.1f);
+  m_sphere_light.setUniformValue("view", view);
+  m_sphere_light.setUniformValue("projection", projection);
+  m_sphere_light.setUniformValue("model", model_light);
+  m_sphere_light.Draw();
+  glBindVertexArray(0);
+
+  //sphere 1
   m_sphere.bind();
   glDepthFunc(GL_LESS);
   glBindVertexArray(m_vao);
   QMatrix4x4 model3{};
-  model3.translate(0, 0, 0);
+  model3.translate(model2_center);
   model3.scale(0.2f);
+  model3.translate(0, -1.0, 0);
   m_sphere.setUniformValue("view", view);
   m_sphere.setUniformValue("projection", projection);
   m_sphere.setUniformValue("model", model3);
@@ -317,7 +337,24 @@ void GLFWRenderer::render() {
   m_sphere.setUniformValue("environmentTexture", 0);
   m_sphere.Draw();
   glBindVertexArray(0);
+
+  //sphere 2
+  m_sphere.bind();
+  glDepthFunc(GL_LESS);
+  glBindVertexArray(m_vao);
+  QMatrix4x4 model4{};
+  model4.translate(model2_center);
+  model4.scale(0.2f);
+  model4.translate(-3.0, -1.0, 0);
+  m_sphere.setUniformValue("view", view);
+  m_sphere.setUniformValue("projection", projection);
+  m_sphere.setUniformValue("model", model4);
+  m_sphere.setUniformValue("cameraPos", camera.Position);
+  m_sphere.setUniformValue("environmentTexture", 0);
+  m_sphere.Draw();
+  glBindVertexArray(0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
   m_fbo->release();
 }
 
