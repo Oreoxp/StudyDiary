@@ -6,8 +6,8 @@
 #include <QOpenGLFramebufferObjectFormat>
 #include <QOpenGLFunctions_3_0>
 #include <QOpenGLVertexArrayObject>
-#include <QtOpenGL/QOpenGLShaderProgram>
-#include <QtOpenGL/QOpenGLTexture>
+#include <QtGui/QOpenGLShaderProgram>
+#include <QtGui/QOpenGLTexture>
 #include <QtQuick/QQuickFramebufferObject>
 #include <QtQuick/QQuickWindow>
 #include "sphere.h"
@@ -49,7 +49,6 @@ class GLFWRenderer : public QObject,
   QOpenGLFramebufferObject* createFramebufferObject(const QSize& size) override;
   void render() override;
   void renderBackgroundFbo();
-  void loadDynamicEnvironmentMapping(QMatrix4x4 view, QMatrix4x4 projection);
   void synchronize(QQuickFramebufferObject* item) {
     m_item = static_cast<GLFWItem*>(item);
     if (m_item) {
@@ -75,12 +74,12 @@ class GLFWRenderer : public QObject,
   QOpenGLShaderProgram* m_main_shader; 
   QOpenGLShaderProgram* m_shader;
   QOpenGLShaderProgram* m_shaderSolid;
-  QOpenGLShaderProgram* m_shader2;
+  QOpenGLShaderProgram* m_bottom_shader;
   QOpenGLShaderProgram* m_skybox_shader; 
   QOpenGLFramebufferObject* m_fbo_cube[6];
   QOpenGLTexture* m_cube_map;
   GLuint m_vao;
-  GLuint m_vao2;
+  GLuint m_bottom_vao;
   GLuint m_vao_quad;
   GLuint m_skyboxVAO;
   GLuint cubemapTexture;

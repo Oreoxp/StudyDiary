@@ -3,8 +3,8 @@
 
 #include <GLFW/glfw3.h>
 #include <QOpenGLFunctions_3_0>
-#include <QtOpenGL/QOpenGLShaderProgram>
-#include <QtOpenGL/QOpenGLTexture>
+#include <QtGui/QOpenGLShaderProgram>
+#include <QtGui/QOpenGLTexture>
 #include <QtQuick/QQuickWindow>
 #include <QtQuick/QQuickFramebufferObject>
 #include <QOpenGLFramebufferObjectFormat>

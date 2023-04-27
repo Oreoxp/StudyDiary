@@ -1,6 +1,6 @@
 #include <QOpenGLFunctions_3_0>
-#include <QtOpenGL/QOpenGLShaderProgram>
-#include <QtOpenGL/QOpenGLTexture>
+#include <QtGui/QOpenGLShaderProgram>
+#include <QtGui/QOpenGLTexture>
 #include <QOpenGLShaderProgram>
 #include <QtQuick/QQuickWindow>
 #include <QtQuick/QQuickFramebufferObject>
