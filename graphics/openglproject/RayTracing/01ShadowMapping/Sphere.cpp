@@ -1,9 +1,9 @@
 #include "Sphere.h"
 
-Sphere::Sphere(){
+Sphere::Sphere(QString vs, QString fs){
     m_model = new Model("../../resouce/sphere/sphere.obj");
-    m_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, "./sphereLast.vs");
-    m_shader.addShaderFromSourceFile(QOpenGLShader::Fragment, "./sphereLast.fs");
+    m_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, vs);
+    m_shader.addShaderFromSourceFile(QOpenGLShader::Fragment, fs);
     m_shader.link();
 }
 
