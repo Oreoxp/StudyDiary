@@ -1,6 +1,6 @@
 #include "fboinsgrenderer.h"
 
-#include <QtOpenGL/QOpenGLFramebufferObject>
+#include <QtGui/QOpenGLFramebufferObject>
 
 #include <QtQuick/QQuickWindow>
 #include <qsgsimpletexturenode.h>
@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <QtMath> 
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

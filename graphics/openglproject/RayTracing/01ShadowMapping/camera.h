@@ -5,8 +5,9 @@
 #include <QOpenGLFramebufferObjectFormat>
 #include <QOpenGLFunctions_3_0>
 #include <QOpenGLVertexArrayObject>
-#include <QtOpenGL/QOpenGLShaderProgram>
+#include <QtGui/QOpenGLShaderProgram>
 #include <vector>
+#include <QtMath> 
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
@@ -44,10 +45,10 @@ public:
 
     // constructor with vectors
     Camera(QVector3D position = QVector3D(0.0f, 0.0f, 0.0f),
-           QVector3D up = QVector3D(0.0f, -1.0f, 0.0f),
+           QVector3D up = QVector3D(0.0f, 1.0f, 0.0f),
            float yaw = YAW,
            float pitch = PITCH)
-        : Front(QVector3D(0.0f, 0.0f, 1.0f)),
+        : Front(QVector3D(0.0f, 0.0f, -1.0f)),
           MovementSpeed(SPEED),
           MouseSensitivity(SENSITIVITY),
           Zoom(ZOOM)

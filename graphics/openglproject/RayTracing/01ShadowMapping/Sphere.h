@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QtOpenGL/QOpenGLShaderProgram>
+#include <QtGui/QOpenGLShaderProgram>
 #include "rendererStruct.h"
 
 class Sphere {
