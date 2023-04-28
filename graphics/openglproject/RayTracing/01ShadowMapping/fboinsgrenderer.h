@@ -107,5 +107,7 @@ class GLFWRenderer : public QObject,
   float firstMouse = false;
   Sphere m_sphere;
   Sphere m_sphere_light;
+  Sphere m_sphere_bottom;
+  //std::vector<OtherObject> obj;
 };
 #endif
