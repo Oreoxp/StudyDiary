@@ -237,3 +237,41 @@ GLuint Model::TextureFromFile(const char* path, QString directory) {
 
     return textureID;
 }
+
+
+void Model::getVertexDataTexture(OtherObject& obj) {
+    auto vertexsData = meshes[0].vertices;
+    if (vertexData.empty()) {
+      for (auto item : vertexsData) {
+        vertexData.push_back(item.position.x());
+        vertexData.push_back(item.position.y());
+        vertexData.push_back(item.position.z());
+        nuomalData.push_back(item.normal.x());
+        nuomalData.push_back(item.normal.y());
+        nuomalData.push_back(item.normal.z());
+      }
+    }
+    GLuint vertexDataTexture;
+    glGenTextures(1, &vertexDataTexture);
+    glBindTexture(GL_TEXTURE_2D, vertexDataTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F,  vertexData.size(), 1, 0, GL_RGB, GL_FLOAT, vertexData.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Create and upload normal data texture
+    GLuint normalDataTexture;
+    glGenTextures(1, &normalDataTexture);
+    glBindTexture(GL_TEXTURE_2D, normalDataTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, nuomalData.size(), 1, 0, GL_RGB, GL_FLOAT, nuomalData.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    obj.vertices_id = vertexDataTexture;
+    obj.normals_id = normalDataTexture;
+    obj.vertices = vertexData.data();
+    obj.normals = nuomalData.data();
+}
+
+int Model::getNumTriangles() {
+    return meshes[0].indices.size()/3;
+}

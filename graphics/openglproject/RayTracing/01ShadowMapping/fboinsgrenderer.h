@@ -108,6 +108,7 @@ class GLFWRenderer : public QObject,
   Sphere m_sphere;
   Sphere m_sphere_light;
   Sphere m_sphere_bottom;
-  //std::vector<OtherObject> obj;
+  Sphere m_sphere_torusknot;
+  std::vector<OtherObject> obj;
 };
 #endif

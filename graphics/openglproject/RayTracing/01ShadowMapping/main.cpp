@@ -2,11 +2,13 @@
 
 #include <QtQuick/QQuickView>
 #include <QTCore\QTextCodec>
+#include <Windows.h>
 
 #include "fboinsgrenderer.h"
 
 int main(int argc, char **argv)
 {
+    //HMODULE hMod = LoadLibrary(L"C:\\Program Files\\RenderDoc\\renderdoc.dll");
     QGuiApplication app(argc, argv);
 
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
