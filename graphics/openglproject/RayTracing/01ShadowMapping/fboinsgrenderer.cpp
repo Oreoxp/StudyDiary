@@ -153,7 +153,7 @@ GLFWRenderer::GLFWRenderer()
       camera(QVector3D(0.0f, 0.0f, 3.0f)),
       m_sphere_light("./resource/light_sphere.vs", "./resource/light_sphere.fs"),
       m_sphere_bottom("./resource/bottom.vs", "./resource/bottom.fs", "../../resouce/sphere/square.obj"),
-      m_sphere_torusknot("./resource/sphereLast.vs", "./resource/sphereLast.fs", "../../resouce/sphere/torusknot.obj") {
+      m_sphere_torusknot("./resource/sphereLast.vs", "./resource/sphereLast.fs", "../../resouce/sphere/rifle.obj") {
   initializeOpenGLFunctions();
   m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
