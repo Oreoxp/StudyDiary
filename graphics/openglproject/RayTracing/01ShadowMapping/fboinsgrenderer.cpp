@@ -151,7 +151,8 @@ GLFWRenderer::GLFWRenderer()
       m_vbo(0),
       m_program(0),
       camera(QVector3D(0.0f, 0.0f, 3.0f)),
-      m_sphere_light("./resource/light_sphere.vs", "./resource/light_sphere.fs") {
+      m_sphere_light("./resource/light_sphere.vs", "./resource/light_sphere.fs"),
+      m_sphere_bottom("./resource/bottom.vs", "./resource/bottom.fs", "../../resouce/sphere/square.obj") {
   initializeOpenGLFunctions();
   m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
@@ -271,6 +272,8 @@ void GLFWRenderer::renderBackgroundFbo() {
 
 
 void GLFWRenderer::render() {
+  //obj.clear();
+  //obj.resize(2);
   float currentFrame = timer.elapsed();
   deltaTime = (currentFrame - lastFrame) / 100.0;
   lastFrame = currentFrame;
@@ -286,19 +289,11 @@ void GLFWRenderer::render() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
-  m_bottom_shader->bind();
-  QMatrix4x4 model2{};
-  model2.scale(2.0f);
-  model2.rotate(60.0f,
+  QMatrix4x4 model_bottom{};
+  model_bottom.scale(4.0f);
+  model_bottom.rotate(60.0f,
     { 1.0,0.0,0 });
-  model2.translate(0, -0.8, -0.5);
-  glBindVertexArray(m_bottom_vao);
-  m_bottom_shader->setUniformValue("view", view);
-  m_bottom_shader->setUniformValue("projection", projection);
-  m_bottom_shader->setUniformValue("model", model2);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  glBindVertexArray(0);
-  m_bottom_shader->release();
+  model_bottom.translate(0, -0.8, -0.5);
 
   //light
   m_sphere_light.bind();
@@ -306,7 +301,7 @@ void GLFWRenderer::render() {
   glBindVertexArray(m_vao);
   QMatrix4x4 model_light{};
   // Compute the center of model2
-  QVector3D model2_center = model2 * QVector3D(0, 0, 0);
+  QVector3D model2_center = model_bottom * QVector3D(0, 0, 0);
   // Set the initial position of the model_light
   model_light.translate(model2_center);
   model_light.translate(0, 0, 0); // Move the light away from the model2_center along the model2 normal
@@ -319,7 +314,7 @@ void GLFWRenderer::render() {
   m_sphere_light.setUniformValue("view", view);
   m_sphere_light.setUniformValue("projection", projection);
   m_sphere_light.setUniformValue("model", model_light);
-  m_sphere_light.Draw();
+  m_sphere_light.Draw(QMatrix4x4(), QMatrix4x4());
   glBindVertexArray(0);
 
   //sphere 1
@@ -329,13 +324,12 @@ void GLFWRenderer::render() {
   QMatrix4x4 model3{};
   model3.translate(model2_center);
   model3.scale(0.2f);
-  model3.translate(0, -1.0, 0);
+  model3.translate(3, -1.0, 0);
   m_sphere.setUniformValue("view", view);
   m_sphere.setUniformValue("projection", projection);
   m_sphere.setUniformValue("model", model3);
-  m_sphere.setUniformValue("cameraPos", camera.Position);
-  m_sphere.setUniformValue("environmentTexture", 0);
-  m_sphere.Draw();
+  m_sphere_light.Draw(QMatrix4x4(), QMatrix4x4());
+  //obj.push_back({projection*view*model3, 2});
   glBindVertexArray(0);
 
   //sphere 2
@@ -349,10 +343,27 @@ void GLFWRenderer::render() {
   m_sphere.setUniformValue("view", view);
   m_sphere.setUniformValue("projection", projection);
   m_sphere.setUniformValue("model", model4);
-  m_sphere.setUniformValue("cameraPos", camera.Position);
-  m_sphere.setUniformValue("environmentTexture", 0);
-  m_sphere.Draw();
+  m_sphere.setUniformValue("viewPos", view * QVector3D{ 0., 0., 0. });
+  m_sphere.Draw(model4, model_light, true);
+  //obj.push_back({projection*view*model4, 2});
   glBindVertexArray(0);
+
+  //bottom
+  m_sphere_bottom.bind();
+  glBindVertexArray(m_vao);
+  m_sphere_bottom.setUniformValue("view", view);
+  m_sphere_bottom.setUniformValue("projection", projection);
+  m_sphere_bottom.setUniformValue("model", model_bottom);
+  m_sphere_bottom.setUniformValue("viewPos", view * QVector3D{ 0., 0., 0. });
+  auto ss = projection * view * model3 * QVector3D{ 0., 0., 0. };
+  m_sphere_bottom.setUniformValue("otherObejcts[0].position", model3 *QVector3D{ 0., 0., 0. });
+  m_sphere_bottom.setUniformValue("otherObejcts[0].radius", 2);
+  ss = projection * view * model4 * QVector3D{ 0., 0., 0. };
+  m_sphere_bottom.setUniformValue("otherObejcts[1].position", model4 * QVector3D{ 0., 0., 0. });
+  m_sphere_bottom.setUniformValue("otherObejcts[1].radius", 2);
+  m_sphere_bottom.Draw(model_bottom, model_light, true);
+  glBindVertexArray(0);
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   m_fbo->release();
