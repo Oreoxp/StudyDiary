@@ -14,12 +14,9 @@ public:
     void setUniformValue(const char* name, int value);
     void setUniformValue(const char* name, QVector3D value);
 
+    void getVertexDataTexture(OtherObject&);
+    int getNumTriangles();
 
-
-    struct OtherObject {
-      QVector3D pos;
-      float r;
-    };
 private:
     QOpenGLShaderProgram m_shader;
     Model* m_model;

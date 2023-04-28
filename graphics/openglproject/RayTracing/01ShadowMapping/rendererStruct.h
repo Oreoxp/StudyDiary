@@ -12,6 +12,15 @@
 #include <../../assimp/scene.h>
 #include <../../assimp/postprocess.h>
 
+struct OtherObject {
+  QVector3D pos;
+  float r;
+  GLuint vertices_id;
+  GLuint normals_id;
+  float* vertices;
+  float* normals;
+  int num_triangles;
+};
 
 struct Vertex {
     QVector3D position;
@@ -31,7 +40,7 @@ class Mesh : protected QOpenGLFunctions_3_0 {
     void Draw(QOpenGLShaderProgram* shader);
     Mesh(const Mesh& mesh);
     Mesh& operator=(const Mesh& mesh);
-private:
+public:
     GLuint VAO, VBO, EBO;
     QVector<Vertex> vertices;
     QVector<GLuint> indices;
@@ -43,7 +52,12 @@ class Model : protected QOpenGLFunctions_3_0 {
  public:
     Model(QString path);
     void Draw(QOpenGLShaderProgram* shader);
+
+    void getVertexDataTexture(OtherObject& obj);
+    int getNumTriangles();
 private:
+    std::vector<float> vertexData;
+    std::vector<float> nuomalData;
     QVector<Mesh> meshes;
     QString directory;
     QVector<Texture> textures_loaded;

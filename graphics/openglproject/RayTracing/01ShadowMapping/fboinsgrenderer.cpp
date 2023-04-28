@@ -152,7 +152,8 @@ GLFWRenderer::GLFWRenderer()
       m_program(0),
       camera(QVector3D(0.0f, 0.0f, 3.0f)),
       m_sphere_light("./resource/light_sphere.vs", "./resource/light_sphere.fs"),
-      m_sphere_bottom("./resource/bottom.vs", "./resource/bottom.fs", "../../resouce/sphere/square.obj") {
+      m_sphere_bottom("./resource/bottom.vs", "./resource/bottom.fs", "../../resouce/sphere/square.obj"),
+      m_sphere_torusknot("./resource/sphereLast.vs", "./resource/sphereLast.fs", "../../resouce/sphere/torusknot.obj") {
   initializeOpenGLFunctions();
   m_main_shader = new QOpenGLShaderProgram();
   m_shader = new QOpenGLShaderProgram();
@@ -272,8 +273,8 @@ void GLFWRenderer::renderBackgroundFbo() {
 
 
 void GLFWRenderer::render() {
-  //obj.clear();
-  //obj.resize(2);
+  obj.clear();
+  obj.reserve(3);
   float currentFrame = timer.elapsed();
   deltaTime = (currentFrame - lastFrame) / 100.0;
   lastFrame = currentFrame;
@@ -298,7 +299,6 @@ void GLFWRenderer::render() {
   //light
   m_sphere_light.bind();
   glDepthFunc(GL_LESS);
-  glBindVertexArray(m_vao);
   QMatrix4x4 model_light{};
   // Compute the center of model2
   QVector3D model2_center = model_bottom * QVector3D(0, 0, 0);
@@ -315,7 +315,6 @@ void GLFWRenderer::render() {
   m_sphere_light.setUniformValue("projection", projection);
   m_sphere_light.setUniformValue("model", model_light);
   m_sphere_light.Draw(QMatrix4x4(), QMatrix4x4());
-  glBindVertexArray(0);
 
   //sphere 1
   m_sphere.bind();
@@ -328,14 +327,18 @@ void GLFWRenderer::render() {
   m_sphere.setUniformValue("view", view);
   m_sphere.setUniformValue("projection", projection);
   m_sphere.setUniformValue("model", model3);
-  m_sphere_light.Draw(QMatrix4x4(), QMatrix4x4());
-  //obj.push_back({projection*view*model3, 2});
+  m_sphere.Draw(model3, model_light, true);
+  OtherObject obj1;
+  m_sphere.getVertexDataTexture(obj1);
+  obj1.num_triangles = m_sphere.getNumTriangles();
+  obj1.pos = model3 * QVector3D{ 0., 0., 0. };
+  obj1.r = 2;
+  obj.push_back(obj1);
   glBindVertexArray(0);
 
   //sphere 2
   m_sphere.bind();
   glDepthFunc(GL_LESS);
-  glBindVertexArray(m_vao);
   QMatrix4x4 model4{};
   model4.translate(model2_center);
   model4.scale(0.2f);
@@ -345,24 +348,58 @@ void GLFWRenderer::render() {
   m_sphere.setUniformValue("model", model4);
   m_sphere.setUniformValue("viewPos", view * QVector3D{ 0., 0., 0. });
   m_sphere.Draw(model4, model_light, true);
+  OtherObject obj2;
+  m_sphere.getVertexDataTexture(obj2);
+  obj2.num_triangles = m_sphere.getNumTriangles();
+  obj2.pos = model3 * QVector3D{ 0., 0., 0. };
+  obj2.r = 2;
+  obj.push_back(obj1);
+
+  //torusknot  
+  m_sphere_torusknot.bind();
+  glDepthFunc(GL_LESS);
+  //glBindVertexArray(m_vao);
+  QMatrix4x4 model_torusknot{};
+  model_torusknot.translate(model2_center);
+  model_torusknot.translate(0.0, -0.3, 0.0);
+  model_torusknot.scale(0.01f);
+  m_sphere_torusknot.setUniformValue("view", view);
+  m_sphere_torusknot.setUniformValue("projection", projection);
+  m_sphere_torusknot.setUniformValue("model", model_torusknot);
+  m_sphere_torusknot.setUniformValue("viewPos", view * QVector3D{ 0., 0., 0. });
+  m_sphere_torusknot.Draw(model_torusknot, model_light, true);
   //obj.push_back({projection*view*model4, 2});
-  glBindVertexArray(0);
+  //glBindVertexArray(0);
 
   //bottom
   m_sphere_bottom.bind();
-  glBindVertexArray(m_vao);
   m_sphere_bottom.setUniformValue("view", view);
   m_sphere_bottom.setUniformValue("projection", projection);
   m_sphere_bottom.setUniformValue("model", model_bottom);
   m_sphere_bottom.setUniformValue("viewPos", view * QVector3D{ 0., 0., 0. });
-  auto ss = projection * view * model3 * QVector3D{ 0., 0., 0. };
+
   m_sphere_bottom.setUniformValue("otherObejcts[0].position", model3 *QVector3D{ 0., 0., 0. });
   m_sphere_bottom.setUniformValue("otherObejcts[0].radius", 2);
-  ss = projection * view * model4 * QVector3D{ 0., 0., 0. };
   m_sphere_bottom.setUniformValue("otherObejcts[1].position", model4 * QVector3D{ 0., 0., 0. });
   m_sphere_bottom.setUniformValue("otherObejcts[1].radius", 2);
+  m_sphere_bottom.setUniformValue("otherObejcts[2].position", model_torusknot* QVector3D{ 0., 0., 0. });
+  m_sphere_bottom.setUniformValue("otherObejcts[2].radius", 2);
+  m_sphere_bottom.setUniformValue("otherObejcts[0].vertex_data_texture", obj[0].vertices_id);
+  m_sphere_bottom.setUniformValue("otherObejcts[0].normal_data_texture", obj[0].normals_id);
+  m_sphere_bottom.setUniformValue("otherObejcts[0].num_triangles", obj[0].num_triangles);
+  m_sphere_bottom.setUniformValue("otherObejcts[1].vertex_data_texture", obj[1].vertices_id);
+  m_sphere_bottom.setUniformValue("otherObejcts[1].normal_data_texture", obj[1].normals_id);
+  m_sphere_bottom.setUniformValue("otherObejcts[1].num_triangles", obj[1].num_triangles);
+  glActiveTexture(GL_TEXTURE0 + obj[0].vertices_id);
+  glBindTexture(GL_TEXTURE_2D, obj[0].vertices_id);
+  glActiveTexture(GL_TEXTURE0 + obj[0].normals_id);
+  glBindTexture(GL_TEXTURE_2D, obj[0].normals_id);
+  glActiveTexture(GL_TEXTURE0 + obj[1].vertices_id);
+  glBindTexture(GL_TEXTURE_2D, obj[1].vertices_id);
+  glActiveTexture(GL_TEXTURE0 + obj[1].normals_id);
+  glBindTexture(GL_TEXTURE_2D, obj[1].normals_id);
+
   m_sphere_bottom.Draw(model_bottom, model_light, true);
-  glBindVertexArray(0);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

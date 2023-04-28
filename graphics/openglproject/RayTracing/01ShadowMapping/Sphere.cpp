@@ -23,6 +23,11 @@ void Sphere::setUniformValue(const char* name, QVector3D value){
     m_shader.setUniformValue(name, value);
 }
 
+
+void Sphere::getVertexDataTexture(OtherObject& obj) {
+ return m_model->getVertexDataTexture(obj);
+}
+
 void Sphere::Draw(QMatrix4x4 wood_box_model, QMatrix4x4 light_model, bool light) {
   if (!light) {
     m_model->Draw(&m_shader);
@@ -62,4 +67,9 @@ void Sphere::Draw(QMatrix4x4 wood_box_model, QMatrix4x4 light_model, bool light)
   m_shader.setUniformValue("material.shininess", 32.0f);
   m_model->Draw(&m_shader);
   m_shader.release();
+}
+
+
+int Sphere::getNumTriangles(){
+  return m_model->getNumTriangles();
 }
