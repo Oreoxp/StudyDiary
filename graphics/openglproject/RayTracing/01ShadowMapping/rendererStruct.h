@@ -55,9 +55,11 @@ class Model : protected QOpenGLFunctions_3_0 {
 
     void getVertexDataTexture(OtherObject& obj);
     int getNumTriangles();
-private:
+
+
     std::vector<float> vertexData;
     std::vector<float> nuomalData;
+private:
     QVector<Mesh> meshes;
     QString directory;
     QVector<Texture> textures_loaded;
