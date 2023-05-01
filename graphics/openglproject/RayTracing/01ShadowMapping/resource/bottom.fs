@@ -24,6 +24,7 @@ struct OtherObjects {
     sampler2D vertex_data_texture;
     sampler2D normal_data_texture;
     int num_triangles;
+    mat4 model;
 };
 
 in vec3 FragPos;  
@@ -44,17 +45,27 @@ bool isRayIntersectingSphere(vec3 ray_origin, vec3 ray_direction, vec3 sphere_ce
 vec3 get_tex_data(sampler2D tex, int index);
 bool isRayIntersectingTriangle(vec3 ray_origin, vec3 ray_dir, vec3 v0, vec3 v1, vec3 v2);
 
+int count = 0;
+
 void main()
 {
     vec3 result = vec3(0.0);
     result += CalcLight(light, Normal, FragPos, viewPos);
     vec3 result2 = CalcShadow(otherObejcts[0], light, Normal, FragPos, viewPos, result);
     vec3 result3 = CalcShadow(otherObejcts[1], light, Normal, FragPos, viewPos, result);
-    //vec3 result4 = CalcShadow(otherObejcts[2], light, Normal, FragPos, viewPos, result);
-    if(result2 == vec3(0, 0, 0) || result3 == vec3(0, 0, 0)){
+    vec3 result4 = CalcShadow(otherObejcts[2], light, Normal, FragPos, viewPos, result);
+    if(result2 == vec3(0, 0, 0) || result3 == vec3(0, 0, 0) || result4 == vec3(0, 0, 0)){
         result = vec3(0, 0, 0);
     }
-    //result = FragPos.xyz;
+    vec3 v0 = get_tex_data(otherObejcts[0].vertex_data_texture, count);
+    vec3 v1 = get_tex_data(otherObejcts[0].vertex_data_texture, count + 1);
+    vec3 v2 = get_tex_data(otherObejcts[0].vertex_data_texture, count + 2);
+    
+    int index = int(FragPos.x * float(textureSize(otherObejcts[0].vertex_data_texture, 0).x)); // 根据纹理坐标计算顶点索引
+    vec3 vertexPosition = get_tex_data(otherObejcts[0].vertex_data_texture, index);
+
+    //count = count + 1;
+    //result = (vertexPosition + 1.0) * 0.5;
     FragColor = vec4(result, 1.0);
 }
 
@@ -101,18 +112,18 @@ vec3 CalcShadow(OtherObjects oo, Light light_model, vec3 normal, vec3 fragPos, v
     vec3 light_dir = light_model.position - fragPos;
     bool isShadow = false;
 
-    if(isRayIntersectingSphere(fragPos, normalize(light_dir), oo.position, 0.3)) { 
+    //if(isRayIntersectingSphere(fragPos, normalize(light_dir), oo.position, 0.2)) { 
         for (int i = 0; i < oo.num_triangles * 3; i += 3) {
-            vec3 v0 = get_tex_data(oo.vertex_data_texture, i);
-            vec3 v1 = get_tex_data(oo.vertex_data_texture, i + 1);
-            vec3 v2 = get_tex_data(oo.vertex_data_texture, i + 2);
+            vec3 v0 = vec3(oo.model * vec4(get_tex_data(oo.vertex_data_texture, i), 1.0));
+            vec3 v1 = vec3(oo.model * vec4(get_tex_data(oo.vertex_data_texture, i+1), 1.0));
+            vec3 v2 = vec3(oo.model * vec4(get_tex_data(oo.vertex_data_texture, i+2), 1.0));
 
             if (isRayIntersectingTriangle(fragPos, normalize(light_dir), v0, v1, v2)) {
                 isShadow = true;
                 break;
             }
         }
-    }
+    //}
 
     if (isShadow) {
         result = vec3(0, 0, 0);
