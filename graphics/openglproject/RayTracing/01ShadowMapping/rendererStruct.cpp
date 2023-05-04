@@ -240,20 +240,25 @@ GLuint Model::TextureFromFile(const char* path, QString directory) {
 
 
 void Model::getVertexDataTexture(OtherObject& obj) {
+    glDeleteTextures(1, &vertexDataTexture);
+    glDeleteTextures(1, &normalDataTexture);
     auto vertexsData = meshes[0].vertices;
     if (vertexData.empty()) {
       vertexData.reserve(vertexsData.size()*3);
-      nuomalData.reserve(vertexsData.size() * 3);
       for (auto item : vertexsData) {
         vertexData.push_back(item.position.x());
         vertexData.push_back(item.position.y());
         vertexData.push_back(item.position.z());
+      }
+    }
+    if (nuomalData.empty()) {
+      nuomalData.reserve(vertexsData.size() * 3);
+      for (auto item : vertexsData) {
         nuomalData.push_back(item.normal.x());
         nuomalData.push_back(item.normal.y());
         nuomalData.push_back(item.normal.z());
       }
     }
-    GLuint vertexDataTexture;
     glGenTextures(1, &vertexDataTexture);
     glBindTexture(GL_TEXTURE_2D, vertexDataTexture); 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, vertexData.size() / 3, 1, 0, GL_RGB, GL_FLOAT, vertexData.data());
@@ -261,7 +266,6 @@ void Model::getVertexDataTexture(OtherObject& obj) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     // Create and upload normal data texture
-    GLuint normalDataTexture;
     glGenTextures(1, &normalDataTexture);
     glBindTexture(GL_TEXTURE_2D, normalDataTexture); 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, nuomalData.size() / 3, 1, 0, GL_RGB, GL_FLOAT, nuomalData.data());

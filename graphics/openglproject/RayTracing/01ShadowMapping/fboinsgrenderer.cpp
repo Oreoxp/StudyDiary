@@ -414,7 +414,6 @@ void GLFWRenderer::render() {
   glBindTexture(GL_TEXTURE_2D, obj[2].normals_id);
 
   m_sphere_bottom.Draw(model_bottom, model_light, true);
-
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   m_fbo->release();

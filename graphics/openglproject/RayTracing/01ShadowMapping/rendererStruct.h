@@ -69,4 +69,7 @@ private:
     QVector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type,
         QString typeName);
     GLuint TextureFromFile(const char* path, QString directory);
+
+    GLuint vertexDataTexture;
+    GLuint normalDataTexture;
 };
