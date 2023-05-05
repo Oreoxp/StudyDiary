@@ -25,12 +25,12 @@ void Sphere::setUniformValue(const char* name, QVector3D value){
 
 
 void Sphere::getVertexDataTexture(OtherObject& obj) {
- return m_model->getVertexDataTexture(obj);
+ return m_model->getVertexDataTexture(obj, &m_shader);
 }
 
-void Sphere::Draw(QMatrix4x4 wood_box_model, QMatrix4x4 light_model, bool light) {
+void Sphere::Draw(QOpenGLFramebufferObject* draw_fbo, QMatrix4x4 wood_box_model, QMatrix4x4 light_model, bool light) {
   if (!light) {
-    m_model->Draw(&m_shader);
+    m_model->Draw(draw_fbo, &m_shader);
     m_shader.release();
     return;
   }
@@ -65,10 +65,9 @@ void Sphere::Draw(QMatrix4x4 wood_box_model, QMatrix4x4 light_model, bool light)
   m_shader.setUniformValue("material.specular",
     QVector3D{ 0.5f, 0.5f, 0.5f });
   m_shader.setUniformValue("material.shininess", 32.0f);
-  m_model->Draw(&m_shader);
+  m_model->Draw(draw_fbo, &m_shader);
   m_shader.release();
 }
-
 
 int Sphere::getNumTriangles(){
   return m_model->getNumTriangles();

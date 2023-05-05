@@ -20,10 +20,12 @@ struct Light {
 
 in vec3 FragPos;  
 in vec3 Normal;  
+in vec2 TexCoords;
   
 uniform vec3 viewPos;
 uniform Material material;
 uniform Light light;
+uniform sampler2D depth_map;
 
 vec3 defuseColor = vec3(1.0, 1.0, 1.0);
 
@@ -32,8 +34,11 @@ vec3 CalcLight(Light light_model, vec3 normal, vec3 fragPos, vec3 view_Pos);
 void main()
 {
     vec3 result = vec3(0.0);
-    result += CalcLight(light, Normal, FragPos, viewPos);
-    FragColor = vec4(result, 1.0);
+    //result += CalcLight(light, Normal, FragPos, viewPos);
+
+    float depth = texture(depth_map, TexCoord).r;
+    FragColor = vec4(vec3(depth), 1.0);
+    //FragColor = vec4(result, 1.0);
 } 
 
 vec3 CalcLight(Light light_model, vec3 normal, vec3 fragPos, vec3 view_Pos)

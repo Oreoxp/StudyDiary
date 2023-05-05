@@ -86,11 +86,44 @@ void Mesh::setupMesh() {
 Model::Model(QString path) {
   initializeOpenGLFunctions();
   this->loadModel(path);
+
+  QOpenGLFramebufferObjectFormat format2;
+  format2.setAttachment(QOpenGLFramebufferObject::Depth);
+  format2.setSamples(4);
+  depthFbo = new QOpenGLFramebufferObject(QSize(1000, 1000), format2);
+
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+    1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
-void Model::Draw(QOpenGLShaderProgram* shader) {
-    for (GLuint i = 0; i < this->meshes.size(); i++)
-        this->meshes[i].Draw(shader);
+void Model::recordDepthDraw(QOpenGLShaderProgram* shader) {
+  depthFbo->bind();
+  glClear(GL_DEPTH_BUFFER_BIT);
+  glViewport(0, 0, depthFbo->width(), depthFbo->height());
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+
+  for (GLuint i = 0; i < this->meshes.size(); i++)
+    this->meshes[i].Draw(shader);
+
+  glReadBuffer(GL_NONE);
+  depthFbo->release();
+  glViewport(0, 0, 1000, 1000);
+}
+
+
+void Model::Draw(QOpenGLFramebufferObject* draw_fbo, QOpenGLShaderProgram* shader) {
+  draw_fbo->bind();
+  for (GLuint i = 0; i < this->meshes.size(); i++)
+     this->meshes[i].Draw(shader);
+  draw_fbo->release();
 }
 
 void Model::loadModel(QString path){
@@ -239,7 +272,8 @@ GLuint Model::TextureFromFile(const char* path, QString directory) {
 }
 
 
-void Model::getVertexDataTexture(OtherObject& obj) {
+void Model::getVertexDataTexture(OtherObject& obj, QOpenGLShaderProgram* shader) {
+    recordDepthDraw(shader);
     glDeleteTextures(1, &vertexDataTexture);
     glDeleteTextures(1, &normalDataTexture);
     auto vertexsData = meshes[0].vertices;
@@ -274,8 +308,10 @@ void Model::getVertexDataTexture(OtherObject& obj) {
 
     obj.vertices_id = vertexDataTexture;
     obj.normals_id = normalDataTexture;
+    obj.depth_id = depthFbo->texture();
     obj.vertices = vertexData.data();
     obj.normals = nuomalData.data();
+    obj.num_triangles = getNumTriangles();
 }
 
 int Model::getNumTriangles() {

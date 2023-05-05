@@ -17,6 +17,7 @@ struct OtherObject {
   float r;
   GLuint vertices_id;
   GLuint normals_id;
+  GLuint depth_id;
   float* vertices;
   float* normals;
   int num_triangles;
@@ -51,11 +52,11 @@ public:
 class Model : protected QOpenGLFunctions_3_0 {
  public:
     Model(QString path);
-    void Draw(QOpenGLShaderProgram* shader);
+    void Draw(QOpenGLFramebufferObject* draw_fbo, QOpenGLShaderProgram* shader);
+    void recordDepthDraw(QOpenGLShaderProgram* shader);
 
-    void getVertexDataTexture(OtherObject& obj);
+    void getVertexDataTexture(OtherObject& obj, QOpenGLShaderProgram* shader);
     int getNumTriangles();
-
 
     std::vector<float> vertexData;
     std::vector<float> nuomalData;
@@ -72,4 +73,8 @@ private:
 
     GLuint vertexDataTexture;
     GLuint normalDataTexture;
+
+    GLuint depthMap;
+    QOpenGLFramebufferObject* depthFbo;
+    QOpenGLFramebufferObject* m_fbo;
 };
