@@ -106,6 +106,7 @@ class GLFWRenderer : public QObject,
   float lastY = 0;
   float firstMouse = false;
   Sphere m_sphere;
+  Sphere m_sphere2;
   Sphere m_sphere_light;
   Sphere m_sphere_bottom;
   Sphere m_sphere_torusknot;
