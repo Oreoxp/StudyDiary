@@ -1,3 +1,6 @@
 .DS_Store
 .vscode
 build
+CEF/code/Debug/cef_sandbox.lib
+CEF/code/Debug/libcef.dll
+CEF/code/Release/libcef.dll
