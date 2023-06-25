@@ -24,10 +24,13 @@ class SimpleHandler : public CefClient,
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override {
     return this;
   }
+  //生命周期管理
   virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override {
     return this;
   }
-  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override { 
+    return this; 
+  }
 
   // CefDisplayHandler methods:
   virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,

@@ -379,26 +379,3 @@ class CefClient : public virtual CefBaseRefCounted {
 ​		当然，文档也为我们指出，CefClient 实例与浏览器实例可以不是一一对应的，多个浏览器实例可以共享一个 CefClient，如此一来我们也可以总结关于CefClient的一点：**非必要情况，不要编写具有状态的 CefClient**。
 
 至此，我们通过对Demo源码入手，对 CefApp 和 CefClient 已经有了一个整体的认识，读者可以阅读官方文档来更加深入的了解：[官方文档](https://bitbucket.org/chromiumembedded/cef/wiki/GeneralUsage.md#markdown-header-application-structure)。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
