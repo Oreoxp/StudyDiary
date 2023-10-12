@@ -15,9 +15,10 @@
     
     fetch v8
     
+    
     git pull origin master
+ gclient sync
    ```
-
    
 
 ## 三、构建项目
