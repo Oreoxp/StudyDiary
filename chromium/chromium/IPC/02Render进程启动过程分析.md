@@ -482,29 +482,532 @@ ChannelPosix::ChannelPosix(const IPC::ChannelHandle& channel_handle,
 
 ​		ChannelPosix 类继承了 ChannelReader 类，后者用来读取从 Render 进程发送过来的 IPC 消息，并且将读取到的 IPC 消息发送给参数 listener 描述的 ChannelProxy::Context 对象，因此这里会将参数 listener 描述的ChannelProxy::Context 对象传递给 ChannelReader 的构造函数。
 
-​		ChannelPosix类通过UNIX Socket来描述IPC通信通道，这个UNIX Socket的Server端和Client文件描述符分别保存在成员变量pipe_和client_pipe_中。如果定义了宏IPC_USES_READWRITE，那么当发送的消息包含有文件描述时，就会使用另外一个专用的UNIX Socket来传输文件描述符给对方。这个专用的UNIX Socket的Server端和Client端文件描述符保存在成员变量fd_pipe_和remote_fd_pipe_中。后面分析IPC消息的分发过程时，我们再详细分析这一点。
+​		ChannelPosix 类通过 UNIX Socket 来描述 IPC 通信通道，这个 UNIX Socket 的 Server 端和 Client 文件描述符分别保存在成员变量 pipe_ 和 client_pipe_ 中。如果定义了宏 IPC_USES_READWRITE，那么当发送的消息包含有文件描述时，就会使用另外一个专用的 UNIX Socket 来传输文件描述符给对方。这个专用的 UNIX Socket 的Server 端和 Client 端文件描述符保存在成员变量 fd_pipe_ 和 remote_fd_pipe_ 中。后面分析 IPC 消息的分发过程时，我们再详细分析这一点。
 
+​      ChannelPosix 类的构造函数最后调用了另外一个成员函数 CreatePipe 开始创建 IPC 通信通道，如下所示：
 
+```c++
+bool ChannelPosix::CreatePipe(
+    const IPC::ChannelHandle& channel_handle) {
+  ......
+ 
+  int local_pipe = -1;
+  if (channel_handle.socket.fd != -1) {
+    ......
+  } else if (mode_ & MODE_NAMED_FLAG) {
+    ......
+  } else {
+    local_pipe = PipeMap::GetInstance()->Lookup(pipe_name_);
+    if (mode_ & MODE_CLIENT_FLAG) {
+      if (local_pipe != -1) {
+        ......
+        local_pipe = HANDLE_EINTR(dup(local_pipe));
+        ......
+      } else {
+        ......
+ 
+        local_pipe =
+            base::GlobalDescriptors::GetInstance()->Get(kPrimaryIPCChannel);
+      }
+    } else if (mode_ & MODE_SERVER_FLAG) {
+      ......
+      base::AutoLock lock(client_pipe_lock_);
+      if (!SocketPair(&local_pipe, &client_pipe_))
+        return false;
+      PipeMap::GetInstance()->Insert(pipe_name_, client_pipe_);
+    } 
+    ......
+  }
+ 
+#if defined(IPC_USES_READWRITE)
+  // Create a dedicated socketpair() for exchanging file descriptors.
+  // See comments for IPC_USES_READWRITE for details.
+  if (mode_ & MODE_CLIENT_FLAG) {
+    if (!SocketPair(&fd_pipe_, &remote_fd_pipe_)) {
+      return false;
+    }
+  }
+#endif  // IPC_USES_READWRITE
+ 
+  ......
+ 
+  pipe_ = local_pipe;
+  return true;
+}
+```
 
+​		**ChannelHandle** 类除了用来保存 UNIX Socket 的名称之外，还可以用来保存与该名称对应的 UNIX Socket 的文件描述符。在我们这个情景中，参数 channel_handle 仅仅保存了即将要创建的 UNIX Socket 的名称。
 
+​		ChannelPosix 类的成员变量 mode_ 的值等于 **IPC::Channel::MODE_SERVER**，它的 MODE_NAMED_FLAG位等于 0。Render 进程启动之后，也会调用到 ChannelPosix 类的成员函数 **`CreatePipe`** 创建一个 Client 端的IPC 通信通道，那时候用来描述 Client 端 IPC 通信通道的 ChannelPosix 对象的成员变量 mode_ 的值**IPC::Channel::MODE_CLIENT**，它的 MODE_NAMED_FLAG 位同样等于 0。因此，无论是在 Browser 进程中创建的 Server 端 IPC 通信通道，还是在 Render 进程中创建的 Client 端 IPC 通信通道，在调用 ChannelPosix 类的成员函数 CreatePipe 时，都按照以下逻辑进行。
 
+​       对于 Client 端的 IPC 通信通道，即 ChannelPosix 类的成员变量 mode_ 的 MODE_CLIENT_FLAG 位等于 1 的情况，**首先是在一个 Pipe Map 中检查是否存在一个 UNIX Socket 文件描述符与成员变量 pipe_name_ 对应。如果存在，那么就使用该文件描述符进行 IPC 通信。如果不存在，那么再到 Global Descriptors 中检查是否存在一个 UNIX Socket 文件描述符与常量 kPrimaryIPCChannel 对应。如果存在，那么就使用该文件描述符进行 IPC 通信。实际上，当网页不是在独立的 Render 进程中加载时，执行的是前一个逻辑，而当网页是在独立的 Render 进程中加载时，执行的是后一个逻辑。**
 
+​       Chromium 为了能够统一地处理网页在独立 Render 进程和不在独立 Render 进程加载两种情况，会对后者进行一个抽象，即会假设后者也是在独立的 Render 进程中加载一样。这样，Browser 进程在加载该网页时，同样会创建一个 RenderProcess对象，不过该 RenderProcess 对象没有对应的一个真正的进程，对应的仅仅是Browser 进程中的一个线程。也就是这时候，RenderPocessHost 对象和 RenderProcess 对象执行的仅仅是进程内通信而已，不过它们仍然是按照进程间的通信规则进行，也就是通过 IO 线程来间接进行。
 
+​		**<u>不过，在进程内建立 IPC 通信通道和在进程间建立 IPC 通信通道的方式是不一样的。具体来说，就是在进程间建立 IPC 通信通道，需要将描述该通道的 UNIX Socket 的 Client 端文件描述符从 Browser 进程传递到 Render进程，Render 进程接收到该文件描述符之后，就会以 kPrimaryIPCChannel 为键值保存在 Global Descriptors中。而在进程内建立 IPC 通信通道时，描述 IPC 通信通道的 UNIX Socke t的 Client 端文件描述符直接以 UNIX Socket 名称为键值，保存在一个 Pipe Map 中即可。</u>**后面我们分析在进程内在进程间创建 Client 端 IPC 通信通道时，会继续看到这些相关的区别。
 
+​		对于 Server 端的 IPC 通信通道，即 ChannelPosix 类的成员变量 mode_ 的 MODE_SERVER_FLAG 位等于1的情况，ChannelPosix 类的成员函数 CreatePipe 调用函数 SocketPair 创建了一个 UNIX Socket，其中，Server 端文件描述符保存在成员变量 pipe_ 中，而 Client 端文件描述符保存在成员变量 client_pipe_ 中，并且 Client 端文件描述符还会以与前面创建的 UNIX Socket 对应的名称为键值，保存在一个 Pipe Map 中，这就是为建立进程内IPC 通信通道而准备的。
 
+​		最后，如果定义了 IPC_USES_READWRITE 宏，如前面提到的，那么还会继续创建一个专门用来在进程间传递文件描述的 UNIX Socket，该 UNIX Socket 的 Server 端和 Client 端文件描述符分别保存在成员变量 fd_pipe_ 和remote_fd_pipe_ 中。
 
+​		这一步执行完成之后，一个 Server 端 IPC 通信通道就创建完成了。回到 ChannelProxy 类的成员函数 Init中，它接下来是发送一个消息到 Browser 进程的 IO 线程的消息队列中，该消息绑定的是 ChannelProxy::Context类的成员函数 OnChannelOpened，它的实现如下所示：
 
+```c++
+void ChannelProxy::Context::OnChannelOpened() {
+  ......
+ 
+  if (!channel_->Connect()) {
+    OnChannelError();
+    return;
+  }
+ 
+  ......
+}
+```
 
+​      从前面的分析可以知道，ChannelProxy::Context 类的成员变量 channel_ 指向的是一个 ChannelPosix 对象，这里调用它的成员函数 Connect 将它描述的 IPC 通信通道交给当前进程的 IO 线程进行监控。
 
+​      ChannelPosix 类的成员函数 Connect 的实现如下所示：
 
+```c++
+bool ChannelPosix::Connect() {
+  ......
+ 
+  bool did_connect = true;
+  if (server_listen_pipe_ != -1) {
+    ......
+  } else {
+    did_connect = AcceptConnection();
+  }
+  return did_connect;
+}
+```
 
+​      当 ChannelPosix 类的成员变量 server_listen_pipe_ 的值不等于 -1 时，表示它描述的是一个用来负责监听 IPC通信通道连接消息的 Socket 中，也就是这个 Socket 不是真正用来执行 Browser 进程和 Render 进程之间的通信的，而是 Browser 进程首先对 ChannelPosix 类的成员变量 server_listen_pipe_ 描述的 Socket 进行 **listen**，接着 Render 进程通过 **connect** 连接到该 Socket，使得 Browser 进程 accepet 到一个新的 Socket，然后再通过这个新的 Socket 与 Render 进程执行 IPC。
 
+​      在我们这个情景中，ChannelPosix 类的成员变量 server_listen_pipe_ 的值等于 -1，因此接下来 ChannelPosix 类的成员函数 Connect 调用了另外一个成员函数 AcceptConnection，它的实现如下所示：
 
+```c++
+bool ChannelPosix::AcceptConnection() {
+  base::MessageLoopForIO::current()->WatchFileDescriptor(
+      pipe_, true, base::MessageLoopForIO::WATCH_READ, &read_watcher_, this);
+  QueueHelloMessage();
+ 
+  if (mode_ & MODE_CLIENT_FLAG) {
+    // If we are a client we want to send a hello message out immediately.
+    // In server mode we will send a hello message when we receive one from a
+    // client.
+    waiting_connect_ = false;
+    return ProcessOutgoingMessages();
+  } else if (mode_ & MODE_SERVER_FLAG) {
+    waiting_connect_ = true;
+    return true;
+  } else {
+    NOTREACHED();
+    return false;
+  }
+}
+```
 
+​       ChannelPosix 类的成员函数 AcceptConnection 首先是获得与当前进程的 IO 线程关联的一个MessageLoopForIO 对象，接着再调用该 MessageLoopForIO 对象的成员函数 WatchFileDescriptor 对成员变量pipe_  描述的一个 UNIX Socket 进行监控。MessageLoopForIO 类的成员函数 WatchFileDescriptor 最终会调用到在前面 Chromium 多线程模型设计和实现分析一文中提到的 MessagePumpLibevent 对该 UNIX Socket 进行监控。这意味着当该 UNIX Socket 有新的 IPC 消息需要接收时，当前正在处理的 ChannelPosix 对象的成员函数OnFileCanReadWithoutBlocking 就会被调用。
 
+​       接下来，ChannelPosix 类的成员函数 AcceptConnection 还会调用另外一个成员函数**`QueueHelloMessage`**创建一个 Hello Message，并且将该 Message 添加到内部的一个 IPC 消息队列去等待发送给对方进程。执行 IPC的双方，就是通过这个 Hello Message 进行握手的。<u>具体来说，就是 Server 端和 Client 端进程建立好连接之后，由 Client 端发送一个 Hello Message 给 Server 端，Server 端接收到该 Hello Message 之后，就认为双方已经准备就绪，可以进行 IPC 了。</u>
 
+​       因此，如果当前正在处理的 ChannelPosix 对象描述的是 Client 端的通信通道，即它的成员变量 mode_ 的MODE_CLIENT_FLAG 位等于 1，那么 ChannelPosix 类的成员函数 AcceptConnection 就会马上调用另外一个成员函数**`ProcessOutgoingMessages`**前面创建的 Hello Message 发送给 Server 端。
 
+​       另一方面，如果当前正在处理的 ChannelPosix 对象描述的是 Server 端的通信通道，那么 ChannelPosix 类的成员函数 AcceptConnection 就仅仅是将成员变量 waiting_connect_ 的值设置为 true，表示正在等待 Client 端发送一个 Hello Message 过来。
 
+​       关于Hello Message的发送和接收，我们在接下来的一篇文章分析IPC消息分发机制时再详细分析。
+
+​       这一步执行完成之后，Server 端的 IPC 通信通道就创建完成了，也就是 Browser 进程已经创建好了一个Server 端的 IPC 通信通道。回到 RenderProcessHostImpl 类的成员函数 **`Init`** 中，它接下来要做的事情就是启动 Render 进程。
+
+​       我们首先考虑网页不是在独立的 Render 进程加载的情况，即在 Browser 进程加载的情况，这时候并没有真的启动了一个 Render 进程，而仅仅是在 Browser 进程中创建了一个 RenderProcess 对象而已，如下所示：
+
+```c++
+bool RenderProcessHostImpl::Init() {
+  ......
+ 
+  // Setup the IPC channel.
+  const std::string channel_id =
+      IPC::Channel::GenerateVerifiedChannelID(std::string());
+  channel_ = IPC::ChannelProxy::Create(
+      channel_id,
+      IPC::Channel::MODE_SERVER,
+      this,
+      BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO).get());
+ 
+  ......
+ 
+  if (run_renderer_in_process()) {
+    ......
+    in_process_renderer_.reset(g_renderer_main_thread_factory(channel_id));
+ 
+    base::Thread::Options options;
+    ......
+    options.message_loop_type = base::MessageLoop::TYPE_DEFAULT;
+    
+    in_process_renderer_->StartWithOptions(options);
+ 
+    g_in_process_thread = in_process_renderer_->message_loop();
+ 
+    ......
+  } else {
+    ......
+  }
+ 
+  return true;
+}
+```
+
+​       前面在分析 RenderProcessHostImpl 类的成员函数 Init 时提到，RenderProcessHostImpl 类的静态成员变量 g_renderer_main_thread_factory 描述的是一个函数，通过它可以创建一个类型为 InProcessRendererThread 的线程。
+
+​       一个类型为 InProcessRendererThread 的线程的创建过程如下所示：
+
+```c++
+InProcessRendererThread::InProcessRendererThread(const std::string& channel_id)
+    : Thread("Chrome_InProcRendererThread"), channel_id_(channel_id) {
+}
+```
+
+​		从这里就可以看到，InProcessRendererThread 类是从 Thread 类继承下来的，因此这里调用了 Thread 类的构造函数。
+
+​		此外，InProcessRendererThread 类的构造函数还会将参数 channel_id 描述的一个 UNIX Socket 名称保存在成员变量 channel_id_ 中。从前面的分析可以知道，该名称对应的 UNIX Socket 已经创建出来了，并且它的Client 端文件描述符以该名称为键值，保存在一个 Pipe Map 中。
+
+​		回到 RenderProcessHostImpl 类的成员函数 Init 中，接下来它会调用前面创建的 InProcessRendererThread 对象的成员函数 **`StartWithOptions`** 启动一个线程。从前面 Chromium 多线程模型设计和实现分析一文可以知道，当该线程启动起来之后，并且在进入消息循环之前，会被调用InProcessRendererThread 类的成员函数 Init 执行初始化工作。
+
+​      InProcessRendererThread 类的成员函数 Init 的实现如下所示：
+
+```c++
+void InProcessRendererThread::Init() {
+  render_process_.reset(new RenderProcessImpl());
+  new RenderThreadImpl(channel_id_);
+}
+```
+
+​		InProcessRendererThread 类的成员函数 Init 首先在当前进程，即 Browser 进程，创建了一个RenderProcessImpl 对象，保存在成员变量 render_process_ 中，描述一个假的 Render 进程，接着再创建了一个 RenderThreadImpl 对象描述当前线程，即当前正在处理的 InProcessRendererThread 对象描述的线程。
+
+​		在 RenderProcessImpl 对象的创建中，会创建一个 IO 线程，该 IO 线程负责与 Browser 进程启动时就创建的一个 IO 线程执行 IPC 通信。从图可以知道，RenderProcessImpl 类继承了 RenderProcess 类，RenderProcess 类又继承了 ChildProcess 类，创建 IO 线程的工作是从 ChildProcess 类的构造函数中进行的，如下所示：
+
+```c++
+ChildProcess::ChildProcess()
+    : ...... {
+  ......
+ 
+  // We can't recover from failing to start the IO thread.
+  CHECK(io_thread_.StartWithOptions(
+      base::Thread::Options(base::MessageLoop::TYPE_IO, 0)));
+ 
+  ......
+}
+```
+
+​		从这里就可以看到，ChildProcess 类的构造函数调用了成员变量 io_thread_ 描述的一个 Thread 对象的成员函数 StartWithOptions 创建了一个 IO 线程。
+
+​		回到 InProcessRendererThread 类的成员函数 Init 中，在 RenderThreadImpl 对象的创建过程，会创建一个 Client 端的 IPC 通信通道，如下所示：
+
+```c++
+RenderThreadImpl::RenderThreadImpl(const std::string& channel_name)
+    : ChildThread(channel_name) {
+  ......
+}
+```
+
+​      从这里可以看到，RenderThreadImpl 类继承了 ChildThread 类，创建 Client 端 IPC 通信通道的过程是在ChildThread 类的构造函数中进行的，如下所示：
+
+```c++
+ChildThread::ChildThread(const std::string& channel_name)
+    : channel_name_(channel_name),
+      ..... {
+  Init();
+}
+```
+
+​       ChildThread 类的构造函数将参数 channel_name 描述的一个 UNIX Socke t的名称保存在成员变量channel_name_ 之后，就调用了另外一个成员函数 **`Init`** 执行创建 Client 端 IPC 通信通道的工作，如下所示： 
+
+```c++
+void ChildThread::Init() {
+  ......
+ 
+  channel_ =
+      IPC::SyncChannel::Create(channel_name_,
+                               IPC::Channel::MODE_CLIENT,
+                               this,
+                               ChildProcess::current()->io_message_loop_proxy(),
+                               true,
+                               ChildProcess::current()->GetShutDownEvent());
+ 
+  ......
+}
+```
+
+​		Client 端 IPC 通信通道通过 IPC::SyncChannel 类的静态成员函数**`Create`**进行创建，如下所示：
+
+```c++
+scoped_ptr<SyncChannel> SyncChannel::Create(
+    const IPC::ChannelHandle& channel_handle,
+    Channel::Mode mode,
+    Listener* listener,
+    base::SingleThreadTaskRunner* ipc_task_runner,
+    bool create_pipe_now,
+    base::WaitableEvent* shutdown_event) {
+  scoped_ptr<SyncChannel> channel =
+      Create(listener, ipc_task_runner, shutdown_event);
+  channel->Init(channel_handle, mode, create_pipe_now);
+  return channel.Pass();
+}
+```
+
+​       IPC::SyncChannel 类的静态成员函数 **`Create`** 首先调用另外一个重载版本的静态成员函数 Create 创建一个SyncChannel 对象，接着再调用该 SyncChannel 的成员函数**`Init`**执行初始化工作。
+
+​       IPC::SyncChannel 类是从 IPC::ChannelProxy 类继承下来的，它与 IPC::ChannelProxy 的区别在于，前者既可以用来发送同步的 IPC 消息，也可以用来发送异步的 IPC 消息，而后者只可以用来发送异步消息。所谓同步 IPC消息，就是发送者发送它给对端之后，会一直等待对方发送一个回复，而对于异步 IPC 消息，发送者把它发送给对端之后，不会进行等待，而是直接返回。后面分析 IPC 消息的分发机制时我们再详细分析这一点。
+
+​       IPC::SyncChannel 类的成员函数**`Init`**是从父类 IPC::ChannelProxy 类继承下来的，后者我们前面已经分析过了，主要区别在于这里传递第二个参数 mode 的值等于 **IPC::Channel::MODE_CLIENT** ，表示要创建的是一个Client 端的 IPC 通信通道。
+
+​       接下来，我们就主要分析 IPC::SyncChannel 类三个参数版本的静态成员函数 Create 创建 SyncChannel 对象的过程，如下所示：
+
+```c++
+scoped_ptr<SyncChannel> SyncChannel::Create(
+    Listener* listener,
+    base::SingleThreadTaskRunner* ipc_task_runner,
+    WaitableEvent* shutdown_event) {
+  return make_scoped_ptr(
+      new SyncChannel(listener, ipc_task_runner, shutdown_event));
+}
+```
+
+​      IPC::SyncChannel 类三个参数版本的静态成员函数 **`Create`** 创建了一个 SyncChannel 对象，并且将该SyncChannel 对象返回给调用者。
+
+​      SyncChannel 对象的创建过程如下所示：
+
+```c++
+SyncChannel::SyncChannel(
+    Listener* listener,
+    base::SingleThreadTaskRunner* ipc_task_runner,
+    WaitableEvent* shutdown_event)
+    : ChannelProxy(new SyncContext(listener, ipc_task_runner, shutdown_event)) {
+  ......
+  StartWatching();
+}
+```
+
+​		从前面的调用过程可以知道，参数 listener 描述的是一个 ChildThread 对象，参数 ipc_task_runner 描述的是与前面在 ChildProcess 类的构造函数中创建的 IO 线程关联的一个 MessageLoopProxy 对象，参数shutdown_event 描述的是一个 ChildProcess 关闭事件。
+
+​		对于第三个参数 shutdown_event 的作用，我们这里做一个简单的介绍，在接下来一篇文章中分析IPC消息的分发机制时再详细分析:
+​		前面提到，SyncChannel 可以用来发送同步消息，这意味着发送线程需要进行等待。这个等待过程是通过我们在前面提到的 WaitableEvent 类实现的。也就是说，每一个同步消息都有一个关联的 WaitableEvent 对象。此外，还有一些异常情况需要处理。例如，SyncChannel 在等待一个同步消息的过程中，有可能对方已经退出了，这相当于是发生了一个 ChildProcess 关闭事件。在这种情况下，继续等待是没有意义的。因此，当 SyncChannel监控到 ChildProcess 关闭事件时，就可以执行一些清理工作了。此外，SyncChannel 在等待一个同步消息的过程中，也有可能收到对方发送过来的非回复消息。在这种情况下，SyncChannel 需要获得通知，以便可以对这些非回复消息进行处理。SyncChannel 获得此类非回复消息的事件通知是通过另外一个称为 Dispatch Event 的WaitableEvent 对象获得的。这意味着 SyncChannel 在发送一个同步消息的过程中，需要同时监控多个WaitableEvent 对象。
+
+​      了解了各个参数的含义之后，我们就开始分析 SyncChannel 类的构造函数。它首先是创建了一个SyncChannel::SyncContext 对象，并且以该 SyncChannel::SyncContext 对象为参数，调用父类 ChannelProxy 的构造函数，以便可以对父类 ChannelProxy 进行初始化。
+
+​       SyncChannel::SyncContext 对象的创建过程如下所示：
+
+```c++
+SyncChannel::SyncContext::SyncContext(
+    Listener* listener,
+    base::SingleThreadTaskRunner* ipc_task_runner,
+    WaitableEvent* shutdown_event)
+    : ChannelProxy::Context(listener, ipc_task_runner),
+      ......,
+      shutdown_event_(shutdown_event),
+      ...... {
+}
+```
+
+​       从这里可以看到，SyncChannel::SyncContext 类是从 ChannelProxy::Context 类继承下来的，因此这里会调用 ChannelProxy::Context 类的构造函数进行初始化。此外，SyncChannel::SyncContext 类的构造函数还会将参数 shutdown_event 描述的一个 ChildProcess 关闭事件保存在成员变量 shutdown_event_ 中。
+
+​       回到 SyncChannel 类的构造函数中，当它创建了一个 SyncChannel::SyncContext 对象之后，就使用该SyncChannel::SyncContext 对象来初始化父类 ChannelProxy，如下所示：
+
+```c++
+ChannelProxy::ChannelProxy(Context* context)
+    : context_(context), 
+      did_init_(false) {
+}
+```
+
+​		注意，参数 context 的类型虽然为一个 ChannelProxy::Context 指针，但是它实际上指向的是一个SyncChannel::SyncContext 对象，该 SyncChannel::SyncContext 对象保存在成员变量 context_ 中。
+
+​      继续回到 SyncChannel 类的构造函数中，它用一个 SyncChannel::SyncContext 对象初始化了父类ChannelProxy 之后，继续调用另外一个成员函数 StartWatching 监控我们在前面提到的一个 Dispatch Event，如下所示：
+
+```c++
+void SyncChannel::StartWatching() {
+  ......
+  dispatch_watcher_callback_ =
+      base::Bind(&SyncChannel::OnWaitableEventSignaled,
+                  base::Unretained(this));
+  dispatch_watcher_.StartWatching(sync_context()->GetDispatchEvent(),
+                                  dispatch_watcher_callback_);
+}
+```
+
+​		SyncChannel 类的成员函数 StartWatching 调用成员变量 dispatch_watcher_ 描述的一个WaitableEventWatcher 对象的成员函数 StartWatching 对 Dispatch Event 进行监控，从这里就可以看到，Dispatch Event 可以通过前面创建的 SyncChannel::SyncContext 对象的成员函数 sync_context 获得，并且当该Display Event 发生时，SyncChannel 类的成员函数 **`OnWaitableEventSignaled`** 就会被调用。
+
+​		前面在分析 ChannelProxy 类的成员函数 Init 时，我们提到，当它调用另外一个成员函数 CreateChannel 创建了一个 IPC 通信通道之后，会调用其成员变量 context_ 描述的一个 ChannelProxy::Context 对象的成员函数**`OnChannelOpened`**将已经创建好的的 IPC 通信通道增加到 IO 线程的消息队列中去监控。由于在我们这个情景中，ChannelProxy 类的成员变量 context_ 指向的是一个 SyncChannel::SyncContext 对象，因此，当ChannelProxy 类的成员函数 Init 创建了一个 IPC 通信通道之后，它接下来调用的是 SyncChannel::SyncContext类的成员函数 **`OnChanneIOpened`** 将已经创建好的 IPC 通信通道增加到 IO 线程的消息队列中去监控。
+
+​      SyncChannel::SyncContext 类的成员函数 OnChanneIOpened 的实现如下所示：
+
+```c++
+void SyncChannel::SyncContext::OnChannelOpened() {
+  shutdown_watcher_.StartWatching(
+      shutdown_event_,
+      base::Bind(&SyncChannel::SyncContext::OnWaitableEventSignaled,
+                 base::Unretained(this)));
+  Context::OnChannelOpened();
+}
+```
+
+​      SyncChannel::SyncContext 类的成员函数 OnChanneIOpened 首先是调用成员变量 shutdown_watcher_ 描述的一个 WaitableEventWatcher 对象的成员函数 StartWatching 监控成员变量 shutdown_event_ 描述的一个ChildProcess 关闭事件。从这里就可以看到，当 ChildProcess 关闭事件发生时，SyncChannel::SyncContext 类的成员函数 **`OnWaitableEventSignaled`** 就会被调用。
+
+​      最后，SyncChannel::SyncContext 类的成员函数 OnChanneIOpened 调用了父类 ChannelProxy 的成员函数OnChannelOpened 将 IPC 通信通道增加到 IO 线程的的消息队列中去监控。
+
+​      这一步执行完成之后，一个 Client 端的 IPC 通信通道就创建完成了。这里我们描述的 Client 端 IPC 通信通道的创建过程虽然是发生在 Browser 进程中的，不过这个过程与在独立的 Render 进程中创建的 Client 端 IPC 通信通道的过程是一样的。这一点在接下来的分析中就可以看到。
+
+### 独立Render
+
+​      回到前面分析的 RenderProcessHostImpl 类的成员函数Init中，对于需要在独立的Render进程加载网页的情况，它就会启动一个 Render 进程，如下所示：
+
+```c++
+bool RenderProcessHostImpl::Init() {
+  ......
+ 
+  // Setup the IPC channel.
+  const std::string channel_id =
+      IPC::Channel::GenerateVerifiedChannelID(std::string());
+  channel_ = IPC::ChannelProxy::Create(
+      channel_id,
+      IPC::Channel::MODE_SERVER,
+      this,
+      BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO).get());
+ 
+  ......
+ 
+  if (run_renderer_in_process()) {
+    ......
+  } else {
+    ......
+ 
+    CommandLine* cmd_line = new CommandLine(renderer_path);
+    ......
+    AppendRendererCommandLine(cmd_line);
+    cmd_line->AppendSwitchASCII(switches::kProcessChannelID, channel_id);
+ 
+    ......
+ 
+    child_process_launcher_.reset(new ChildProcessLauncher(
+        new RendererSandboxedProcessLauncherDelegate(channel_.get()),
+        cmd_line,
+        GetID(),
+        this));
+ 
+    ......
+  }
+ 
+  return true;
+}
+```
+
+​       RenderProcessHostImpl 类的成员函数 Init 创建了一个 Server 端的 IPC 通信通道之后，就会通过一个**ChildProcessLauncher** 对象来启动一个 Render 进程。不过在启动该 Render 进程之前，首先要构造好它的启动参数，也就是命令行参数。
+
+​       Render 进程的启动命令行参数通过一个 CommandLine 对象来描述，它包含有很多选项，不过现在我们只关心两个。一个是 switches::kProcessType，另外一个是 switches::kProcessChannelID。其中，switches::kProcessChannelID 选项对应的值设置为本地变量 channel_id 描述的值，即前面调用 IPC::Channel 类的静态成员函数 GenerateVerifiedChannelID 生成的一个 UNIX Socket 名称。
+
+​		选项 switches::kProcessType 的值是通过 RenderProcessHostImpl 类的成员函数AppendRendererCommandLine 设置的，如下所示：
+
+```c++
+void RenderProcessHostImpl::AppendRendererCommandLine(
+    CommandLine* command_line) const {
+  // Pass the process type first, so it shows first in process listings.
+  command_line->AppendSwitchASCII(switches::kProcessType,
+                                  switches::kRendererProcess);
+  
+    ......
+}
+```
+
+​       从这里就可以看到，选项 switches::kProcessType 的值设置为 kRendererProcess，这表示接下来我们通过ChildProcessLauncher 类启动的进程是一个 Render 进程。
+
+​       回到 RenderProcessHostImpl 类的成员函数Init中，当要启动的 Render 进程的命令行参数准备好之后，接下来就通过 ChildProcessLauncher 类的构造函数启动一个 Render 进程，如下所示：
+
+```c++
+ChildProcessLauncher::ChildProcessLauncher(
+    SandboxedProcessLauncherDelegate* delegate,
+    CommandLine* cmd_line,
+    int child_process_id,
+    Client* client) {
+  context_ = new Context();
+  context_->Launch(
+      delegate,
+      cmd_line,
+      child_process_id,
+      client);
+}
+```
+
+​       ChildProcessLauncher 类的构造函数首先创建了一个 ChildProcessLauncher::Context 对象，保存在成员变量 context_ 中，并且调用该 ChildProcessLauncher::Context 对象的成员函数 Launch 启动一个 Render 进程。
+
+​       ChildProcessLauncher::Context 类的成员函数 Launch 的实现如下所示：
+
+```c++
+class ChildProcessLauncher::Context
+    : public base::RefCountedThreadSafe<ChildProcessLauncher::Context> {
+ public:
+  ......
+ 
+  void Launch(
+      SandboxedProcessLauncherDelegate* delegate,
+      CommandLine* cmd_line,
+      int child_process_id,
+      Client* client) {
+    client_ = client;
+ 
+    ......
+ 
+    BrowserThread::PostTask(
+        BrowserThread::PROCESS_LAUNCHER, FROM_HERE,
+        base::Bind(
+            &Context::LaunchInternal,
+            make_scoped_refptr(this),
+            client_thread_id_,
+            child_process_id,
+            delegate,
+            cmd_line));
+  }
+ 
+  ......
+};
+```
+
+​       ChildProcessLauncher::Context 类的成员函数 **`Launch`** 通过调用 BrowserThread 类的静态成员函数PostTask 向 Browser 进程的一个专门用来启动子进程的 **BrowserThread::PROCESS_LAUNCHER** 线程的消息队列发送一个任务，该任务绑定了 ChildProcessLauncher::Context 类的成员函数**`LaunchInternal`**。因此，接下来 ChildProcessLauncher::Context 类的成员函数**`LaunchInternal`**就会在BrowserThread::PROCESS_LAUNCHER 线程中执行，如下所示：
+
+```c++
+class ChildProcessLauncher::Context  
+    : public base::RefCountedThreadSafe<ChildProcessLauncher::Context> {  
+ public:  
+  ......  
+  
+  static void LaunchInternal(  
+      // |this_object| is NOT thread safe. Only use it to post a task back.  
+      scoped_refptr<Context> this_object,  
+      BrowserThread::ID client_thread_id,  
+      int child_process_id,  
+      SandboxedProcessLauncherDelegate* delegate,  
+      CommandLine* cmd_line) {  
+    ......  
+    int ipcfd = delegate->GetIpcFd();  
+    ......  
+  
+    std::vector<FileDescriptorInfo> files_to_register;  
+    files_to_register.push_back(  
+        FileDescriptorInfo(kPrimaryIPCChannel,  
+                           base::FileDescriptor(ipcfd, false)));  
+    ......  
+  
+    StartChildProcess(cmd_line->argv(), child_process_id, files_to_register,  
+        base::Bind(&ChildProcessLauncher::Context::OnChildProcessStarted,  
+                   this_object, client_thread_id, begin_launch_time));  
+  
+    ......  
+  }  
+  
+  ......  
+};  
+```
 
 
 
