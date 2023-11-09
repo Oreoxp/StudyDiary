@@ -1009,17 +1009,598 @@ class ChildProcessLauncher::Context
 };  
 ```
 
+​		从前面的调用过程可以知道，参数 delegate 指向的一个 **SandboxedProcessLauncherDelegate** 对象封装了前面创建的一个 ChannelProxy 对象，通过调用它的成员函数 **`GetIpcFd`** 可以获得它所封装的 ChannelProxy 对象描述的一个 UNIX Socket 的 Client 端文件描述符。该 Client 端文件描述符接下来以 **kPrimaryIPCChannel** 为键值封装在一个 FileDescriptorInfo 对象，并且该 FileDescriptorInfo 对象最终会保存在本地变量files_to_register 描述的一个 std::vector。该 std::vector 最后又会传递给函数 StartChildProcess，后者负责执行启动 Render 进程的工程。
+
+​		函数 StartChildProcess 的实现如下所示：
+
+```c++
+void StartChildProcess(  
+    const CommandLine::StringVector& argv,  
+    int child_process_id,  
+    const std::vector<content::FileDescriptorInfo>& files_to_register,  
+    const StartChildProcessCallback& callback) {  
+  JNIEnv* env = AttachCurrentThread();  
+  ......  
+  
+  // Create the Command line String[]  
+  ScopedJavaLocalRef<jobjectArray> j_argv = ToJavaArrayOfStrings(env, argv);  
+  
+  size_t file_count = files_to_register.size();  
+  DCHECK(file_count > 0);  
+  
+  ScopedJavaLocalRef<jintArray> j_file_ids(env, env->NewIntArray(file_count));  
+  base::android::CheckException(env);  
+  jint* file_ids = env->GetIntArrayElements(j_file_ids.obj(), NULL);  
+  base::android::CheckException(env);  
+  ScopedJavaLocalRef<jintArray> j_file_fds(env, env->NewIntArray(file_count));  
+  base::android::CheckException(env);  
+  jint* file_fds = env->GetIntArrayElements(j_file_fds.obj(), NULL);  
+  base::android::CheckException(env);  
+  ScopedJavaLocalRef<jbooleanArray> j_file_auto_close(  
+      env, env->NewBooleanArray(file_count));  
+  base::android::CheckException(env);  
+  jboolean* file_auto_close =  
+      env->GetBooleanArrayElements(j_file_auto_close.obj(), NULL);  
+  base::android::CheckException(env);  
+  for (size_t i = 0; i < file_count; ++i) {  
+    const content::FileDescriptorInfo& fd_info = files_to_register[i];  
+    file_ids[i] = fd_info.id;  
+    file_fds[i] = fd_info.fd.fd;  
+    file_auto_close[i] = fd_info.fd.auto_close;  
+  }  
+  env->ReleaseIntArrayElements(j_file_ids.obj(), file_ids, 0);  
+  env->ReleaseIntArrayElements(j_file_fds.obj(), file_fds, 0);  
+  env->ReleaseBooleanArrayElements(j_file_auto_close.obj(), file_auto_close, 0);  
+  
+  Java_ChildProcessLauncher_start(env,  
+      base::android::GetApplicationContext(),  
+      j_argv.obj(),  
+      child_process_id,  
+      j_file_ids.obj(),  
+      j_file_fds.obj(),  
+      j_file_auto_close.obj(),  
+      reinterpret_cast<intptr_t>(new StartChildProcessCallback(callback)));  
+}  
+```
+
+​		函数 **`StartChildProcess`** 将参数 argv 转换为一个 Java 层的 String 数组，并且将参数 files_to_register 描述的一个类型为 FileDescriptorInfo 的 std::vector 转换为两个 Java 层的 int 数组以及一个 boolean 数组，其中，第一个 int 数组描述的一组 ID，第二个 int 数组描述的是与第一个 int 数组描述的 ID 对应的一组文件描述符，而另外一个 boolean 数组描述第二个 int 数组描述的一组文件描述符那些是需要自动关闭的。
+
+​		最后，函数 StartChildProcess 最后调用了另外一个函数 Java_ChildProcessLauncher_start 通过 Java 层的接口来启动一个子进程，如下所示：
+
+```java
+static void Java_ChildProcessLauncher_start(JNIEnv* env, jobject context,  
+    jobjectArray commandLine,  
+    JniIntWrapper childProcessId,  
+    jintArray fileIds,  
+    jintArray fileFds,  
+    jbooleanArray fileAutoClose,  
+    jlong clientContext) {  
+  /* Must call RegisterNativesImpl()  */  
+  CHECK_CLAZZ(env, ChildProcessLauncher_clazz(env),  
+      ChildProcessLauncher_clazz(env));  
+  jmethodID method_id =  
+      base::android::MethodID::LazyGet<  
+      base::android::MethodID::TYPE_STATIC>(  
+      env, ChildProcessLauncher_clazz(env),  
+      "start",  
+  
+"("  
+"Landroid/content/Context;"  
+"[Ljava/lang/String;"  
+"I"  
+"[I"  
+"[I"  
+"[Z"  
+"J"  
+")"  
+"V",  
+      &g_ChildProcessLauncher_start);  
+  
+     env->CallStaticVoidMethod(ChildProcessLauncher_clazz(env),  
+          method_id, context, commandLine, as_jint(childProcessId), fileIds,  
+              fileFds, fileAutoClose, clientContext);  
+  jni_generator::CheckException(env);  
+  
+}  
+```
+
+​		函数 **`Java_ChildProcessLauncher_start`** 调用参数 env 描述的一个 JNI 环境对象调用了 Java 层的ChildProcessLauncher 类的成员函数 start 执行启动子进程的操作。
+
+​		Java 层的 ChildProcessLauncher 类的成员函数 start 的实现如下所示：
+
+```java
+public class ChildProcessLauncher {  
+    ......  
+  
+    static void start(  
+            Context context,  
+            final String[] commandLine,  
+            int childProcessId,  
+            int[] fileIds,  
+            int[] fileFds,  
+            boolean[] fileAutoClose,  
+            long clientContext) {  
+        ......  
+        FileDescriptorInfo[] filesToBeMapped = new FileDescriptorInfo[fileFds.length];  
+        for (int i = 0; i < fileFds.length; i++) {  
+            filesToBeMapped[i] =  
+                    new FileDescriptorInfo(fileIds[i], fileFds[i], fileAutoClose[i]);  
+        }  
+        assert clientContext != 0;  
+  
+        int callbackType = CALLBACK_FOR_UNKNOWN_PROCESS;  
+        boolean inSandbox = true;  
+        String processType = getSwitchValue(commandLine, SWITCH_PROCESS_TYPE);  
+        if (SWITCH_RENDERER_PROCESS.equals(processType)) {  
+            callbackType = CALLBACK_FOR_RENDERER_PROCESS;  
+        } else if (SWITCH_GPU_PROCESS.equals(processType)) {  
+            callbackType = CALLBACK_FOR_GPU_PROCESS;  
+        } else if (SWITCH_PPAPI_BROKER_PROCESS.equals(processType)) {  
+            inSandbox = false;  
+        }  
+  
+        ChildProcessConnection allocatedConnection = null;  
+        synchronized (ChildProcessLauncher.class) {  
+            if (inSandbox) {  
+                allocatedConnection = sSpareSandboxedConnection;  
+                sSpareSandboxedConnection = null;  
+            }  
+        }  
+        if (allocatedConnection == null) {  
+            allocatedConnection = allocateBoundConnection(context, commandLine, inSandbox);  
+            ......  
+        }  
+  
+        ......  
+        triggerConnectionSetup(allocatedConnection, commandLine, childProcessId, filesToBeMapped,  
+                callbackType, clientContext);  
+        ......  
+    }  
+  
+    ......  
+}  
+```
+
+
+
+​		ChildProcessLauncher 类的成员函数 start 首先将参数 fileIds、fileFds 和 fileAutoClose 描述的文件描述符信息封装在一个 **FileDescriptorInfo** 数组中。记住 ，这里面包含了一个 ID 值 为kPrimaryIPCChannel 的文件描述符，该文件描述符描述的是用作 IPC 通信通道的一个 UNIX Socket 的客户端文件描述符。
+
+​		接下来，ChildProcessLauncher 类的成员函数 start 判断要启动的子进程需不需要运行在沙箱中。ChildProcessLauncher 类负责启动所有的 Browser子 进程，包括：
+
+1. Render进程；
+
+2. GPU进程；
+
+3. Plugin进程；
+
+4. Broker进程。
+
+​        其中，前面三种进程都是需要运行在沙箱里面的。这里所谓的沙箱，就是一个 android:isolatedProcess 属性被设置为 true 的 Service 进程，它不具有任何宿主应用程序申请的权限，这一点我们在前面Chromium多进程架构简要介绍和学习计划一文有提及到。
+
+​		对于第四种进程，它不是运行在沙箱里面的，这意味着它具有宿主应用程序申请的权限。什么情况下 Browser 进程会启动一个 Broker 进程呢？ Chromium 给 Pepper Plugin 提供了一个 PPB_BrokerTrusted 接口，通过该接口的成员函数 Connect 可以请求 Browser 进程创建一个 Broker 进程。由于 Broker 进程是一个具有特权的进程，因此，一个 Pepper Plugin 在调用 PPB_BrokerTrusted 接口的成员函数 Connect 的时候，Chromium会弹出一个 infobar 提示用户，只有用户同意的情况下，才允许请求 Browser 进程创建一个 Broker 进程。Broker 进程同样会加载请求启动它的 Pepper Plugin 对应的模块文件，但是会调用不同的入口点函数。Broker 进程启动完成之后，Pepper Plugin 可以通过 PPB_BrokerTrusted 接口的 GetHandle 获得一个用来与Broker进程执行IPC的UNIX Socket文件描述符。通过该UNIX Socket文件描述符，Pepper Plugin就可以请求Broker进程执行一些特权操作了，这样就可以绕开Pepper Plugin由于运行在沙箱不能执行特权操作的问题。注意，这一切都是在用户允许的前提下才能够进行的。
+
+
+
+​		ChildProcessLauncher 类的成员函数 start 通过获取命令行参数里面的 SWITCH_PROCESS_TYPE 选项确定要启动的子进程的类型，从而确定是否要将它运行在沙箱中。当要启动的子进程要运行沙箱的时候，本地变量inSandbox 的值就会被设置为 true。
+
+​		ChildProcessLauncher 类提供了一个静态成员函数 warmUp，Browser 进程可以调用它提前启动一个运行在沙箱中的 Service 进程，并且获得该 Service 进程的一个 ServiceConnection 对象，该 ServiceConnection 对象封装在一个 ChildProcessConnectionImpl 对象中，并且该 ChildProcessConnectionImpl 对象保存在ChildProcessLauncher 类的静态成员变量 sSpareSandboxedConnection 中。
+
+​		在要启动的子进程需要运行在沙箱的情况下，ChildProcessLauncher类的成员函数start尝试复用之前预先启动的子进程，因为这样可以加载子进程的启动过程。注意，一旦该预先启动的子进程被复用了，ChildProcessLauncher类的静态成员变量sSpareSandboxedConnection的值就被设置为null，表示它所描述的子进程已经被复用过了。
+
+​		不过，目前还没有在源码里面发现Browser进程有使用上述的warm up机制，因此，ChildProcessLauncher类的成员函数start接下来会调用另外一个静态成员函数allocateBoundConnection启动一个Service进程，并且调用静态成员函数triggerConnectionSetup将该Service进程的启动参数保存起来，以便等该Service进程启动完成之后，使用保存起来的参数对Service进程进行初始化。因此，接下来我们就分别分析ChildProcessLauncher类的静态成员函数allocateBoundConnection和triggerConnectionSetup。
+
+
+
+### Render进程（Android）
+
+#### java部分
+
+现在，我们就将目光转向 Service 进程的启动过程，也就是 Render 进程启动过程的第二部分子过程，如下所示：
+
+![02renderstart](./markdownimage/02renderstart.png)
+
+​		我们知道，一个Service在启动的时候，它的成员函数onCreate就会被调用。在我们这个情景中，启动的Service是一个SandboxedProcessService<N>，它是从ChildProcessService继承下来的，我们假设SandboxedProcessService<N>没有重写父类ChildProcessService的成员函数onCreate，那么当SandboxedProcessService<N>在新启动的Service进程中加载的过程中，ChildProcessService类的成员函数onCreate就会被调用。
+
+​		ChildProcessService类的成员函数onCreate的实现如下所示：
+
+```java
+public class ChildProcessService extends Service {  
+    ......  
+  
+    @Override  
+    public void onCreate() {  
+        ......  
+  
+        mMainThread = new Thread(new Runnable() {  
+            @Override  
+            public void run()  {  
+                try {  
+                    ......  
+  
+                    try {  
+                        LibraryLoader.loadNow(getApplicationContext(), false);  
+                    } catch (ProcessInitException e) {  
+                        ......  
+                    }  
+  
+                    synchronized (mMainThread) {  
+                        while (mCommandLineParams == null) {  
+                            mMainThread.wait();  
+                        }  
+                    }  
+                    LibraryLoader.initialize(mCommandLineParams);  
+  
+                    synchronized (mMainThread) {  
+                        ......  
+                        while (mFileIds == null) {  
+                            mMainThread.wait();  
+                        }  
+                    }  
+                    ......  
+                    int[] fileIds = new int[mFileIds.size()];  
+                    int[] fileFds = new int[mFileFds.size()];  
+                    for (int i = 0; i < mFileIds.size(); ++i) {  
+                        fileIds[i] = mFileIds.get(i);  
+                        fileFds[i] = mFileFds.get(i).detachFd();  
+                    }  
+                    ......  
+  
+                    nativeInitChildProcess(sContext.get().getApplicationContext(),  
+                            ChildProcessService.this, fileIds, fileFds,  
+                            mCpuCount, mCpuFeatures);  
+                    ContentMain.start();  
+                    ......  
+                } catch (InterruptedException e) {  
+                    ......  
+                } catch (ProcessInitException e) {  
+                    ......  
+                }  
+            }  
+        }, MAIN_THREAD_NAME);  
+        mMainThread.start();  
+    }  
+  
+    ......  
+}  
+```
+
+​		ChildProcessService 类的成员函数 onCreate 启动了一个线程，该线程由成员变量 mMainThread 描述，它主要做了以下几件事情：
+
+​    1. 调用 LibraryLoader 类的静态成员函数 loadNow 加载了 Chromium 相关的 so 库。
+
+​    2. 等待成员变量 mCommandLineParams 的值不等于null。当该成员变量的值不等于null的时候，它就指向了一个String数组。该String数组描述的是当前进程的命令行参数，因此，它会通过LibraryLoader类的静态成员函数initialize设置为当前进程的命令参数。
+
+​    3. 等待成员变量mFileIds的值不等于null。当该成员变量的值不等于null的时候，另外一个成员变量mFileIds的值也不等于null，这时候它们描述了一系列的文件描述符及对应的ID。 这些文件描述符及其对应的ID会通过JNI方法nativeInitChildProcess传递给Native层。
+
+​    4. 调用ContentMain类的静态成员函数start启动Native层的Chromium。
+
+​        ChildProcessService类的成员变量mCommandLineParams、mFileIds和mFileIds的值开始的时候都是等于null的，那么它们是什么时候被设置的呢？前面提到，当Browser进程获得了一个可以用来与刚刚启动的Service进程进行Binder IPC的类型为IChildProcessService的Binder代理之后，就会调用该Binder代理的成员函数setupConnection，这会导致运行在刚刚启动的Service进程中的一个对应的Binder服务的成员函数setupConnection被调用。
+
+​		通过ChildProcessService类的成员函数onBind，我们可以看到上述的Bind服务是什么，如下所示：
+
+```java
+public class ChildProcessService extends Service {  
+    ......  
+  
+    @Override  
+    public IBinder onBind(Intent intent) {  
+        ......  
+  
+        return mBinder;  
+    }  
+  
+    ......  
+}  
+```
+
+​		从这里我们就可以看到，ChildProcessService类的成员函数onBind返回的Binder服务就即为上述提到的Binder服务，它由成员变量mBinder指定，如下所示：
+
+```java
+public class ChildProcessService extends Service {  
+    ......  
+  
+    private final IChildProcessService.Stub mBinder = new IChildProcessService.Stub() {  
+        // NOTE: Implement any IChildProcessService methods here.  
+        @Override  
+        public int setupConnection(Bundle args, IChildProcessCallback callback) {  
+            synchronized (mMainThread) {  
+                // Allow the command line to be set via bind() intent or setupConnection, but  
+                // the FD can only be transferred here.  
+                if (mCommandLineParams == null) {  
+                    mCommandLineParams = args.getStringArray(  
+                            ChildProcessConnection.EXTRA_COMMAND_LINE);  
+                }  
+                ......  
+                mFileIds = new ArrayList<Integer>();  
+                mFileFds = new ArrayList<ParcelFileDescriptor>();  
+                for (int i = 0;; i++) {  
+                    String fdName = ChildProcessConnection.EXTRA_FILES_PREFIX + i  
+                            + ChildProcessConnection.EXTRA_FILES_FD_SUFFIX;  
+                    ParcelFileDescriptor parcel = args.getParcelable(fdName);  
+                    ......  
+                    mFileFds.add(parcel);  
+                    String idName = ChildProcessConnection.EXTRA_FILES_PREFIX + i  
+                            + ChildProcessConnection.EXTRA_FILES_ID_SUFFIX;  
+                    mFileIds.add(args.getInt(idName));  
+                }  
+  
+                mMainThread.notifyAll();  
+            }  
+            return Process.myPid();  
+        }  
+    }  
+  
+    ......  
+}  
+```
+
+​		从这里就可以看到，当ChildProcessService类的成员变量mBinder描述的Binder服务的成员函数setupConnection被调用的时候，它就会通过参数args获得Browser进程传递过来的命令行参数和文件描述符，分别保存在成员变量mCommandLineParams、mFileIds和mFileFds中，这时候这几个成员变量的值就不等于null。因此当最后ChildProcessService类的成员变量mMainThread描述的线程被唤醒之后，它就能继续往前执行，也就是执行前面提到的ChildProcessService类的JNI方法nativeInitChildProcess和ContentMain类的成员函数start。
+
+#### C++部分
+
+​		接下来我们就分别分析ChildProcessService类的JNI方法nativeInitChildProcess和ContentMain类的成员函数start的实现。
+
+​		ChildProcessService类的JNI方法nativeInitChildProcess同Native层的函数Java_com_android_org_chromium_content_app_ChildProcessService_nativeInitChildProcess实现，如下所示：
+
+```c++
+__attribute__((visibility("default")))  
+void   Java_com_android_org_chromium_content_app_ChildProcessService_nativeInitChildProcess(JNIEnv*  
+    env, jclass jcaller,  
+    jobject applicationContext,  
+    jobject service,  
+    jintArray extraFileIds,  
+    jintArray extraFileFds,  
+    jint cpuCount,  
+    jlong cpuFeatures) {  
+  return InitChildProcess(env, jcaller, applicationContext, service,  
+      extraFileIds, extraFileFds, cpuCount, cpuFeatures);  
+}  
+```
+
+​		函数Java_com_android_org_chromium_content_app_ChildProcessService_nativeInitChildProcess调用了另外一个函数InitChildProcess来对当前进程执行一些初始化工作，后者的实现如下所示：
+
+```c++
+void InitChildProcess(JNIEnv* env,  
+                      jclass clazz,  
+                      jobject context,  
+                      jobject service,  
+                      jintArray j_file_ids,  
+                      jintArray j_file_fds,  
+                      jint cpu_count,  
+                      jlong cpu_features) {  
+  std::vector<int> file_ids;  
+  std::vector<int> file_fds;  
+  JavaIntArrayToIntVector(env, j_file_ids, &file_ids);  
+  JavaIntArrayToIntVector(env, j_file_fds, &file_fds);  
+  
+  InternalInitChildProcess(  
+      file_ids, file_fds, env, clazz, context, service,  
+      cpu_count, cpu_features);  
+}  
+```
+
+​		函数**`InitChildProcess`**首先是将参数 j_file_ids 和 j_file_fds 描述的一系列文件描述符及其对应的 ID 取出来，并且分别保存在本地变量 file_ids 和 file_fds 描述的 std::vector 中，将这两个 std::vector 传递给另外一个函数**`InternalInitChildProcess`**，后者对上述文件描述符及其对应的ID的处理如下所示：
+
+```c++
+void InternalInitChildProcess(const std::vector<int>& file_ids,  
+                              const std::vector<int>& file_fds,  
+                              JNIEnv* env,  
+                              jclass clazz,  
+                              jobject context,  
+                              jobject service_in,  
+                              jint cpu_count,  
+                              jlong cpu_features) {  
+  ......  
+  
+  // Register the file descriptors.  
+  // This includes the IPC channel, the crash dump signals and resource related  
+  // files.  
+  ......  
+  for (size_t i = 0; i < file_ids.size(); ++i)  
+    base::GlobalDescriptors::GetInstance()->Set(file_ids[i], file_fds[i]);  
+  
+  ......  
+}  
+```
+
+​		从这里就可以看到，函数**`InternalInitChildProcess`**将参数 file_fds 描述的文件描述符以参数 file_ids 描述的 ID 为键值，注册在当前进程的一个 Global Descriptors 中。这其中就包含了一个 UNIX Socket 的 Client 端文件描述符，该文件描述符的 ID 值为 kPrimaryIPCChannel ，并且该 UNIX Socket 就是 Browser 进程用来与它请求启动的进程，例如 Render 进程、GPU 进程和 Plugin 进程，建立 IPC 通信通道使用的。
+
+​		前面我们提到，当我们通过 IPC::SyncChannel 类的静态成员函数Create创建一个Client端的IPC通信通道时，就会从Global Descriptors中取出ID值为kPrimaryIPCChannel的文件描述符，以便可以创建一个用来与Browser进程执行IPC的通信通道。
+
+​		这一步执行完成之后，接下来我们继续分析ContentMain类的静态成员函数start的实现，如下所示：
+
+```java
+public class ContentMain {  
+    ......  
+  
+    public static int start() {  
+        return nativeStart();  
+    }  
+  
+    ......  
+  
+    private static native int nativeStart();  
+}  
+```
+
+​		从这里可以看到，ContentMain类的静态成员函数start调用JNI方法nativeStart启动Native层的Chromium。
+
+​		ContentMain类的JNI方法nativeStart由Native层的函数Java_com_android_org_chromium_content_app_ContentMain_nativeStart实现，如下所示：
+
+```c++
+__attribute__((visibility("default")))  
+jint Java_com_android_org_chromium_content_app_ContentMain_nativeStart(JNIEnv*  
+    env, jclass jcaller) {  
+  return Start(env, jcaller);  
+}  
+```
+
+   函数Java_com_android_org_chromium_content_app_ContentMain_nativeStart调用了另外一个函数Start执行启动Chromium的工作，后者的实现如下所示：
+
+```java
+static jint Start(JNIEnv* env, jclass clazz) {  
+  ......  
+  
+  if (!g_content_runner.Get().get()) {  
+    ContentMainParams params(g_content_main_delegate.Get().get());  
+    g_content_runner.Get().reset(ContentMainRunner::Create());  
+    g_content_runner.Get()->Initialize(params);  
+  }  
+  return g_content_runner.Get()->Run();  
+}  
+```
+
+​        函数Start首先检查全局变量g_content_runner是否被初始化。如果还没有被初始化，那么就会调用ContentMainRunner类的静态成员函数Create创建一个ContentMainRunnerImpl对象，如下所示：
+
+```c++
+ContentMainRunner* ContentMainRunner::Create() {  
+  return new ContentMainRunnerImpl();  
+}  
+```
+
+​		ContentMainRunner 类的静态成员函数 Create 返回的实际上是一个 ContentMainRunnerImpl 对象，因此，上述全局变量 g_content_runner 指向的是一个 ContentMainRunnerImpl 对象。
+
+​        回到函数Start中，创建了一个ContentMainRunnerImpl对象之后，接下来还会调用它的成员函数Initialize执行初始化工作，以及最后调用它的成员函数Run使得当前进程进入运行状态。
+
+​		ContentMainRunnerImpl类的成员函数Run的实现如下所示：
+
+```c++
+class ContentMainRunnerImpl : public ContentMainRunner {  
+ public:  
+  ......  
+  
+  virtual int Run() OVERRIDE {  
+    ......  
+    const CommandLine& command_line = *CommandLine::ForCurrentProcess();  
+    std::string process_type =  
+          command_line.GetSwitchValueASCII(switches::kProcessType);  
+  
+    MainFunctionParams main_params(command_line);  
+    main_params.ui_task = ui_task_;  
+    ......  
+  
+    return RunNamedProcessTypeMain(process_type, main_params, delegate_);  
+  
+    ......  
+  }  
+  
+ ......  
+};  
+```
+
+​		ContentMainRunnerImpl类的成员函数Run首先是获得当前进程的命令行参数，并且保存在本地变量comand_line中。从前面的分析可以知道，当前进程的命令行参数是从Browser进程传递过来的，它里面包含了一个kProcessType选项。在我们这个情景中，这个kProcessType选项的值等于kRendererProcess。也就是说，本地变量process_type的值等于kRendererProcess。
+
+​		最后，ContentMainRunnerImpl类的成员函数Run调用函数RunNamedProcessTypeMain使得当前进程进入运行状态，如下所示：
+
+```c++
+int RunNamedProcessTypeMain(  
+    const std::string& process_type,  
+    const MainFunctionParams& main_function_params,  
+    ContentMainDelegate* delegate) {  
+  static const MainFunction kMainFunctions[] = {  
+#if !defined(CHROME_MULTIPLE_DLL_CHILD)  
+    { "",                            BrowserMain },  
+#endif  
+#if !defined(CHROME_MULTIPLE_DLL_BROWSER)  
+#if defined(ENABLE_PLUGINS)  
+#if !defined(OS_LINUX)  
+    { switches::kPluginProcess,      PluginMain },  
+#endif  
+    { switches::kWorkerProcess,      WorkerMain },  
+    { switches::kPpapiPluginProcess, PpapiPluginMain },  
+    { switches::kPpapiBrokerProcess, PpapiBrokerMain },  
+#endif  // ENABLE_PLUGINS  
+    { switches::kUtilityProcess,     UtilityMain },  
+    { switches::kRendererProcess,    RendererMain },  
+    { switches::kGpuProcess,         GpuMain },  
+#endif  // !CHROME_MULTIPLE_DLL_BROWSER  
+  };  
+  
+  ......  
+  
+  for (size_t i = 0; i < arraysize(kMainFunctions); ++i) {  
+    if (process_type == kMainFunctions[i].name) {  
+      if (delegate) {  
+        int exit_code = delegate->RunProcess(process_type,  
+            main_function_params);  
+#if defined(OS_ANDROID)  
+        // In Android's browser process, the negative exit code doesn't mean the  
+        // default behavior should be used as the UI message loop is managed by  
+        // the Java and the browser process's default behavior is always  
+        // overridden.  
+        if (process_type.empty())  
+          return exit_code;  
+#endif  
+        if (exit_code >= 0)  
+          return exit_code;  
+      }  
+      return kMainFunctions[i].function(main_function_params);  
+    }  
+  }  
+  
+  ......  
+}  
+```
+
+​    	在函数**`RunNamedProcessTypeMain`**内部，定义了一个类型为 MainFunction 的静态数组 kMainFunctions。这个数组记录了每一个进程类型对应的运行入口点函数。例如，对于类型为 switches::kRendererProcess 的进程来说，即Render进程，它的运行入口点函数为 RendererMain。又如，对于类型为 switches::kGpuProcess 的进程来说，即 GPU 进程，它的运行入口点函数为 RendererMain。注意，Browser进程的类型是一个空字符串，因此它的运行入口点函数为 BrowserMain。
+
+​    	从前面的调用过程可以知道，参数delegate指向的 ContentMainDelegate 对象来自于ContentMainRunnerImpl类的成员变量delegate_ 。对于非 Browser 进程来说，ContentMainRunnerImpl 类的成员变量 delegate_ 的值是等于 NULL 的。对于 Chromium 浏览器来说，它的 Browser 进程中的ContentMainRunnerImpl 类的成员变量 delegate_ 指向的是一个 ChromeMainDelegateChromeShellAndroid 对象，而对于 WebView 来说，它的 Browser 进程中的 ContentMainRunnerImpl 类的成员变量 delegate_ 指向的是一个 AwMainDelegate 对象。由于现在我们分析的是非 Browser 进程，因此，参数 delegate 的值就等于NULL。
+
+​    	函数**`RunNamedProcessTypeMain`**通过遍历数组 kMainFunctions，找到与参数 process_type 对应的进程运行入口点函数，并且调用它。不过，如果参数 delegate 的值不等于 NULL，那么就会先调用它指向的一个ContentMainDelegate 对象的成员函数 RunProcess。只有当该 ContentMainDelegate 对象的成员函数RunProcess 的返回值为负值的情况下，才会调用在数组中 kMainFunctions 中找到的运行入口点函数。
+
+​    	但是，对于Android平台的Chromium的Browser进程来说，当它从参数delegate指向的ContentMainDelegate对象的成员函数RunProcess返回来之后，不管返回值是什么，都会直接退出，而不会执行数组kMainFunctions中对应的运行入口点函数。这是因为Android平台的Chromium的Browser进程即为Android应用程序的主进程，它在Java层有着自己的消息循环，因此就不能在Native层进入运行状态，否则的话，就会影响到Android应用程序主进程的正常执行。
+
+​    	由于当前运行的进程为Render进程，即参数delegate的值等于NULL，因此函数RunNamedProcessTypeMain就会直接调用函数RendererMain使得当前进程进入运行状态，如下所示：
+
+```c++
+int RendererMain(const MainFunctionParams& parameters) {  
+  ......  
+  
+  base::MessageLoop main_message_loop;  
+  ......  
+   
+  {  
+    bool run_loop = true;  
+    ......  
+  
+    RenderProcessImpl render_process;  
+    new RenderThreadImpl();  
+    ......  
+  
+    if (run_loop) {  
+      ......  
+      base::MessageLoop::current()->Run();  
+      ......  
+    }  
+  }  
+  
+  return 0;  
+}  
+```
+
+
+
+​		函数RendererMain首先是创建了一个MessageLoop对象。从前面Chromium多线程模型设计和实现分析一文可以知道，通过默认构造函数创建的MessageLoop对象的消息循环类型为TYPE_DEFAULT，这意味着Render进程的主线程通过类型为MessagePumpDefault的消息泵进入运行状态。
+
+​    	在 Render 进程的主线程，也就是当前线程，通过类型为MessagePumpDefault的消息泵进入运行状态之前，会创建一个 RenderProcessImpl 对象和一个 RenderThreadImpl 对象。前面分析网页不在单独的 Render 进程中加载时，我们已经分析过 RenderProcessImpl 对象和 RenderThreadImpl 对象的创建过程了。其中，RenderProcessImpl 对象的创建过程将会触发在当前进程中启动一个 IO 线程，用来执行IPC，而RenderThreadImpl 对象的创建过程会触发在当前进程中创建一个 Client 端的 IPC 通信通道，并且该 IPC 通信通道是通过从 Global Descriptors 中获取ID值为 kPrimaryIPCChannel 的文件描述符创建的，具体可以参考前面分析的ChannelPosix类的成员函数CreatePipe的实现。
 
 
 
 
 
+## 总结
 
+​		至此，我们就分析完成了Chromium的Render进程的启动过程。对于Chromium的GPU进程和Plugin进程来说，它们的启动过程也是类似的，最主要的区别就是最后执行函数 RunNamedProcessTypeMain时，通过不同的入口点函数进入运行状态。因此，后面我们分析 GPU 进程和 Plugin 进程的启动过程时，会跳过中间的过程直接进入到对应的运行入口点函数进行分析。例如，对于 GPU 进程，直接进入到 GpuMain 函数分析，而对于 Pepper Plugin 进程来说，直接进入到 PpapiPluginMain 函 数分析。
 
+​    <u>**回到 Chromium 的 Render 进程的启动过程来，总的来说，它主要做的事情就是与 Browser 进程建立 IPC 通信通道。这个建立过程如下所示：**</u>
 
+​    <u>**1. Browser 进程在启动 Render 进程之前，会创建一个 UNIX Socket，并且使用该 UNIX Socket 的 Server 端文件描述符创建一个 Server 端的 IPC 通信通道。**</u>
 
+​    <u>**2. Browser 进程在启动 Render 进程之后，会通过 Binder IPC 将前面创建的 UNIX Socket 的 Client 端文件描述符传递给 Render 进程。**</u>
 
+​    <u>**3. Render 进程在进入运行状态之前，会使用前面获得的 Client 端文件描述符创建一个 Client 端的 IPC 通信通道。**</u>
 
+​        <u>**由于 Browser 进程和 Render 进程创建的 IPC 通信通道使用的是同一个 UNIX Socket 的 Server 端和 Client 端文件描述符，因此它们就可以通过该 UNIX Socket 进行相互通信了。Browser 进程和 Render 进程之间是通过传递 IPC 消息进行通信的，也就是通过 UNIX Socket 来传递 IPC 消息。了解这些 IPC 消息的传递过程，对阅读Chromium 的源代码是非常有帮助的，因为 Chromium 的源代码到处充斥着 IPC 消息发送、接收和分发处理逻辑，就如同 Android 系统里面的 Binder IPC 一样普遍。**</u>
 
 
 
