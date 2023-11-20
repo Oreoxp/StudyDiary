@@ -101,18 +101,8 @@ RenderViewHostImpl::RenderViewHostImpl(
       frames_ref_count_(0),
       delegate_(delegate),
       instance_(static_cast<SiteInstanceImpl*>(instance)),
-      is_active_(!swapped_out),
-      is_swapped_out_(swapped_out),
-      main_frame_routing_id_(main_frame_routing_id),
-      is_waiting_for_close_ack_(false),
-      sudden_termination_allowed_(false),
-      render_view_termination_status_(base::TERMINATION_STATUS_STILL_RUNNING),
-      updating_web_preferences_(false),
-      has_notified_about_creation_(false),
-      weak_factory_(this) {
-  DCHECK(instance_.get());
-  CHECK(delegate_);  // http://crbug.com/82827
-
+      ...... {
+....
   GetWidget()->set_owner_delegate(this);
   GetProcess()->AddObserver(this);
   GetProcess()->EnableSendQueue();
@@ -133,13 +123,21 @@ RenderViewHostImpl::RenderViewHostImpl(
 
   input_device_change_observer_.reset(new InputDeviceChangeObserver(this));
 }
+
+RenderWidgetHostImpl* RenderViewHostImpl::GetWidget() const {
+  return render_widget_host_.get();
+}
+
+RenderProcessHost* RenderViewHostImpl::GetProcess() const {
+  return GetWidget()->GetProcess();
+}
 ```
 
 
 
-##### SiteInstanceImpl
+##### RenderWidgetHostImpl
 
-​      这里我们主要关注类型为 SiteInstance 的参数 instance，它指向的实际上是一个 SiteInstanceImpl 对象，用来描述 Chromium 当前加载的一个网站实例。RenderViewHostImpl 类的构造函数调用该 SiteInstanceImpl 对象的成员函数 GetProcess 获得一个 RenderProcessHostImpl 对象，如下所示：
+​      这里我们主要关注类型为 **RenderWidgetHostImpl** 的参数 widget，RenderViewHostImpl 类的构造函数调用该 **RenderWidgetHostImpl** 对象的成员函数 **`get() `**获得一个 **RenderProcessHost** 对象，如下所示：
 
 ```c++
 RenderProcessHost* SiteInstanceImpl::GetProcess() {
