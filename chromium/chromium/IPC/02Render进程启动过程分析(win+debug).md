@@ -85,59 +85,31 @@
 
 
 
-#### RenderViewHostImpl
-
-​     RenderViewHostImpl对象的创建过程，即RenderViewHostImpl类的构造函数的实现如下所示：
-
 ```c++
-RenderViewHostImpl::RenderViewHostImpl(
-    SiteInstance* instance,
-    std::unique_ptr<RenderWidgetHostImpl> widget,
-    RenderViewHostDelegate* delegate,
-    int32_t main_frame_routing_id,
-    bool swapped_out,
-    bool has_initialized_audio_host)
-    : render_widget_host_(std::move(widget)),
-      frames_ref_count_(0),
-      delegate_(delegate),
-      instance_(static_cast<SiteInstanceImpl*>(instance)),
-      ...... {
-....
-  GetWidget()->set_owner_delegate(this);
-  GetProcess()->AddObserver(this);
-  GetProcess()->EnableSendQueue();
+// PlzNavigate
+bool RenderFrameHostManager::CreateSpeculativeRenderFrameHost(
+    SiteInstance* old_instance,
+    SiteInstance* new_instance) {
+  if (!new_instance->GetProcess()->Init())
+    return false;
 
-  if (ResourceDispatcherHostImpl::Get()) {
-    BrowserThread::PostTask(
-        BrowserThread::IO, FROM_HERE,
-        base::BindOnce(
-            &ResourceDispatcherHostImpl::OnRenderViewHostCreated,
-            base::Unretained(ResourceDispatcherHostImpl::Get()),
-            GetProcess()->GetID(), GetRoutingID(),
-            base::RetainedRef(
-                GetProcess()->GetStoragePartition()->GetURLRequestContext())));
+  CreateProxiesForNewRenderFrameHost(old_instance, new_instance);
+
+  speculative_render_frame_host_ =
+      CreateRenderFrame(new_instance, delegate_->IsHidden(), nullptr);
+
+  if (speculative_render_frame_host_) {
+    speculative_render_frame_host_->render_view_host()
+        ->DispatchRenderViewCreated();
   }
 
-  close_timeout_.reset(new TimeoutMonitor(base::Bind(
-      &RenderViewHostImpl::ClosePageTimeout, weak_factory_.GetWeakPtr())));
-
-  input_device_change_observer_.reset(new InputDeviceChangeObserver(this));
-}
-
-RenderWidgetHostImpl* RenderViewHostImpl::GetWidget() const {
-  return render_widget_host_.get();
-}
-
-RenderProcessHost* RenderViewHostImpl::GetProcess() const {
-  return GetWidget()->GetProcess();
+  return !!speculative_render_frame_host_;
 }
 ```
 
+**`CreateSpeculativeRenderFrameHost`**这个函数的主要目的是在导航过程中预先创建一个“推测性”的 `RenderFrameHost` 实例。这一过程是浏览器预测性能优化的一部分，特别是在处理页面导航时。
 
-
-##### RenderWidgetHostImpl
-
-​      这里我们主要关注类型为 **RenderWidgetHostImpl** 的参数 widget，RenderViewHostImpl 类的构造函数调用该 **RenderWidgetHostImpl** 对象的成员函数 **`get() `**获得一个 **RenderProcessHost** 对象，如下所示：
+​      这里我们主要关注RenderViewHostImpl 类的构造函数调用该 **RenderWidgetHostImpl** 对象的成员函数 **`get() `**获得一个 **RenderProcessHost** 对象，如下所示：
 
 ```c++
 RenderProcessHost* SiteInstanceImpl::GetProcess() {
@@ -286,9 +258,242 @@ RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
 
 ​		注意上述 RenderProcessHostImpl 对象的创建过程：
 
-  1. <u>如果 Chromium 启动时，指定了**同一个网站**的所有网页都在同一个 Render 进程中加载，即本地变量 use_ process_ per_site 的值等于 true，那么这时候 **SiteInstanceImpl** 类的成员函数 GetProcess 就会先调用RenderProcessHostImpl 类的静态函 数GetProcessHostForSite 检查之前是否已经为当前正在处理的SiteInstanceImpl 对象描述的网站创建过 Render 进程。如果已经创建过，那么就可以获得一个对应的RenderProcessHostImpl 对象。</u>
-  2. <u>如果按照上面的方法找不到一个相应的 RenderProcessHostImpl 对象，本来就应该要创建一个新的 Render 进程了，也就是要创建一个新的 RenderProcessHostImpl 对象了。但是由于当前创建的 Render 进程已经超出预设的最大数量了，这时候就要复用前面已经启动的 Rende r进程，即使这个 Render 进程加载的是另一个网站的内容。</u>
-  3. <u>如果通过前面两步仍然找不到一个对应的 RenderProcessHostImpl 对象，这时候就真的是需要创建一个RenderProcessHostImpl 对象了。取决于 SiteInstanceImpl 类的静态成员变量 g_render _ process _host _factory _  是否被设置，创建一个新的 RenderProcessHostImpl 对象的方式有所不同。如果该静态成员变量被设置了指向一个 RenderProcessHostFactory 对象，那么就调用该RenderProcessHostFactory 对象的成员函数 CreateRenderProcessHost 创建一个从 RenderProcessHost 类继承下来的子类对象。否则的话，就直接创建一个 RenderProcessHostImpl 对象。</u>
+    1. <u>如果 Chromium 启动时，指定了**同一个网站**的所有网页都在同一个 Render 进程中加载，即本地变量 use_ process_ per_site 的值等于 true，那么这时候 **SiteInstanceImpl** 类的成员函数 GetProcess 就会先调用RenderProcessHostImpl 类的静态函 数GetProcessHostForSite 检查之前是否已经为当前正在处理的SiteInstanceImpl 对象描述的网站创建过 Render 进程。如果已经创建过，那么就可以获得一个对应的RenderProcessHostImpl 对象。</u>
+    2. <u>如果按照上面的方法找不到一个相应的 RenderProcessHostImpl 对象，本来就应该要创建一个新的 Render 进程了，也就是要创建一个新的 RenderProcessHostImpl 对象了。但是由于当前创建的 Render 进程已经超出预设的最大数量了，这时候就要复用前面已经启动的 Rende r进程，即使这个 Render 进程加载的是另一个网站的内容。</u>
+    3. <u>如果通过前面两步仍然找不到一个对应的 RenderProcessHostImpl 对象，这时候就真的是需要创建一个RenderProcessHostImpl 对象了。取决于 SiteInstanceImpl 类的静态成员变量 g_render _ process _host _factory _  是否被设置，创建一个新的 RenderProcessHostImpl 对象的方式有所不同。如果该静态成员变量被设置了指向一个 RenderProcessHostFactory 对象，那么就调用该RenderProcessHostFactory 对象的成员函数 CreateRenderProcessHost 创建一个从 RenderProcessHost 类继承下来的子类对象。否则的话，就直接创建一个 RenderProcessHostImpl 对象。</u>
+
+下面看看是如何创建新进程的：
+
+```c++
+RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
+    BrowserContext* browser_context,
+    SiteInstanceImpl* site_instance) {
+    
+......
+render_process_host = CreateOrUseSpareRenderProcessHost(
+		browser_context, nullptr, site_instance, is_for_guests_only);
+......
+    
+}
+
+// static
+RenderProcessHost* RenderProcessHostImpl::CreateRenderProcessHost(
+    BrowserContext* browser_context,
+    StoragePartitionImpl* storage_partition_impl,
+    SiteInstance* site_instance,
+    bool is_for_guests_only) {
+  if (g_render_process_host_factory_) {
+    return g_render_process_host_factory_->CreateRenderProcessHost(
+        browser_context);
+  }
+
+  if (!storage_partition_impl) {
+    storage_partition_impl = static_cast<StoragePartitionImpl*>(
+        BrowserContext::GetStoragePartition(browser_context, site_instance));
+  }
+
+  return new RenderProcessHostImpl(browser_context, storage_partition_impl,
+                                   is_for_guests_only);
+}
+
+// static
+RenderProcessHost* RenderProcessHostImpl::CreateOrUseSpareRenderProcessHost(
+    BrowserContext* browser_context,
+    StoragePartitionImpl* storage_partition_impl,
+    SiteInstance* site_instance,
+    bool is_for_guests_only) {
+  RenderProcessHost* render_process_host =
+      g_spare_render_process_host_manager.Get().MaybeTakeSpareRenderProcessHost(
+          browser_context, storage_partition_impl, site_instance,
+          is_for_guests_only);
+
+  if (!render_process_host) {
+    render_process_host =
+        CreateRenderProcessHost(browser_context, storage_partition_impl,
+                                site_instance, is_for_guests_only);
+  }
+
+  DCHECK(render_process_host);
+  return render_process_host;
+}
+```
+
+在 `RenderProcessHostImpl::GetProcessHostForSiteInstance` 函数中，`CreateOrUseSpareRenderProcessHost` 是用于创建或重用一个备用的 `RenderProcessHost`。我们可以基于您提供的代码进一步分析这一部分的功能和工作流程：
+
+​		`CreateOrUseSpareRenderProcessHost` 函数首先尝试通过调用 `g_spare_render_process_host_manager.Get().MaybeTakeSpareRenderProcessHost` 获取一个备用的 `RenderProcessHost`。备用进程主机管理器（`g_spare_render_process_host_manager`）维护一个备用的 `RenderProcessHost` 池，可以快速分配给需要的 `SiteInstance`。`MaybeTakeSpareRenderProcessHost` 考虑了多个因素，包括浏览器上下文（`BrowserContext`）、存储分区（`StoragePartitionImpl`）、站点实例（`SiteInstance`）和是否为客人模式（`is_for_guests_only`）。这些因素确保选择的备用进程与请求的站点兼容。
+
+​		如果没有合适的备用 `RenderProcessHost` 可用，`CreateOrUseSpareRenderProcessHost` 函数将调用 `CreateRenderProcessHost` 来创建一个新的进程实例。这确保了即使没有可用的备用进程，请求也能被满足。
+
+**CreateRenderProcessHost 的实现**：
+
+- `CreateRenderProcessHost` 首先检查是否有全局的 `RenderProcessHost` 工厂（`g_render_process_host_factory_`）。如果有，它将使用这个工厂来创建新的 `RenderProcessHost`。这通常用于测试或自定义进程创建逻辑。
+- 如果没有设置自定义工厂，函数会获取或确认 `StoragePartitionImpl`。如果没有提供 `storage_partition_impl`，它将根据 `BrowserContext` 和 `SiteInstance` 查找合适的存储分区。
+- 最后，它创建一个新的 `RenderProcessHostImpl` 实例并返回。这个新实例是根据提供的浏览器上下文、存储分区和是否为客人模式创建的。
+
+**RenderProcessHostImpl** 在 Chromium 架构中扮演着重要的角色。它是 `RenderProcessHost` 接口的具体实现，负责管理浏览器进程和渲染进程之间的交互。我们主要讲解中的**`InitializeChannelProxy`**；
+
+### RenderProcessHostImpl
+
+```c++
+RenderProcessHostImpl::RenderProcessHostImpl(
+    BrowserContext* browser_context,
+    StoragePartitionImpl* storage_partition_impl,
+    bool is_for_guests_only)
+    : ...... {
+ ......
+  InitializeChannelProxy();
+ ......
+}
+
+
+void RenderProcessHostImpl::InitializeChannelProxy() {
+  scoped_refptr<base::SingleThreadTaskRunner> io_task_runner =
+      BrowserThread::GetTaskRunnerForThread(BrowserThread::IO);
+
+  service_manager::Connector* connector =
+      BrowserContext::GetConnectorFor(browser_context_);
+  if (!connector) {
+    if (!ServiceManagerConnection::GetForProcess()) 
+      ServiceManagerConnection::SetForProcess(ServiceManagerConnection::Create(
+          mojo::MakeRequest(&test_service_), io_task_runner));
+    }
+    connector = ServiceManagerConnection::GetForProcess()->GetConnector();
+  }
+
+  broker_client_invitation_ =
+      base::MakeUnique<mojo::edk::OutgoingBrokerClientInvitation>();
+  service_manager::Identity child_identity(
+      mojom::kRendererServiceName,
+      BrowserContext::GetServiceUserIdFor(GetBrowserContext()),
+      base::StringPrintf("%d_%d", id_, instance_id_++));
+  child_connection_.reset(new ChildConnection(child_identity,
+                                              broker_client_invitation_.get(),
+                                              connector, io_task_runner));
+
+  mojo::MessagePipe pipe;
+  BindInterface(IPC::mojom::ChannelBootstrap::Name_, std::move(pipe.handle1));
+  std::unique_ptr<IPC::ChannelFactory> channel_factory =
+      IPC::ChannelMojo::CreateServerFactory(std::move(pipe.handle0),
+                                            io_task_runner);
+
+  ResetChannelProxy();
+
+  if (!channel_)
+    channel_.reset(new IPC::ChannelProxy(this, io_task_runner.get()));
+  channel_->Init(std::move(channel_factory), true /* create_pipe_now */);
+
+  channel_->GetRemoteAssociatedInterface(&remote_route_provider_);
+  channel_->GetRemoteAssociatedInterface(&renderer_interface_);
+
+  channel_->Pause();
+}
+
+```
+
+​		<u>`RenderProcessHostImpl::InitializeChannelProxy` 函数在 Chromium 代码中负责设置与渲染进程的通信通道。这个函数的主要职责是创建和初始化 IPC（Inter-Process Communication）通道，该通道用于浏览器进程和渲染进程之间的通信。</u>下面是对这个函数的关键部分的分析：
+
+1. **获取 I/O 线程的任务运行器**：
+   - `io_task_runner` 获取用于 I/O 操作的线程的任务运行器。这是因为大部分与渲染进程通信的操作都在 I/O 线程上执行。
+2. **获取 Service Manager 连接器**：
+   - 获取 `service_manager::Connector` 实例，用于与 Service Manager 建立连接。这个连接器用于路由到新的渲染服务实例。
+3. **处理连接器的备用情况**：
+   - 如果没有针对每个 `BrowserContext` 初始化连接器，代码会回退使用浏览器全局的连接器。在一些测试环境中，可能需要初始化一个虚拟的连接器。
+4. **建立 Service Manager 连接**：
+   - 使用 `broker_client_invitation_` 和 `child_connection_` 创建新的渲染服务实例的 Service Manager 连接。这包括设置服务身份（`service_manager::Identity`）和相关的连接逻辑。
+5. **初始化 IPC 通道**：
+   - 创建一个新的消息管道（`mojo::MessagePipe`），并使用它来初始化一个 `IPC::ChannelFactory`。
+   - 根据编译条件和运行时设置，决定是创建一个标准的 `IPC::ChannelProxy` 还是一个同步通道（`IPC::SyncChannel`，通常用于 Android 的同步合成）。
+6. **配置通道代理**：
+   - 调用 `ResetChannelProxy` 清理旧的通道代理（如果有）。
+   - 使用之前创建的通道工厂初始化新的通道代理，并立即创建管道。
+7. **获取关联接口代理**：
+   - 通过 `channel_->GetRemoteAssociatedInterface` 方法获取 `remote_route_provider_` 和 `renderer_interface_` 的代理。这些接口用于后续的通信。
+8. **暂停通道**：
+   - 初始化时，通道被设置为暂停状态。这样做是为了在进程启动和初期配置期间控制消息流。
+
+这个函数体现了 Chromium 架构中对于进程间通信的复杂管理和控制。通过精心设计的 IPC 通道和 Service Manager 交互，确保了浏览器进程和渲染进程之间的高效、安全的通信机制。这对于浏览器的稳定性、性能和安全性至关重要。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### RenderViewHostImpl
+
+​     RenderViewHostImpl对象的创建过程，即RenderViewHostImpl类的构造函数的实现如下所示：
+
+```c++
+RenderViewHostImpl::RenderViewHostImpl(
+    SiteInstance* instance,
+    std::unique_ptr<RenderWidgetHostImpl> widget,
+    RenderViewHostDelegate* delegate,
+    int32_t main_frame_routing_id,
+    bool swapped_out,
+    bool has_initialized_audio_host)
+    : render_widget_host_(std::move(widget)),
+      frames_ref_count_(0),
+      delegate_(delegate),
+      instance_(static_cast<SiteInstanceImpl*>(instance)),
+      ...... {
+....
+  GetWidget()->set_owner_delegate(this);
+  GetProcess()->AddObserver(this);
+  GetProcess()->EnableSendQueue();
+
+  if (ResourceDispatcherHostImpl::Get()) {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(
+            &ResourceDispatcherHostImpl::OnRenderViewHostCreated,
+            base::Unretained(ResourceDispatcherHostImpl::Get()),
+            GetProcess()->GetID(), GetRoutingID(),
+            base::RetainedRef(
+                GetProcess()->GetStoragePartition()->GetURLRequestContext())));
+  }
+
+  close_timeout_.reset(new TimeoutMonitor(base::Bind(
+      &RenderViewHostImpl::ClosePageTimeout, weak_factory_.GetWeakPtr())));
+
+  input_device_change_observer_.reset(new InputDeviceChangeObserver(this));
+}
+
+RenderWidgetHostImpl* RenderViewHostImpl::GetWidget() const {
+  return render_widget_host_.get();
+}
+
+RenderProcessHost* RenderViewHostImpl::GetProcess() const {
+  return GetWidget()->GetProcess();
+}
+```
+
+
+
+##### RenderWidgetHostImpl
+
+
+
+
+
+
+
+
+
+
 
 
 
