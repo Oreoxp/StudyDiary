@@ -258,9 +258,9 @@ RenderProcessHost* RenderProcessHostImpl::GetProcessHostForSiteInstance(
 
 ​		注意上述 RenderProcessHostImpl 对象的创建过程：
 
-    1. <u>如果 Chromium 启动时，指定了**同一个网站**的所有网页都在同一个 Render 进程中加载，即本地变量 use_ process_ per_site 的值等于 true，那么这时候 **SiteInstanceImpl** 类的成员函数 GetProcess 就会先调用RenderProcessHostImpl 类的静态函 数GetProcessHostForSite 检查之前是否已经为当前正在处理的SiteInstanceImpl 对象描述的网站创建过 Render 进程。如果已经创建过，那么就可以获得一个对应的RenderProcessHostImpl 对象。</u>
-    2. <u>如果按照上面的方法找不到一个相应的 RenderProcessHostImpl 对象，本来就应该要创建一个新的 Render 进程了，也就是要创建一个新的 RenderProcessHostImpl 对象了。但是由于当前创建的 Render 进程已经超出预设的最大数量了，这时候就要复用前面已经启动的 Rende r进程，即使这个 Render 进程加载的是另一个网站的内容。</u>
-    3. <u>如果通过前面两步仍然找不到一个对应的 RenderProcessHostImpl 对象，这时候就真的是需要创建一个RenderProcessHostImpl 对象了。取决于 SiteInstanceImpl 类的静态成员变量 g_render _ process _host _factory _  是否被设置，创建一个新的 RenderProcessHostImpl 对象的方式有所不同。如果该静态成员变量被设置了指向一个 RenderProcessHostFactory 对象，那么就调用该RenderProcessHostFactory 对象的成员函数 CreateRenderProcessHost 创建一个从 RenderProcessHost 类继承下来的子类对象。否则的话，就直接创建一个 RenderProcessHostImpl 对象。</u>
+1. <u>如果 Chromium 启动时，指定了**同一个网站**的所有网页都在同一个 Render 进程中加载，即本地变量 use_ process_ per_site 的值等于 true，那么这时候 **SiteInstanceImpl** 类的成员函数 GetProcess 就会先调用RenderProcessHostImpl 类的静态函 数GetProcessHostForSite 检查之前是否已经为当前正在处理的SiteInstanceImpl 对象描述的网站创建过 Render 进程。如果已经创建过，那么就可以获得一个对应的RenderProcessHostImpl 对象。</u>
+2. <u>如果按照上面的方法找不到一个相应的 RenderProcessHostImpl 对象，本来就应该要创建一个新的 Render 进程了，也就是要创建一个新的 RenderProcessHostImpl 对象了。但是由于当前创建的 Render 进程已经超出预设的最大数量了，这时候就要复用前面已经启动的 Rende r进程，即使这个 Render 进程加载的是另一个网站的内容。</u>
+3. <u>如果通过前面两步仍然找不到一个对应的 RenderProcessHostImpl 对象，这时候就真的是需要创建一个RenderProcessHostImpl 对象了。取决于 SiteInstanceImpl 类的静态成员变量 g_render _ process _host _factory _  是否被设置，创建一个新的 RenderProcessHostImpl 对象的方式有所不同。如果该静态成员变量被设置了指向一个 RenderProcessHostFactory 对象，那么就调用该RenderProcessHostFactory 对象的成员函数 CreateRenderProcessHost 创建一个从 RenderProcessHost 类继承下来的子类对象。否则的话，就直接创建一个 RenderProcessHostImpl 对象。</u>
 
 下面看看是如何创建新进程的：
 
@@ -411,146 +411,21 @@ void RenderProcessHostImpl::InitializeChannelProxy() {
 8. **暂停通道**：
    - 初始化时，通道被设置为暂停状态。这样做是为了在进程启动和初期配置期间控制消息流。
 
-这个函数体现了 Chromium 架构中对于进程间通信的复杂管理和控制。通过精心设计的 IPC 通道和 Service Manager 交互，确保了浏览器进程和渲染进程之间的高效、安全的通信机制。这对于浏览器的稳定性、性能和安全性至关重要。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#### RenderViewHostImpl
-
-​     RenderViewHostImpl对象的创建过程，即RenderViewHostImpl类的构造函数的实现如下所示：
+调用完**RenderProcessHostImpl::InitializeChannelProxy**之后，就可以返回了，直到
 
 ```c++
-RenderViewHostImpl::RenderViewHostImpl(
-    SiteInstance* instance,
-    std::unique_ptr<RenderWidgetHostImpl> widget,
-    RenderViewHostDelegate* delegate,
-    int32_t main_frame_routing_id,
-    bool swapped_out,
-    bool has_initialized_audio_host)
-    : render_widget_host_(std::move(widget)),
-      frames_ref_count_(0),
-      delegate_(delegate),
-      instance_(static_cast<SiteInstanceImpl*>(instance)),
-      ...... {
-....
-  GetWidget()->set_owner_delegate(this);
-  GetProcess()->AddObserver(this);
-  GetProcess()->EnableSendQueue();
-
-  if (ResourceDispatcherHostImpl::Get()) {
-    BrowserThread::PostTask(
-        BrowserThread::IO, FROM_HERE,
-        base::BindOnce(
-            &ResourceDispatcherHostImpl::OnRenderViewHostCreated,
-            base::Unretained(ResourceDispatcherHostImpl::Get()),
-            GetProcess()->GetID(), GetRoutingID(),
-            base::RetainedRef(
-                GetProcess()->GetStoragePartition()->GetURLRequestContext())));
-  }
-
-  close_timeout_.reset(new TimeoutMonitor(base::Bind(
-      &RenderViewHostImpl::ClosePageTimeout, weak_factory_.GetWeakPtr())));
-
-  input_device_change_observer_.reset(new InputDeviceChangeObserver(this));
-}
-
-RenderWidgetHostImpl* RenderViewHostImpl::GetWidget() const {
-  return render_widget_host_.get();
-}
-
-RenderProcessHost* RenderViewHostImpl::GetProcess() const {
-  return GetWidget()->GetProcess();
+CreateSpeculativeRenderFrameHost(
+    SiteInstance* old_instance,
+    SiteInstance* new_instance) {
+  if (!new_instance->GetProcess()->Init())
+      .......
 }
 ```
 
-
-
-##### RenderWidgetHostImpl
-
-
-
-
-
-
-
-
-
-
-
-
-
-​        这一步执行完成后，回到 RenderViewHostImpl 类的构造函数中，从这里返回的 RenderProcessHostImpl 对象用来初始化 RenderViewHostImpl 类的父类 RenderWidgetHostImpl ，如下所示：
-
-```c++
-RenderWidgetHostImpl::RenderWidgetHostImpl(RenderWidgetHostDelegate* delegate,
-                                           RenderProcessHost* process,
-                                           int routing_id,
-                                           mojom::WidgetPtr widget,
-                                           bool hidden)
-    : ......,
-      process_(process),
-      ...... {
-  ......
-}
-```
-
-​		这个函数定义在文件 content/browser/renderer_host/render_widget_host_impl.cc 中。
-
-​		参数 process 指向的 **RenderProcessHostImpl** 对象保存在 RenderWidgetHostImpl 类的成员变量 process_ 中，以后就可以通过 **RenderWidgetHostImpl** 类的成员函数 GetProcess 获得该RenderProcessHostImpl 对象，如下所示：
-
-```c++
-RenderProcessHost* RenderWidgetHostImpl::GetProcess() const {
-  return process_;
-}
-```
-
-​      有了 RenderProcessHostImpl 之后，接下来我们就开始分析 RenderViewHostImpl 类的成员函数CreateRenderView 创建一个新的 Render 进程的过程了，如下所示：
-
-```c++
-bool RenderViewHostImpl::CreateRenderView(
-    const base::string16& frame_name,
-    int opener_route_id,
-    int proxy_route_id,
-    int32 max_page_id,
-    bool window_was_created_with_opener) {
-  ......
- 
-  if (!GetProcess()->Init())
-    return false;
- 
-  ......
- 
-}
-```
-
-​		这个函数定义在文件 content/browser/renderer_host/render_view_host_impl.cc 中。
-
-​		RenderViewHostImpl 类的成员函数 **`CreateRenderView`** 首先调用从父类 **RenderWidgetHostImpl** **<u>继承</u>**下来的成员函数 **`GetProcess`** 获得一个 **RenderProcessHostImpl** 对象，接着再调用该 RenderProcessHostImpl 对象的成员函数 **`Init`** 检查是否需要为当前加载的网页创建一个新的 Render 进程。
-
-​		RenderProcessHostImpl 类的成员函数 Init 的实现如下所示：
+​		**RenderProcessHostImpl**类的成员函数Init的实现如下所示：
 
 ```c++
 bool RenderProcessHostImpl::Init() {
-  // calling Init() more than once does nothing, this makes it more convenient
-  // for the view host which may not be sure in some cases
   if (HasConnection())
     return true;
 
@@ -579,7 +454,6 @@ bool RenderProcessHostImpl::Init() {
   // null, so we re-initialize it here.
   if (!channel_)
     InitializeChannelProxy();
-  DCHECK(broker_client_invitation_);
 
   // Unpause the Channel briefly. This will be paused again below if we launch a
   // real child process. Note that messages may be sent in the short window
@@ -593,11 +467,16 @@ bool RenderProcessHostImpl::Init() {
   // Call the embedder first so that their IPC filters have priority.
   GetContentClient()->browser()->RenderProcessWillLaunch(this);
 
+  // Intentionally delay the hang monitor creation after the first renderer
+  // is created. On Mac audio thread is the UI thread, a hang monitor is not
+  // necessary or recommended.
+  media::AudioManager::StartHangMonitorIfNeeded(
+      BrowserThread::GetTaskRunnerForThread(BrowserThread::IO));
+
   CreateMessageFilters();
   RegisterMojoInterfaces();
 
   if (run_renderer_in_process()) {
-    DCHECK(g_renderer_main_thread_factory);
     // Crank up a thread and run the initialization there.  With the way that
     // messages flow between the browser and renderer, this thread is required
     // to prevent a deadlock in single-process mode.  Since the primordial
@@ -611,7 +490,7 @@ bool RenderProcessHostImpl::Init() {
             child_connection_->service_token())));
 
     base::Thread::Options options;
-      
+    // In-process plugins require this to be a UI message loop.
     options.message_loop_type = base::MessageLoop::TYPE_UI;
     // As for execution sequence, this callback should have no any dependency
     // on starting in-process-render-thread.
@@ -647,7 +526,7 @@ bool RenderProcessHostImpl::Init() {
 
     fast_shutdown_started_ = false;
   }
-
+ 
   if (!gpu_observer_registered_) {
     gpu_observer_registered_ = true;
     ui::GpuSwitchingManager::GetInstance()->AddObserver(this);
@@ -659,124 +538,34 @@ bool RenderProcessHostImpl::Init() {
 }
 ```
 
-​		如果 HasConnection() 返回 true，就表明已经为当前要加载的网而创建过 Render 进程了，因此在这种情况下，就无需要往前执行了。
+​		这个函数定义在文件 content/browser/renderer_host/render_process_host_impl.cc 中。
 
-​		我们假设到目前为止，还没有为当前要加载的网页创建过 Render 进程。
+​		RenderProcessHostImpl 类有一个类型为scoped_ptr< IPC::ChannelProxy > 成员变量channel_，当它引用了一个IPC::ChannelProxy 对象的时候，就表明已经为当前要加载的网而创建过 Render 进程了，因此在这种情况下，就无需要往前执行了。
 
-​		首先检查 channel_ 是否初始化，如果没有就调用 **`RenderProcessHostImpl::InitializeChannelProxy`** 来初始化
+​		 我们假设到目前为止，还没有为当前要加载的网页创建过 Render 进程。接下来RenderProcessHostImpl类的成员函数 Init就会做以下四件事情：
 
-​		之后 **channel_** 被简短地恢复（**`Unpause`**），这样在真正的子进程启动之前可以发送消息。
+      1. 如果通道 (`channel_`) 尚未初始化，则调用 **`InitializeChannelProxy`** 来设置通信通道。
+      2. 通道在初始化期间被暂停，现在临时解除暂停，以便可以立即发送一些初始化消息。
+      3. 调用 **GetContentClient()->browser()->RenderProcessWillLaunch(this)`** 通知浏览器客户端即将启动渲染进程。
+      4. 调用RenderProcessHostImpl类的成员函数 CreateMessageFilters 创建一系列的 Message Filter，用来过滤 IPC 消息。
+      5. **<u>如果所有网页都在 Browser 进程中加载，即不单独创建 Render 进程来加载网页，那么这时候调用父类 RenderProcessHost 的静态成员函数 run_ renderer_ in_ process 的返回值就等于 true。在这种情况下，就会通过在本进程（即Browser进程）创建一个新的线程来渲染网页。这个线程由 RenderProcessHostImpl 类的静态成员变量g_ renderer_ main _thread _ factory 描述的一个函数创建，它的类型为InProcessRendererThread。InProcessRendererThread类继承了base::Thread类，从前面 Chromium 多线程模型设计和实现分析一文可以知道，当调用它的成员函数 StartWithOptions 的时候，新的线程就会运行起来。这时候如果我们再调用它的成员函数  message _ loop ，就可以获得它的 Message Loop。有了这个 Message Loop 之后，以后就可以向它发送消息了。</u>**
+      6. 如果网页要单独的 Render 进程中加载，那么调用创建一个命令行，并且以该命令行以及前面创建的 IPC::ChannelProxy 对象为参数，创建一个 ChildProcessLauncher 对象，而该 ChildProcessLauncher 对象在创建的过程，就会启动一个新的 Render进程。
 
-​		调用**`RenderProcessWillLaunch()`**函数，让内容客户端（`GetContentClient()->browser()`）知道渲染进程即将启动。创建消息过滤器（`CreateMessageFilters()`）用来过滤 IPC 消息，并注册 Mojo 接口**RegisterMojoInterfaces()**。
-
-​		<u>如果所有网页都在 Browser 进程中加载，即不单独创建 Render 进程来加载网页，那么这时候调用父类RenderProcessHost 的静态成员函数 run_ renderer_ in_process 的返回值就等于 true。在这种情况下，就会通过在本进程（即 Browser 进程）创建一个**新的线程**来渲染网页。</u>这个线程由 RenderProcessHostImpl 类的静态成员变量 g_renderer_main_thread_factory 描述的一个函数创建，它的类型为**InProcessRendererThread**。InProcessRendererThread 类继承了 base::Thread 类，从前面 Chromium 多线程模型设计和实现分析一文可以知道，当调用它的成员函数 StartWithOptions 的时候，新的线程就会运行起来。这时候如果我们再调用它的成员函数 message_loop，就可以获得它的 Message Loop。有了这个Message Loop 之后，以后就可以向它发送消息了。
-
-​		如果网页要单独的 Render 进程中加载，那么调用创建一个命令行，创建一个 **ChildProcessLauncher** 对象，而该 ChildProcessLauncher 对象在创建的过程，就会启动一个新的 Render 进程。
-
-
-
-​		接下来，我们主要分析第 IPC::Channel、InProcessRendererThread 和 ChildProcessLauncher，MessageFilters 在接下来的一篇文章中分析 IPC 消息分发机制时再分析。
+   接下来，我们主要分析第 1、3 和 4 件事情，第 2 件事情在接下来的一篇文章中分析 IPC 消息分发机制时再分析。
 
 
 
 
 
-#### IPC::Channel
 
-##### ChannelProxy
 
-RenderProcessHostImpl 类的 InitializeChannelProxy 的初始化 ChannelProxy 实现如下所示：
 
-```c++
-void RenderProcessHostImpl::InitializeChannelProxy() {
-  scoped_refptr<base::SingleThreadTaskRunner> io_task_runner =
-      BrowserThread::GetTaskRunnerForThread(BrowserThread::IO);
 
-  // Acquire a Connector which will route connections to a new instance of the
-  // renderer service.
-  service_manager::Connector* connector =
-      BrowserContext::GetConnectorFor(browser_context_);
-  if (!connector) {
-    // Note that some embedders (e.g. Android WebView) may not initialize a
-    // Connector per BrowserContext. In those cases we fall back to the
-    // browser-wide Connector.
-    if (!ServiceManagerConnection::GetForProcess()) {
-      // Additionally, some test code may not initialize the process-wide
-      // ServiceManagerConnection prior to this point. This class of test code
-      // doesn't care about render processes, so we can initialize a dummy
-      // connection.
-      ServiceManagerConnection::SetForProcess(ServiceManagerConnection::Create(
-          mojo::MakeRequest(&test_service_), io_task_runner));
-    }
-    connector = ServiceManagerConnection::GetForProcess()->GetConnector();
-  }
 
-  // Establish a ServiceManager connection for the new render service instance.
-  broker_client_invitation_ =
-      base::MakeUnique<mojo::edk::OutgoingBrokerClientInvitation>();
-  service_manager::Identity child_identity(
-      mojom::kRendererServiceName,
-      BrowserContext::GetServiceUserIdFor(GetBrowserContext()),
-      base::StringPrintf("%d_%d", id_, instance_id_++));
-  child_connection_.reset(new ChildConnection(child_identity,
-                                              broker_client_invitation_.get(),
-                                              connector, io_task_runner));
 
-  // Send an interface request to bootstrap the IPC::Channel. Note that this
-  // request will happily sit on the pipe until the process is launched and
-  // connected to the ServiceManager. We take the other end immediately and
-  // plug it into a new ChannelProxy.
-  mojo::MessagePipe pipe;
-  BindInterface(IPC::mojom::ChannelBootstrap::Name_, std::move(pipe.handle1));
-  std::unique_ptr<IPC::ChannelFactory> channel_factory =
-      IPC::ChannelMojo::CreateServerFactory(std::move(pipe.handle0),
-                                            io_task_runner);
 
-  ResetChannelProxy();
 
-  // Do NOT expand ifdef or run time condition checks here! Synchronous
-  // IPCs from browser process are banned. It is only narrowly allowed
-  // for Android WebView to maintain backward compatibility.
-  // See crbug.com/526842 for details.
-  if (!channel_)
-    channel_.reset(new IPC::ChannelProxy(this, io_task_runner.get()));
-  channel_->Init(std::move(channel_factory), true /* create_pipe_now */);
 
-  // Note that Channel send is effectively paused and unpaused at various points
-  // during startup, and existing code relies on a fragile relative message
-  // ordering resulting from some early messages being queued until process
-  // launch while others are sent immediately. See https://goo.gl/REW75h for
-  // details.
-  //
-  // We acquire a few associated interface proxies here -- before the channel is
-  // paused -- to ensure that subsequent initialization messages on those
-  // interfaces behave properly. Specifically, this avoids the risk of an
-  // interface being requested while the Channel is paused, which could
-  // effectively and undesirably block the transmission of a subsequent message
-  // on that interface while the Channel is unpaused.
-  //
-  // See OnProcessLaunched() for some additional details of this somewhat
-  // surprising behavior.
-  channel_->GetRemoteAssociatedInterface(&remote_route_provider_);
-  channel_->GetRemoteAssociatedInterface(&renderer_interface_);
-
-  // We start the Channel in a paused state. It will be briefly unpaused again
-  // in Init() if applicable, before process launch is initiated.
-  channel_->Pause();
-}
-```
-
-1. **任务调度器的获取**: 首先，代码获取指向I/O线程的任务运行器（`io_task_runner`）。这是因为很多与进程间通信（IPC）相关的操作需要在 I/O 线程上执行。
-2. **服务管理连接器的获取**: 接下来，代码尝试获取与`browser_context_`相关的`service_manager::Connector`实例。如果不存在，则回退到浏览器级别的连接器，这在某些嵌入式环境（例如Android WebView）中可能会发生。如果这也不可行，例如在某些测试环境中，则创建一个用于测试的连接。
-3. **建立服务管理连接**: 使用`broker_client_invitation_`创建一个向渲染服务实例路由连接的`ServiceManager`连接。`child_connection_`用于管理与渲染器进程的通信，并且它具有一个唯一的标识符`child_identity`。
-4. **IPC通道的初始化**: 使用`mojo::MessagePipe`创建一个IPC通道，这条管道将在渲染器进程启动并连接到`ServiceManager`之前保持开启。通过`IPC::ChannelFactory`创建服务端工厂，并与`channel_`关联，它将用于跨进程通信。
-5. **通道代理重置**: 调用`ResetChannelProxy`以准备新的通道实例。
-6. **同步IPC的警告**: 代码中的注释明确指出，来自浏览器进程的同步IPC被禁止，这是为了避免潜在的死锁问题，特别是在Android WebView中为了向后兼容性。
-7. **通道代理的初始化**: 创建`IPC::ChannelProxy`实例，并初始化通道，这个通道最初是暂停状态。它会在`RenderProcessHostImpl::Init`方法中被短暂地取消暂停，然后在进程启动之前再次暂停。
-8. **接口代理的获取**: 通过通道代理获取到`remote_route_provider_`和`renderer_interface_`的关联接口代理。这是在通道暂停之前进行的，以确保在通道暂停期间仍能发送初始化消息。
-9. **通道暂停**: 在函数的最后，通道被暂停，这样做是为了控制消息的发送时机，直到进程启动过程被初始化。
-
-整体而言，这段代码涉及到了浏览器内核中对渲染进程的通信通道的建立和初始化过程。这是浏览器多进程架构中至关重要的部分，确保了渲染进程能够安全、有效地与浏览器主进程进行通信。这样的设计旨在确保浏览器的稳定性和响应性，同时提供了一个严密的、安全的沙箱环境来隔离不同的渲染进程。
 
 
 
