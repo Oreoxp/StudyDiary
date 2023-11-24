@@ -1,0 +1,14 @@
+prefix=/home/jason/build/ffmpeg
+exec_prefix=${prefix}
+libdir=/home/jason/build/ffmpeg/lib
+includedir=/home/jason/build/ffmpeg/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 56.51.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -lm -luser32 -lbcrypt
+Cflags: -I${includedir}
