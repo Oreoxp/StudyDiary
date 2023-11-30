@@ -1,23 +1,25 @@
-#include <QtCore/QCoreApplication>
+ï»¿#include <QtCore/QCoreApplication>
 #include <iostream>
 #include <string>
+#include <fstream>
 
 extern "C" {
 #include <libavutil/avutil.h>
 #include <libavformat/avformat.h>
+#include <libavformat/avio.h>
 }
 
 
 void funcDemux() {
   std::string filename = "believe.mp4";
 
-  //AVFormatContext ÊÇÃèÊöÒ»¸öÃ½ÌåÎÄ¼ş»òÃ½ÌåÁ÷µÄ¹¹³ÉºÍ»ù±¾ĞÅÏ¢µÄ½á¹¹Ìå
-  AVFormatContext * pFormatCtx = NULL; //ÊäÈëÎÄ¼şµÄdemux
+  //AVFormatContext æ˜¯æè¿°ä¸€ä¸ªåª’ä½“æ–‡ä»¶æˆ–åª’ä½“æµçš„æ„æˆå’ŒåŸºæœ¬ä¿¡æ¯çš„ç»“æ„ä½“
+  AVFormatContext * pFormatCtx = NULL; //è¾“å…¥æ–‡ä»¶çš„demux
 
-  int videoindex = -1; //ÊÓÆµÁ÷Ë÷Òı
-  int audioindex = -1; //ÒôÆµÁ÷Ë÷Òı
+  int videoindex = -1; //è§†é¢‘æµç´¢å¼•
+  int audioindex = -1; //éŸ³é¢‘æµç´¢å¼•
 
-  //´ò¿ªÎÄ¼ş
+  //æ‰“å¼€æ–‡ä»¶
   int ret = avformat_open_input(&pFormatCtx, filename.c_str(), NULL, NULL);
   if (ret != 0) {
     std::cout << "[error] avformat_open_input open failed :" << ret << std::endl;
@@ -35,12 +37,12 @@ void funcDemux() {
 
   std::cout << std::endl;
   std::cout << "dump format========:" << std::endl;
-  std::cout << "medianame(Ã½ÌåÃû³Æ)        :" << pFormatCtx->url << std::endl;
-  std::cout << "nb_streams(Á÷Ã½ÌåÊıÁ¿)     :" << pFormatCtx->nb_streams << std::endl;
-  std::cout << "bit_rate(±ÈÌØÂÊ)           :" << pFormatCtx->bit_rate << std::endl;
-  std::cout << "media average rate(ÂëÂÊ)   :" << pFormatCtx->bit_rate / 1024 << "kbps" << std::endl;
-  std::cout << "format name(·â×°¸ñÊ½Ãû³Æ)  :" << pFormatCtx->iformat->name << std::endl;
-  std::cout << "duration(Ê±³¤)             :" << (pFormatCtx->duration/AV_TIME_BASE)/3600 << "h"
+  std::cout << "medianame(åª’ä½“åç§°)        :" << pFormatCtx->url << std::endl;
+  std::cout << "nb_streams(æµåª’ä½“æ•°é‡)     :" << pFormatCtx->nb_streams << std::endl;
+  std::cout << "bit_rate(æ¯”ç‰¹ç‡)           :" << pFormatCtx->bit_rate << std::endl;
+  std::cout << "media average rate(ç ç‡)   :" << pFormatCtx->bit_rate / 1024 << "kbps" << std::endl;
+  std::cout << "format name(å°è£…æ ¼å¼åç§°)  :" << pFormatCtx->iformat->name << std::endl;
+  std::cout << "duration(æ—¶é•¿)             :" << (pFormatCtx->duration/AV_TIME_BASE)/3600 << "h"
                                               << ((pFormatCtx->duration/AV_TIME_BASE)%3600)/60 << "m"
                                               << ((pFormatCtx->duration/AV_TIME_BASE)%3600)%60 << "s" 
                                               << std::endl;
@@ -55,39 +57,39 @@ void funcDemux() {
       audioindex = i;
       std::cout << "read audio info========:" << std::endl;
       std::cout << "frame index(index)              :" << stream->index << std::endl;
-      std::cout << "audio sample rate(²ÉÑùÂÊ)       :" << stream->codecpar->sample_rate << std::endl;
-      std::cout << "audio channels(Í¨µÀÊı)          :" << stream->codecpar->channels << std::endl;
-      std::cout << "audio bit rate(±ÈÌØÂÊ)          :" << stream->codecpar->bit_rate << std::endl;
-      std::cout << "audio frame size(Ö¡³¤)          :" << stream->codecpar->frame_size << std::endl;
-      std::cout << "audio codec name(Ñ¹Ëõ±àÂë¸ñÊ½)  :" << avcodec_get_name(stream->codecpar->codec_id) << std::endl;
-      std::cout << "audio codec format(¸ñÊ½)        :" << av_get_sample_fmt_name((AVSampleFormat)stream->codecpar->format) << std::endl;
+      std::cout << "audio sample rate(é‡‡æ ·ç‡)       :" << stream->codecpar->sample_rate << std::endl;
+      std::cout << "audio channels(é€šé“æ•°)          :" << stream->codecpar->channels << std::endl;
+      std::cout << "audio bit rate(æ¯”ç‰¹ç‡)          :" << stream->codecpar->bit_rate << std::endl;
+      std::cout << "audio frame size(å¸§é•¿)          :" << stream->codecpar->frame_size << std::endl;
+      std::cout << "audio codec name(å‹ç¼©ç¼–ç æ ¼å¼)  :" << avcodec_get_name(stream->codecpar->codec_id) << std::endl;
+      std::cout << "audio codec format(æ ¼å¼)        :" << av_get_sample_fmt_name((AVSampleFormat)stream->codecpar->format) << std::endl;
       if (stream->duration != AV_NOPTS_VALUE) {
         int duration = stream->duration * av_q2d(stream->time_base);
-        std::cout << "audio duration(Ê±³¤)            :" << (duration) / 3600 << "h"
+        std::cout << "audio duration(æ—¶é•¿)            :" << (duration) / 3600 << "h"
                                                          << ((duration) % 3600) / 60 << "m"
                                                          << ((duration) % 3600) % 60 << "s"
                                                          << std::endl;
       }
       else {
-        std::cout << "audio duration(Ê±³¤)            :" << "unknown" << std::endl;
+        std::cout << "audio duration(æ—¶é•¿)            :" << "unknown" << std::endl;
       }
     } else if (AVMEDIA_TYPE_VIDEO == stream->codecpar->codec_type) {
       videoindex = i;
       std::cout << "read video info========:" << std::endl;
       std::cout << "frame index(index)              :" << stream->index << std::endl;
       std::cout << "video fps                       :" << av_q2d(stream->avg_frame_rate) << std::endl;
-      std::cout << "video width(¿í,¸ß)              :" << stream->codecpar->width << "," << stream->codecpar->height << std::endl;
-      std::cout << "video bit rate(±ÈÌØÂÊ)          :" << stream->codecpar->bit_rate << std::endl;
-      std::cout << "video codec name(Ñ¹Ëõ±àÂë¸ñÊ½)  :" << avcodec_get_name(stream->codecpar->codec_id) << std::endl;
+      std::cout << "video width(å®½,é«˜)              :" << stream->codecpar->width << "," << stream->codecpar->height << std::endl;
+      std::cout << "video bit rate(æ¯”ç‰¹ç‡)          :" << stream->codecpar->bit_rate << std::endl;
+      std::cout << "video codec name(å‹ç¼©ç¼–ç æ ¼å¼)  :" << avcodec_get_name(stream->codecpar->codec_id) << std::endl;
       if (stream->duration != AV_NOPTS_VALUE) {
         int duration = stream->duration * av_q2d(stream->time_base);
-        std::cout << "audio duration(Ê±³¤)            :" << (duration) / 3600 << "h"
+        std::cout << "audio duration(æ—¶é•¿)            :" << (duration) / 3600 << "h"
                                                          << ((duration) % 3600) / 60 << "m"
                                                          << ((duration) % 3600) % 60 << "s"
                                                          << std::endl;
       }
       else {
-        std::cout << "audio duration(Ê±³¤)            :" << "unknown" << std::endl;
+        std::cout << "audio duration(æ—¶é•¿)            :" << "unknown" << std::endl;
       }
     } else {
       std::cout << "read other stream" << std::endl;
@@ -103,20 +105,20 @@ void funcDemux() {
   while (av_read_frame(pFormatCtx, packet) >= 0) {
     if (packet->stream_index == videoindex) {
       std::cout << "read video frame======" << std::endl;
-      std::cout << "frame pts(Ê±¼ä´Á)              :" << packet->pts << std::endl;
-      std::cout << "frame dts(½âÂëÊ±¼ä´Á)          :" << packet->dts << std::endl;
-      std::cout << "frame duration(Ö¡Ê±³¤s)        :" << packet->duration * av_q2d(pFormatCtx->streams[packet->stream_index]->time_base) << std::endl;
-      std::cout << "frame size(Ö¡´óĞ¡)             :" << packet->size << std::endl;
-      std::cout << "frame pos(Ö¡ÔÚÎÄ¼şÖĞµÄÎ»ÖÃ)    :" << packet->pos << std::endl;
-      std::cout << "frame flags(±êÖ¾)              :" << packet->flags << std::endl;
+      std::cout << "frame pts(æ—¶é—´æˆ³)              :" << packet->pts << std::endl;
+      std::cout << "frame dts(è§£ç æ—¶é—´æˆ³)          :" << packet->dts << std::endl;
+      std::cout << "frame duration(å¸§æ—¶é•¿s)        :" << packet->duration * av_q2d(pFormatCtx->streams[packet->stream_index]->time_base) << std::endl;
+      std::cout << "frame size(å¸§å¤§å°)             :" << packet->size << std::endl;
+      std::cout << "frame pos(å¸§åœ¨æ–‡ä»¶ä¸­çš„ä½ç½®)    :" << packet->pos << std::endl;
+      std::cout << "frame flags(æ ‡å¿—)              :" << packet->flags << std::endl;
     } else if (packet->stream_index == audioindex) {
       std::cout << "read audio frame======" << std::endl;
-      std::cout << "frame pts(Ê±¼ä´Á)              :" << packet->pts << std::endl;
-      std::cout << "frame dts(½âÂëÊ±¼ä´Á)          :" << packet->dts << std::endl;
-      std::cout << "frame duration(Ö¡Ê±³¤s)        :" << packet->duration * av_q2d(pFormatCtx->streams[packet->stream_index]->time_base) << std::endl;
-      std::cout << "frame size(Ö¡´óĞ¡)             :" << packet->size << std::endl;
-      std::cout << "frame pos(Ö¡ÔÚÎÄ¼şÖĞµÄÎ»ÖÃ)    :" << packet->pos << std::endl;
-      std::cout << "frame flags(±êÖ¾)              :" << packet->flags << std::endl;
+      std::cout << "frame pts(æ—¶é—´æˆ³)              :" << packet->pts << std::endl;
+      std::cout << "frame dts(è§£ç æ—¶é—´æˆ³)          :" << packet->dts << std::endl;
+      std::cout << "frame duration(å¸§æ—¶é•¿s)        :" << packet->duration * av_q2d(pFormatCtx->streams[packet->stream_index]->time_base) << std::endl;
+      std::cout << "frame size(å¸§å¤§å°)             :" << packet->size << std::endl;
+      std::cout << "frame pos(å¸§åœ¨æ–‡ä»¶ä¸­çš„ä½ç½®)    :" << packet->pos << std::endl;
+      std::cout << "frame flags(æ ‡å¿—)              :" << packet->flags << std::endl;
     } else {
       std::cout << "read other frame" << std::endl;
     }
@@ -129,13 +131,104 @@ void funcDemux() {
   }
 }
 
+void funcExtractAAC() {
+  std::string input_filename = "believe.mp4";
+  std::string output_filename = "out.aac";
+
+  AVFormatContext * pFormatCtx = NULL; //è¾“å…¥æ–‡ä»¶çš„demux
+
+  int ret = avformat_open_input(&pFormatCtx, input_filename.c_str(), NULL, NULL);
+  if (ret != 0) {
+    std::cout << "[error] open input failed";
+    return;
+  }
+
+  ret = avformat_find_stream_info(pFormatCtx, NULL);
+  if (ret != 0) {
+    std::cout << "[error] find stream info failed";
+    return;
+  }
+
+  av_dump_format(pFormatCtx, 0, input_filename.c_str(), 0);
+
+  int audio_index = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
+
+  if (audio_index < 0) {
+    std::cout << "[error] cant find audio stream";
+    return;
+  }
+
+  std::cout << std::endl;
+  std::cout << "find a audio stream index:" << audio_index << std::endl;
+  auto audio_stream = pFormatCtx->streams[audio_index];
+  std::cout << "info:" << std::endl;
+  std::cout << "é‡‡æ ·ç‡:" << audio_stream->codecpar->sample_rate << std::endl;
+  std::cout << "type:" << av_get_media_type_string(audio_stream->codecpar->codec_type) << std::endl;
+  std::cout << "å‹ç¼©ç¼–ç æ ¼å¼  :" << avcodec_get_name(audio_stream->codecpar->codec_id) << std::endl;
+  std::cout << "audio profile  :" << audio_stream->codecpar->profile<< std::endl;
+
+  if (audio_stream->codecpar->codec_id != AV_CODEC_ID_AAC) {
+    std::cout << "[error] is not aac";
+    return;
+  }
+
+  std::ofstream  output_s;
+  output_s.open(output_filename, std::ios::binary);
+
+  AVPacket* pakt = av_packet_alloc();
+  while (av_read_frame(pFormatCtx, pakt) >= 0) {
+    if (pakt->stream_index == audio_index) {
+      //å†™å…¥head
+      char head[7] = { 0 };
+      int adtsLen = pakt->size + 7;//åŒ…çš„å¤§å°åŠ ä¸Š ADTS å¤´çš„å›ºå®šé•¿åº¦ï¼ˆ7å­—èŠ‚
+      head[0] = 0xFF;//syncword  é«˜8bits
+
+      head[1] = 0xf0;         //syncword:0xfff                          ä½ 4 bits
+      head[1] |= (0 << 3);        //MPEG Version:0 for MPEG-4,1 for MPEG-2  1 bit
+      head[1] |= (0 << 1);    //Layer:0                                 2 bits
+      head[1] |= 1;           //protection absent:1                     1 bit
+
+      head[2] = (audio_stream->codecpar->profile) << 6;            //profile:profile               2bits
+      head[2] |= (3 & 0x0f) << 2; //sampling frequency index:sampling_frequency_index  4bits
+      head[2] |= (0 << 1);             //private bit:0                   1bit
+      head[2] |= (audio_stream->codecpar->channels & 0x04) >> 2; //channel configuration:channels  é«˜1bit
+
+      head[3] = (audio_stream->codecpar->channels & 0x03) << 6; //channel configuration:channels ä½2bits
+      head[3] |= (0 << 5);               //originalï¼š0                1bit
+      head[3] |= (0 << 4);               //homeï¼š0                    1bit
+      head[3] |= (0 << 3);               //copyright id bitï¼š0        1bit
+      head[3] |= (0 << 2);               //copyright id startï¼š0      1bit
+      head[3] |= ((adtsLen & 0x1800) >> 11);           //frame lengthï¼švalue   é«˜2bits
+
+      head[4] = (uint8_t)((adtsLen & 0x7f8) >> 3);     //frame length:value    ä¸­é—´8bits
+      head[5] = (uint8_t)((adtsLen & 0x7) << 5);       //frame length:value    ä½3bits
+      head[5] |= 0x1f;                                 //buffer fullness:0x7ff é«˜5bits
+      head[6] = 0xfc;      //11111100       //buffer fullness:0x7ff ä½6bits
+      // number_of_raw_data_blocks_in_frameï¼š
+      //    è¡¨ç¤ºADTSå¸§ä¸­æœ‰number_of_raw_data_blocks_in_frame + 1ä¸ªAACåŸå§‹å¸§ã€‚
+
+
+      output_s.write(head, 7);// å†™adts header , tsæµä¸é€‚ç”¨ï¼Œtsæµåˆ†ç¦»å‡ºæ¥çš„packetå¸¦äº†adts header
+
+      char buf[1024] = { 0 };
+      memcpy(buf,pakt->data, pakt->size);
+      output_s.write(buf, pakt->size);   // å†™adts data
+      output_s.flush();
+    }
+  }
+  av_packet_free(&pakt);
+  output_s.close();
+
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     std::cout << "Hello World!" << av_version_info() << std::endl;
 
 
-    funcDemux();
+    //funcDemux();
+    funcExtractAAC();
 
     return a.exec();
 }

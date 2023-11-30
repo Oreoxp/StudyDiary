@@ -42,6 +42,10 @@ AVPacket 里面也有一个 index 的字段
 
 
 
+
+
+# 解封装代码
+
 ```c++
 extern "C" {
 #include <libavutil/avutil.h>
