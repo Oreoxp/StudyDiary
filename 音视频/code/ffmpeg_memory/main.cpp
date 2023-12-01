@@ -152,6 +152,7 @@ void funcExtractAAC() {
   av_dump_format(pFormatCtx, 0, input_filename.c_str(), 0);
 
   int audio_index = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
+  int vedio_index = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
 
   if (audio_index < 0) {
     std::cout << "[error] cant find audio stream";
@@ -214,11 +215,86 @@ void funcExtractAAC() {
       memcpy(buf,pakt->data, pakt->size);
       output_s.write(buf, pakt->size);   // 写adts data
       output_s.flush();
+    } else if (pakt->stream_index == vedio_index) {
+      int adtsLen = pakt->size;
+      std::cout << std::endl;
     }
   }
   av_packet_free(&pakt);
   output_s.close();
 
+}
+
+void funcExtractH264() {
+  std::string input_name = "2_audio_track_5s.mp4";
+  std::string output_name = "out.h264";
+
+  std::ofstream output_s;
+  output_s.open(output_name, std::ios::binary);
+
+  //open file
+  AVFormatContext* format = nullptr;
+  int ret = avformat_open_input(&format, input_name.c_str(), NULL, NULL);
+  if (ret != 0) {
+    std::cout << "[h264] error open failed";
+    return;
+  }
+
+  //dump info
+  av_dump_format(format, 0, input_name.c_str(), 0);
+
+  //find stream
+
+  int video_index = av_find_best_stream(format, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+  if (video_index < 0) {
+    std::cout << "[h264] error find failed";
+    return;
+  }
+  AVStream* stream = format->streams[video_index];
+
+  //read frame
+  const AVBitStreamFilter* bsfilter = av_bsf_get_by_name("h264_mp4toannexb");
+  AVBSFContext* bsf_ctx = NULL;
+  // 2 初始化过滤器上下⽂
+  av_bsf_alloc(bsfilter, &bsf_ctx); //AVBSFContext;
+  // 3 添加解码器属性
+  avcodec_parameters_copy(bsf_ctx->par_in, stream->codecpar);
+  av_bsf_init(bsf_ctx);
+
+  AVPacket * pkt = av_packet_alloc();
+  while (1) {
+    if ((ret = av_read_frame(format, pkt)) < 0) {
+      printf("read file end: ret:%d\n", ret);
+      break;
+    }
+    if (ret == 0 && pkt->stream_index == video_index) {
+      int input_size = pkt->size;
+      int out_pkt_count = 0;
+      if (av_bsf_send_packet(bsf_ctx, pkt) != 0) // bitstreamfilter内部去维护内存空间
+      {
+        av_packet_unref(pkt);   // 你不用了就把资源释放掉
+        continue;       // 继续送
+      }
+      av_packet_unref(pkt);   // 释放资源
+      while (av_bsf_receive_packet(bsf_ctx, pkt) == 0)
+      {
+        out_pkt_count++;
+        // printf("fwrite size:%d\n", pkt->size);
+        char buf[202400] = { 0 };
+        memcpy(buf, pkt->data, pkt->size);
+        output_s.write(buf, pkt->size);
+        av_packet_unref(pkt);
+      }
+      if (out_pkt_count >= 2)
+      {
+        printf("cur pkt(size:%d) only get 1 out pkt, it get %d pkts\n",
+          input_size, out_pkt_count);
+      }
+    } else {
+      if (ret == 0)
+        av_packet_unref(pkt);        // 释放内存
+    }
+  }
 }
 
 int main(int argc, char *argv[])
@@ -228,7 +304,8 @@ int main(int argc, char *argv[])
 
 
     //funcDemux();
-    funcExtractAAC();
+    //funcExtractAAC();
+    funcExtractH264();
 
     return a.exec();
 }
