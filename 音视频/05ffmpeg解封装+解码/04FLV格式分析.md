@@ -71,6 +71,7 @@ FLV 头的结构如下：
 
 | Field                          | Type | Comment                                                      |
 | ------------------------------ | ---- | ------------------------------------------------------------ |
+| Previous Tag Size              | UI32 | 4个字节，表示前一个标签的大小。                              |
 | Tag类型 Type                   | UI8  | **8:audeo 9:video 18:Script data(脚本数据)** all Others:reserved 其他所有值未使⽤ |
 | 数据区⼤⼩                     | UI24 | 当前tag的数据域的⼤⼩，不包含 tag header。 Length of the data in the Data field |
 | 时间戳Timestamp                | UI24 | 当前帧时戳，单位是毫秒。相对值，第⼀个tag的时戳总是为 0      |
