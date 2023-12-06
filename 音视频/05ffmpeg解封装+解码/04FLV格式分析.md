@@ -24,7 +24,7 @@ FLV 文件的详细内容结构如下图：
 
 ## 大体的解析框架
 
-![image-20231205094012863](markdownimage/image-20231205094012863.png)
+![image-20231206091508225](markdownimage/image-20231206091508225.png)
 
 
 
@@ -55,7 +55,7 @@ FLV 头的结构如下：
 
 ## FLV Body
 
-​		FLV Header 之后，就是 FLV File Body。FLV File Body 是由⼀连串的 back-pointers + tags 构成。 Back-pointer 表示 Previous Tag Size （前⼀个 tag 的字节数据⻓度），占 4 个字节。
+​		FLV Header 之后，就是 FLV File Body。FLV File Body 是由⼀连串的 **back-pointers + tags** 构成。 **Back-pointer 表示 Previous Tag Size （前⼀个 tag 的字节数据⻓度），占 4 个字节。**
 
 ![image-20231205095309930](markdownimage/image-20231205095309930.png)
 
@@ -71,7 +71,6 @@ FLV 头的结构如下：
 
 | Field                          | Type | Comment                                                      |
 | ------------------------------ | ---- | ------------------------------------------------------------ |
-| Previous Tag Size              | UI32 | 4个字节，表示前一个标签的大小。                              |
 | Tag类型 Type                   | UI8  | **8:audeo 9:video 18:Script data(脚本数据)** all Others:reserved 其他所有值未使⽤ |
 | 数据区⼤⼩                     | UI24 | 当前tag的数据域的⼤⼩，不包含 tag header。 Length of the data in the Data field |
 | 时间戳Timestamp                | UI24 | 当前帧时戳，单位是毫秒。相对值，第⼀个tag的时戳总是为 0      |
@@ -88,13 +87,38 @@ FLV 头的结构如下：
 
 #### Tag Data
 
-##### Script Tag Data结构(脚本类型、帧类型)
+##### ※Script Tag Data结构(脚本类型、帧类型)
 
 ​		**Script data 脚本数据**就是描述视频或⾳频的信息的数据，如宽度、⾼度、时间等等，⼀个文件中通常只有⼀个元数据，⾳频 tag 和视频 tag 就是⾳视频信息了，采样、声道、频率，编码等信息。
 
 ​		该类型 Tag ⼜被称为 MetaData Tag，存放⼀些关于 FLV 视频和⾳频的元信息，⽐如：duration、width、 height 等。通常该类型 Tag 会作为 FLV ⽂件的第⼀个 tag，并且只有⼀个，跟在 File Header 后。该类型 Tag DaTa 的结构如下所示（source.200kbps.768x320.flv⽂件为例）:
 
 ![image-20231205100221103](markdownimage/image-20231205100221103.png)
+
+Script Tag的结构通常如下所述：
+
+1. **Tag Type (1 byte)**: 对于Script Tag，这个值通常是18。
+2. **Data Size (3 bytes)**: 标识随后数据部分的大小，不包括标签头。
+3. **Timestamp (3 bytes) & Timestamp Extended (1 byte)**: 虽然这些字段对于Script Tag来说通常不重要，但它们仍然被包括在内。
+4. **Stream ID (3 bytes)**: 总是0。
+5. **Data**: Script Tag的数据部分，通常包含两个 AMF 包：
+   - **AMF Packet 1**: 通常是 AMF0 编码的字符串，表示元数据的 “ 名称 ”，例如`"onMetaData"`。
+   - **AMF Packet 2**: 包含实际的元数据，通常是 AMF0 编码的 “ 混合数组 ”（即一个关联数组，包含多种数据类型的元素）。这个包可以包含如下信息：
+     - `duration`: 视频长度，以秒为单位。
+     - `width`: 视频宽度，以像素为单位。
+     - `height`: 视频高度，以像素为单位。
+     - `videodatarate`: 视频数据率，以kbps为单位。
+     - `framerate`: 帧率。
+     - `videocodecid`: 视频编码ID。
+     - `audiodatarate`: 音频数据率，以kbps为单位。
+     - `audiosamplerate`: 音频采样率。
+     - `audiosamplesize`: 音频样本大小。
+     - `stereo`: 是否为立体声音频。
+     - `audiocodecid`: 音频编码ID。
+     - `filesize`: 文件大小，以字节为单位。
+     - 其他键值对。
+
+
 
 第⼀个 AMF 包： 第 1 个字节表示 AMF 包类型，⼀般总是 0x02，表示字符串。第 2-3 个字节为 UI16 类型值， 标识字符串的⻓度，⼀般总是 0x000A（“onMetaData”⻓度）。后⾯字节为具体的字符串，⼀般总为 “ onMetaData ”（6F,6E,4D,65,74,61,44,61,74,61）。 
 
