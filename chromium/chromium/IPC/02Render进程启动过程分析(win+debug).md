@@ -42,7 +42,7 @@
 
 ![02renderprocessdrawio](./markdownimage/02renderprocess.drawio.png)
 
-​		RenderViewImpl 类多重继承了 **RenderView** 类和 **RenderWidget** 类。RenderView 类实现了 Sender 接口。RenderWidget 类也实现了 Sender 接口，同时也实现了 Listener 接口，因此它可以用来发送和接收 IPC 消息。
+​		RenderViewImpl 类多重继承了 **RenderView** 类和 **RenderWidget** 类。RenderView 类实现了 Sender 接口。RenderWidget 类也实现了 Sender 接口，同时也实现了 Listener 接口，因此它可以用来发送和接收 IPC 消息。<u>但其实他们的 **`Send`** 都是调用了 **RenderThread** 的 **`Send`** 函数， **`OnMessageReceived`** 函数用来监听自己关注的事件。</u>
 
 ​		RenderWidget 类实现了接口 Sender 的成员函数 **`Send`**，RenderViewImpl 类就是通过它来发送 IPC 消息的。RenderWidget 类的成员函数 **`Send`** 又是通过一个用来描述 Render 线程的 **RenderThreadImpl** 对象来发送IPC 类的。这个 RenderThreadImpl 对象可以通过调用 RenderThread 类的静态成员函数**`Get`**获得。
 
@@ -107,9 +107,9 @@ bool RenderFrameHostManager::CreateSpeculativeRenderFrameHost(
 }
 ```
 
-**`CreateSpeculativeRenderFrameHost`**这个函数的主要目的是在导航过程中预先创建一个“推测性”的 `RenderFrameHost` 实例。这一过程是浏览器预测性能优化的一部分，特别是在处理页面导航时。
+**`CreateSpeculativeRenderFrameHost`**这个函数的主要目的是在导航过程中预先创建一个“**推测性**”的 `RenderFrameHost` 实例。这一过程是浏览器预测性能优化的一部分，特别是在处理页面导航时。
 
-​      这里我们主要关注RenderViewHostImpl 类的构造函数调用该 **RenderWidgetHostImpl** 对象的成员函数 **`get() `**获得一个 **RenderProcessHost** 对象，如下所示：
+​      这里我们主要关注 RenderViewHostImpl 类的构造函数调用该 **RenderWidgetHostImpl** 对象的成员函数 **`get() `**获得一个 **RenderProcessHost** 对象，如下所示：
 
 ```c++
 RenderProcessHost* SiteInstanceImpl::GetProcess() {
@@ -119,7 +119,7 @@ RenderProcessHost* SiteInstanceImpl::GetProcess() {
   if (!process_) {
     BrowserContext* browser_context = browsing_instance_->browser_context();
 
-    // Check if the ProcessReusePolicy should be updated.
+    // 检查是否应更新 ProcessReusePolicy。
     bool should_use_process_per_site =
         has_site_ &&
         RenderProcessHost::ShouldUseProcessPerSite(browser_context, site_);
@@ -277,26 +277,6 @@ render_process_host = CreateOrUseSpareRenderProcessHost(
 }
 
 // static
-RenderProcessHost* RenderProcessHostImpl::CreateRenderProcessHost(
-    BrowserContext* browser_context,
-    StoragePartitionImpl* storage_partition_impl,
-    SiteInstance* site_instance,
-    bool is_for_guests_only) {
-  if (g_render_process_host_factory_) {
-    return g_render_process_host_factory_->CreateRenderProcessHost(
-        browser_context);
-  }
-
-  if (!storage_partition_impl) {
-    storage_partition_impl = static_cast<StoragePartitionImpl*>(
-        BrowserContext::GetStoragePartition(browser_context, site_instance));
-  }
-
-  return new RenderProcessHostImpl(browser_context, storage_partition_impl,
-                                   is_for_guests_only);
-}
-
-// static
 RenderProcessHost* RenderProcessHostImpl::CreateOrUseSpareRenderProcessHost(
     BrowserContext* browser_context,
     StoragePartitionImpl* storage_partition_impl,
@@ -315,6 +295,26 @@ RenderProcessHost* RenderProcessHostImpl::CreateOrUseSpareRenderProcessHost(
 
   DCHECK(render_process_host);
   return render_process_host;
+}
+
+// static
+RenderProcessHost* RenderProcessHostImpl::CreateRenderProcessHost(
+    BrowserContext* browser_context,
+    StoragePartitionImpl* storage_partition_impl,
+    SiteInstance* site_instance,
+    bool is_for_guests_only) {
+  if (g_render_process_host_factory_) {
+    return g_render_process_host_factory_->CreateRenderProcessHost(
+        browser_context);
+  }
+
+  if (!storage_partition_impl) {
+    storage_partition_impl = static_cast<StoragePartitionImpl*>(
+        BrowserContext::GetStoragePartition(browser_context, site_instance));
+  }
+
+  return new RenderProcessHostImpl(browser_context, storage_partition_impl,
+                                   is_for_guests_only);
 }
 ```
 
@@ -390,7 +390,7 @@ void RenderProcessHostImpl::InitializeChannelProxy() {
 
 ```
 
-​		<u>`RenderProcessHostImpl::InitializeChannelProxy` 函数在 Chromium 代码中负责设置与渲染进程的通信通道。这个函数的主要职责是创建和初始化 IPC（Inter-Process Communication）通道，该通道用于浏览器进程和渲染进程之间的通信。</u>下面是对这个函数的关键部分的分析：
+​		<u>`RenderProcessHostImpl::InitializeChannelProxy` 函数在 Chromium 代码中负责设置与渲染进程的通信通道。这个函数的主要职责是创建和初始化 IPC 通道，该通道用于浏览器进程和渲染进程之间的通信。</u>下面是对这个函数的关键部分的分析：
 
 1. **获取 I/O 线程的任务运行器**：
    - `io_task_runner` 获取用于 I/O 操作的线程的任务运行器。这是因为大部分与渲染进程通信的操作都在 I/O 线程上执行。
@@ -654,7 +654,7 @@ class Identity {
 
 ### ChildConnection 
 
-​		回到R enderProcessHostImpl 类的成员函数**`InitializeChannelProxy`**中，有了用来创建 UNIX Socket 的名字之后，就可以生成一个 ChildConnection 了，如下所示：
+​		回到 RenderProcessHostImpl 类的成员函数**`InitializeChannelProxy`**中，有了用来创建 UNIX Socket 的名字之后，就可以生成一个 ChildConnection 了，如下所示：
 
 ```c++
 ChildConnection::ChildConnection(
@@ -708,7 +708,7 @@ class ChildConnection::IOThreadContext
 
 
 
-​		之后创建并配置 Mojo 消息管道，用于建立和管理与渲染进程的 IPC 通信，`BindInterface(IPC::mojom::ChannelBootstrap::Name_, std::move(pipe.handle1));` 这行代码将消息管道的一个端点（`pipe.handle1`）绑定到 `IPC::mojom::ChannelBootstrap` 接口。`ChannelBootstrap` 接口是一个 Mojo 接口，用于初始化 IPC 通道。
+​		回到 **`RenderProcessHostImpl::InitializeChannelProxy()`**，之后创建并配置 Mojo 消息管道，用于建立和管理与渲染进程的 IPC 通信，`BindInterface(IPC::mojom::ChannelBootstrap::Name_, std::move(pipe.handle1));` 这行代码将消息管道的一个端点（`pipe.handle1`）绑定到 `IPC::mojom::ChannelBootstrap` 接口。`ChannelBootstrap` 接口是一个 Mojo 接口，用于初始化 IPC 通道。
 
 `std::unique_ptr<IPC::ChannelFactory> channel_factory = IPC::ChannelMojo::CreateServerFactory(std::move(pipe.handle0), io_task_runner);` 这行代码使用消息管道的另一个端点（`pipe.handle0`）来创建一个 IPC 通道工厂。`CreateServerFactory` 创建一个用于服务器端的工厂，它将在 I/O 线程上运行。这个工厂负责生成 IPC 通道，该通道将用于浏览器进程与新创建的渲染进程之间的通信。
 
@@ -751,7 +751,7 @@ ChannelProxy::Context::Context(
 
    1. **listenter_task_runner_**。这个成员变量的类型为scoped_refptr< base::SingleThreadTaskRunner >，它指向的是一个 SingleThreadTaskRunner 对象。这个 SingleThreadTaskRunner 对象通过调用 ThreadTaskRunnerHandle 类的静态成员函数 Get 获得。从前面 Chromium 多线程模型设计和实现分析一文可以知道，ThreadTaskRunnerHandle 类的静态成员<u>函数 Get 返回的 SingleThreadTaskRunner 对象实际上是当前线程的一个 MessageLoopProxy 对象，通过该 MessageLoopProxy 对象可以向当前线程的消息队列发送消息</u>。当前线程即为 Browser 进程的主线程。
 
-   2. **listener**_ 。这是一个 IPC::Listener 指针，它的值设置为参数 listener 的值。从前面的图可以知道，RenderProcessHostImpl 类实现了 IPC::Listener 接口，而且从前面的调用过程过程可以知道，**<u>参数 listener 指向的就是一个 RenderProcessHostImpl 对象。以后正在创建的 ChannelProxy::Context 对象在 IO线 程中接收到 Render 进程发送过来的 IPC 消息之后，就会转发给成员变量 listener_ 指向的 RenderProcessHostImpl 对象处理，但是并不是让后者直接在 IO线程处理，而是让后者在成员变量 listener_task_runner_ 描述的线程中处理，即 Browser 进程的主线程处理。</u>**也就是说，ChannelProxy::Context 类的成员变量 listener_task_runner_ 和 listener_ 是配合在一起使用的，后面我们分析 IPC 消息的分发机制时就可以看到这一点。
+   2. **listener**_ 。这是一个 IPC::Listener 指针，它的值设置为参数 listener 的值。从前面的图可以知道，RenderProcessHostImpl 类实现了 IPC::Listener 接口，而且从前面的调用过程过程可以知道，**<u>参数 listener 指向的就是一个 RenderProcessHostImpl 对象。以后正在创建的 ChannelProxy::Context 对象在 IO线 程中接收到 Render 进程发送过来的 IPC 消息之后，就会转发给成员变量 listener_ 指向的 RenderProcessHostImpl 对象处理，但是并不是让后者直接在 IO线程处理，而是让后者在成员变量  listener_ task_ runner_ 描述的线程中处理，即 Browser 进程的主线程处理。</u>**也就是说，ChannelProxy::Context 类的成员变量 listener_task_runner_ 和 listener_ 是配合在一起使用的，后面我们分析 IPC 消息的分发机制时就可以看到这一点。
 
    3. **ipc_task_runner_**。这个成员变量与前面分析的成员变量 listener_task_runner 一样，类型都为 scoped_refptr< base::SingleThreadTaskRunner >，指向的者是一个 SingleThreadTaskRunner 对象。不过，这个 SingleThreadTaskRunner 对象由参数 ipc_task_runner 指定。从前面的调用过程可以知道，这个SingleThreadTaskRunner 对象实际上是与 Browser 进程的 IO 线程关联的一个 MessageLoopProxy 对象。这个 MessageLoopProxy 对象用来接收 Render进程发送过来的 IPC 消息。也就是说，Browser 进程在 IO 线程中接收 IPC 消息。
 
@@ -759,7 +759,7 @@ ChannelProxy::Context::Context(
 
 
 
- 回到 **`InitializeChannelProxy`** 中，创建了一个 ChannelProxy 对象之后，接下来就调用它的成员函数 **`Init`** 进行初始化，如下所示：
+回到 **`InitializeChannelProxy`** 中，创建了一个 ChannelProxy 对象之后，接下来就调用它的成员函数 **`Init`** 进行初始化，如下所示：
 
 ```c++
 void ChannelProxy::Init(std::unique_ptr<ChannelFactory> factory,
