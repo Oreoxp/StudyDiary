@@ -850,7 +850,105 @@ ChannelMojo::ChannelMojo(
 }
 ```
 
-​		从前面的调用过程知道，参数 channel_factory 描述的是一个服务端 ChannelFactory，进入函数后直接调用 `factory->BuildChannel(this)`，在最后直接创建了一个**`ChannelMojo`**，**`ChannelMojo`** 通过 **Mojo** 消息管道实现了 `IPC::Channel` 接口。下面我们分析 `ChannelMojo` 的作用和其成员的角色：
+​		从前面的调用过程知道，参数 channel_factory 描述的是一个服务端 ChannelFactory，进入函数后直接调用 `factory->BuildChannel(this)`，在最后直接创建了一个**`ChannelMojo`**，**`ChannelMojo`** 通过 **Mojo** 消息管道实现了 `IPC::Channel` 接口。
+
+### ChannelMojo
+
+```c++
+
+class IPC_EXPORT ChannelMojo : public Channel,
+                               public Channel::AssociatedInterfaceSupport,
+                               public internal::MessagePipeReader::Delegate {
+ public:
+  // Creates a ChannelMojo.
+  static std::unique_ptr<ChannelMojo>
+  Create(mojo::ScopedMessagePipeHandle handle,
+         Mode mode,
+         Listener* listener,
+         const scoped_refptr<base::SingleThreadTaskRunner>& ipc_task_runner =
+            base::ThreadTaskRunnerHandle::Get());
+
+  // Create a factory object for ChannelMojo.
+  // The factory is used to create Mojo-based ChannelProxy family.
+  // |host| must not be null.
+  static std::unique_ptr<ChannelFactory> CreateServerFactory(
+      mojo::ScopedMessagePipeHandle handle,
+      const scoped_refptr<base::SingleThreadTaskRunner>& ipc_task_runner);
+
+  static std::unique_ptr<ChannelFactory> CreateClientFactory(
+      mojo::ScopedMessagePipeHandle handle,
+      const scoped_refptr<base::SingleThreadTaskRunner>& ipc_task_runner);
+
+  ~ChannelMojo() override;
+
+  // Channel implementation
+  bool Connect() override;
+  void Pause() override;
+  void Unpause(bool flush) override;
+  void Flush() override;
+  void Close() override;
+  bool Send(Message* message) override;
+  Channel::AssociatedInterfaceSupport* GetAssociatedInterfaceSupport() override;
+
+  // These access protected API of IPC::Message, which has ChannelMojo
+  // as a friend class.
+  static MojoResult WriteToMessageAttachmentSet(
+      base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles,
+      Message* message);
+  static MojoResult ReadFromMessageAttachmentSet(
+      Message* message,
+      base::Optional<std::vector<mojo::native::SerializedHandlePtr>>* handles);
+
+  // MessagePipeReader::Delegate
+  void OnPeerPidReceived(int32_t peer_pid) override;
+  void OnMessageReceived(const Message& message) override;
+  void OnPipeError() override;
+  void OnAssociatedInterfaceRequest(
+      const std::string& name,
+      mojo::ScopedInterfaceEndpointHandle handle) override;
+
+ private:
+  ChannelMojo(
+      mojo::ScopedMessagePipeHandle handle,
+      Mode mode,
+      Listener* listener,
+      const scoped_refptr<base::SingleThreadTaskRunner>& ipc_task_runner);
+
+  void ForwardMessageFromThreadSafePtr(mojo::Message message);
+  void ForwardMessageWithResponderFromThreadSafePtr(
+      mojo::Message message,
+      std::unique_ptr<mojo::MessageReceiver> responder);
+
+  // Channel::AssociatedInterfaceSupport:
+  std::unique_ptr<mojo::ThreadSafeForwarder<mojom::Channel>>
+  CreateThreadSafeChannel() override;
+  void AddGenericAssociatedInterface(
+      const std::string& name,
+      const GenericAssociatedInterfaceFactory& factory) override;
+  void GetGenericRemoteAssociatedInterface(
+      const std::string& name,
+      mojo::ScopedInterfaceEndpointHandle handle) override;
+
+  // A TaskRunner which runs tasks on the ChannelMojo's owning thread.
+  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+
+  const mojo::MessagePipeHandle pipe_;
+  std::unique_ptr<MojoBootstrap> bootstrap_;
+  Listener* listener_;
+
+  std::unique_ptr<internal::MessagePipeReader> message_reader_;
+
+  base::Lock associated_interface_lock_;
+  std::map<std::string, GenericAssociatedInterfaceFactory>
+      associated_interfaces_;
+
+  base::WeakPtrFactory<ChannelMojo> weak_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(ChannelMojo);
+};
+```
+
+下面我们分析 `ChannelMojo` 的作用和其成员的角色：
 
 1. **作用与继承关系**:
    - `ChannelMojo` 继承自 `Channel` 和 `Channel::AssociatedInterfaceSupport`，并实现了 `internal::MessagePipeReader::Delegate` 接口。这表明它既是一个通信通道，也支持关联接口，并能处理消息管道的读取事件。
@@ -876,7 +974,72 @@ ChannelMojo::ChannelMojo(
 
 总的来说，`ChannelMojo` 是 Chromium 中用于处理进程间通信的关键组件，它通过 Mojo 消息管道实现了 IPC::Channel 接口，并提供了对关联接口的支持。通过它的方法和成员变量，`ChannelMojo` 管理了消息的发送、接收和处理，确保了通信的高效和安全。
 
+注意这个 mojo::ScopedMessagePipeHandle
 
+
+
+
+
+
+
+
+
+
+
+
+
+​		这一步执行完成之后，一个 Server 端 IPC 通信通道就创建完成了。回到 ChannelProxy 类的成员函数**`Init`**中，它接下来是发送一个消息到 Browser 进程的 IO 线程的消息队列中，该消息绑定的是ChannelProxy::Context类的成员函数OnChannelOpened，它的实现如下所示：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 在MojoBootstrapImpl里完成sender和listener的绑定：
+
+```c++
+ class MojoBootstrapImpl : public MojoBootstrap {
+  public:
+   MojoBootstrapImpl(
+       mojo::ScopedMessagePipeHandle handle,
+       const scoped_refptr<ChannelAssociatedGroupController> controller)
+       : controller_(controller),
+         associated_group_(controller),
+         handle_(std::move(handle)) {}
+ 
+   ~MojoBootstrapImpl() override {
+     controller_->ShutDown();
+   }
+ 
+  private:
+   void Connect(mojom::ChannelAssociatedPtr* sender,
+                mojom::ChannelAssociatedRequest* receiver) override {
+     controller_->Bind(std::move(handle_));
+     controller_->CreateChannelEndpoints(sender, receiver);
+   }
+ 
+ 。。。
+}
+```
 
 
 
