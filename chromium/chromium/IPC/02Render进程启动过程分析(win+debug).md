@@ -974,72 +974,333 @@ class IPC_EXPORT ChannelMojo : public Channel,
 
 总的来说，`ChannelMojo` 是 Chromium 中用于处理进程间通信的关键组件，它通过 Mojo 消息管道实现了 IPC::Channel 接口，并提供了对关联接口的支持。通过它的方法和成员变量，`ChannelMojo` 管理了消息的发送、接收和处理，确保了通信的高效和安全。
 
-注意这个 mojo::ScopedMessagePipeHandle
+​		注意这个 mojo::ScopedMessagePipeHandle ， MessagePipe在MOJO::Node的上抽象成为类似TCP\IP的协议，来发送消息进行通信，具体见 [ 02ChromiumMojo深入分析](./02ChromiumMojo深入分析.md)。 这里不展开分析，只要知道到此处就把 通信的Server建立起来了。
 
 
 
-
-
-
-
-
-
-
-
-
-
-​		这一步执行完成之后，一个 Server 端 IPC 通信通道就创建完成了。回到 ChannelProxy 类的成员函数**`Init`**中，它接下来是发送一个消息到 Browser 进程的 IO 线程的消息队列中，该消息绑定的是ChannelProxy::Context类的成员函数OnChannelOpened，它的实现如下所示：
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 在MojoBootstrapImpl里完成sender和listener的绑定：
+​		这一步执行完成之后，一个 Server 端 IPC 通信通道就创建完成了。回到 ChannelProxy 类的成员函数**`Init`**中，它接下来是发送一个消息到 Browser 进程的 IO 线程的消息队列中，该消息绑定的是ChannelProxy::Context 类的成员函数 OnChannelOpened，它的实现如下所示：
 
 ```c++
- class MojoBootstrapImpl : public MojoBootstrap {
-  public:
-   MojoBootstrapImpl(
-       mojo::ScopedMessagePipeHandle handle,
-       const scoped_refptr<ChannelAssociatedGroupController> controller)
-       : controller_(controller),
-         associated_group_(controller),
-         handle_(std::move(handle)) {}
- 
-   ~MojoBootstrapImpl() override {
-     controller_->ShutDown();
-   }
- 
-  private:
-   void Connect(mojom::ChannelAssociatedPtr* sender,
-                mojom::ChannelAssociatedRequest* receiver) override {
-     controller_->Bind(std::move(handle_));
-     controller_->CreateChannelEndpoints(sender, receiver);
-   }
- 
- 。。。
+// Called on the IPC::Channel thread
+void ChannelProxy::Context::OnChannelOpened() {
+  DCHECK(channel_ != NULL);
+
+  // Assume a reference to ourselves on behalf of this thread.  This reference
+  // will be released when we are closed.
+  AddRef();
+
+  if (!channel_->Connect()) {
+    OnChannelError();
+    return;
+  }
+
+  for (size_t i = 0; i < filters_.size(); ++i)
+    filters_[i]->OnFilterAdded(channel_.get());
 }
 ```
+
+​		从前面的分析可以知道，ChannelProxy::Context 类的成员变量 channel_ 指向的是一个 ChannelMojo对象，这里调用它的成员函数 Connect 将它描述的 IPC 通信通道交给当前进程的 IO 线程进行监控。
+
+​		ChannelPosix 类的成员函数 Connect 的实现如下所示
+
+```c++
+bool ChannelMojo::Connect() {
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
+
+  WillConnect();
+
+  mojom::ChannelAssociatedPtr sender;
+  mojom::ChannelAssociatedRequest receiver;
+  bootstrap_->Connect(&sender, &receiver);
+
+  DCHECK(!message_reader_);
+  sender->SetPeerPid(GetSelfPID());
+  message_reader_.reset(new internal::MessagePipeReader(
+      pipe_, std::move(sender), std::move(receiver), this));
+  return true;
+}
+```
+
+​		在这里，会调用 MojoBootstrap 的 Connect 函数，实现为：
+
+```c++
+  void Connect(mojom::ChannelAssociatedPtr* sender,
+               mojom::ChannelAssociatedRequest* receiver) override {
+    controller_->Bind(std::move(handle_));
+    controller_->CreateChannelEndpoints(sender, receiver);
+  }
+```
+
+​		主要是将sender、receiver成对绑定起来。
+
+之后新建一个 MessagePipeReader , MessagePipeReader 是一个帮助器类，用于以模板方法模式直接通过 mojo::MessagePipe 处理字节流。 MessagePipeReader 管理给定 MessagePipe 的生命周期并参与事件循环，并在准备就绪时读取流并调用客户端。当 MessagePipeReader 在构造时就已经开始监听 pipe 了。
+
+​		这一步执行完成之后，Server 端的 IPC 通信通道就创建完成了，也就是 Browser 进程已经创建好了一个Server 端的 IPC 通信通道。回到 RenderProcessHostImpl 类的成员函数 Init 中，它接下来要做的事情就是启动 Render 进程。
+
+​		对于需要在独立的Render进程加载网页的情况，它就会启动一个Render进程，如下所示：
+
+```c++
+bool RenderProcessHostImpl::Init() {
+  // calling Init() more than once does nothing, this makes it more convenient
+  // for the view host which may not be sure in some cases
+  if (HasConnection())
+    return true;
+
+  is_dead_ = false;
+
+  base::CommandLine::StringType renderer_prefix;
+  // A command prefix is something prepended to the command line of the spawned
+  // process.
+  const base::CommandLine& browser_command_line =
+      *base::CommandLine::ForCurrentProcess();
+  renderer_prefix =
+      browser_command_line.GetSwitchValueNative(switches::kRendererCmdPrefix);
+
+  int flags = renderer_prefix.empty() ? ChildProcessHost::CHILD_ALLOW_SELF
+                                      : ChildProcessHost::CHILD_NORMAL;
+
+  // Find the renderer before creating the channel so if this fails early we
+  // return without creating the channel.
+  base::FilePath renderer_path = ChildProcessHost::GetChildPath(flags);
+  if (renderer_path.empty())
+    return false;
+
+  sent_render_process_ready_ = false;
+
+  // We may reach Init() during process death notification (e.g.
+  // RenderProcessExited on some observer). In this case the Channel may be
+  // null, so we re-initialize it here.
+  if (!channel_)
+    InitializeChannelProxy();
+  DCHECK(broker_client_invitation_);
+
+  // Unpause the Channel briefly. This will be paused again below if we launch a
+  // real child process. Note that messages may be sent in the short window
+  // between now and then (e.g. in response to RenderProcessWillLaunch) and we
+  // depend on those messages being sent right away.
+  //
+  // |channel_| must always be non-null here: either it was initialized in
+  // the constructor, or in the most recent call to ProcessDied().
+  channel_->Unpause(false /* flush */);
+
+  // Call the embedder first so that their IPC filters have priority.
+  GetContentClient()->browser()->RenderProcessWillLaunch(this);
+
+
+  CreateMessageFilters();
+  RegisterMojoInterfaces();
+
+  if (run_renderer_in_process()) {
+    ......
+  } else {
+    // Build command line for renderer.  We call AppendRendererCommandLine()
+    // first so the process type argument will appear first.
+    std::unique_ptr<base::CommandLine> cmd_line =
+        base::MakeUnique<base::CommandLine>(renderer_path);
+    if (!renderer_prefix.empty())
+      cmd_line->PrependWrapper(renderer_prefix);
+    AppendRendererCommandLine(cmd_line.get());
+
+    // Spawn the child process asynchronously to avoid blocking the UI thread.
+    // As long as there's no renderer prefix, we can use the zygote process
+    // at this stage.
+    child_process_launcher_.reset(new ChildProcessLauncher(
+        base::MakeUnique<RendererSandboxedProcessLauncherDelegate>(),
+        std::move(cmd_line), GetID(), this,
+        std::move(broker_client_invitation_),
+        base::Bind(&RenderProcessHostImpl::OnMojoError, id_)));
+    channel_->Pause();
+
+    fast_shutdown_started_ = false;
+  }
+
+  if (!gpu_observer_registered_) {
+    gpu_observer_registered_ = true;
+    ui::GpuSwitchingManager::GetInstance()->AddObserver(this);
+  }
+
+  is_initialized_ = true;
+  init_time_ = base::TimeTicks::Now();
+  return true;
+}
+```
+
+​		RenderProcessHostImpl 类的成员函数 Init 创建了一个 Server 端的 IPC 通信通道之后，就会通过一个ChildProcessLauncher 对象来启动一个 Render 进程。不过在启动该 Render 进程之前，首先要构造好它的启动参数，也就是命令行参数。
+
+​		Render 进程的启动命令行参数通过一个 CommandLine 对象来描述，它包含有很多选项，不过现在我们只关心两个。
+
+- 一个是 switches::kProcessType，
+- 一个是switches::kProcessChannelID。其中，switches::kProcessChannelID选项对应的值设置为本地变量 channel_id 描述的值，即前面调用 IPC::Channel 类的静态成员函数GenerateVerifiedChannelID 生成的一个 UNIX Socket 名称。
+
+ChildProcessLauncher类的构造函数启动一个Render进程，如下所示：
+
+```c++
+ChildProcessLauncher::ChildProcessLauncher(
+    std::unique_ptr<SandboxedProcessLauncherDelegate> delegate,
+    std::unique_ptr<base::CommandLine> command_line,
+    int child_process_id,
+    Client* client,
+    std::unique_ptr<mojo::edk::OutgoingBrokerClientInvitation>
+        broker_client_invitation,
+    const mojo::edk::ProcessErrorCallback& process_error_callback,
+    bool terminate_on_shutdown)
+    : client_(client),
+      termination_status_(base::TERMINATION_STATUS_NORMAL_TERMINATION),
+      exit_code_(RESULT_CODE_NORMAL_EXIT),
+      starting_(true),
+      broker_client_invitation_(std::move(broker_client_invitation)),
+      process_error_callback_(process_error_callback),
+      weak_factory_(this) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  CHECK(BrowserThread::GetCurrentThreadIdentifier(&client_thread_id_));
+
+  helper_ = new ChildProcessLauncherHelper(
+                child_process_id, client_thread_id_,
+              std::move(command_line), std::move(delegate),
+                       weak_factory_.GetWeakPtr(), terminate_on_shutdown);
+  helper_->StartLaunchOnClientThread();
+}
+```
+
+​		ChildProcessLauncher类的构造函数首先创建了一个 ChildProcessLauncherHelper 对象，保存在成员变量 helper_ 中，并且调用该ChildProcessLauncherHelper 对象的成员函数StartLaunchOnClientThread启动一个Render进程。
+
+​		ChildProcessLauncherHelper  类的成员函数StartLaunchOnClientThread的实现如下所示：
+
+```c++
+void ChildProcessLauncherHelper::StartLaunchOnClientThread() {
+  DCHECK_CURRENTLY_ON(client_thread_id_);
+
+  BeforeLaunchOnClientThread();
+
+  mojo_server_handle_ = PrepareMojoPipeHandlesOnClientThread();
+  if (!mojo_server_handle_.is_valid()) {
+    mojo::edk::PlatformChannelPair channel_pair;
+    mojo_server_handle_ = channel_pair.PassServerHandle();
+    mojo_client_handle_ = channel_pair.PassClientHandle();
+  }
+
+  BrowserThread::PostTask(
+      BrowserThread::PROCESS_LAUNCHER, FROM_HERE,
+      base::BindOnce(&ChildProcessLauncherHelper::LaunchOnLauncherThread,
+                     this));
+}
+```
+
+​		ChildProcessLauncherHelper 类的成员函数 StartLaunchOnClientThread 通过调用BrowserThread类的静态成员函数 PostTask 向 Browser 进程的一个专门用来启动子进程的BrowserThread::PROCESS_LAUNCHER 线程的消息队列发送一个任务，该任务绑定了ChildProcessLauncherHelper 类的成员函数 LaunchOnLauncherThread。因此，接下来ChildProcessLauncherHelper 类的成员函数LaunchOnLauncherThread 就会在BrowserThread::PROCESS_LAUNCHER 线程中执行，如下所示：
+
+```c++
+void ChildProcessLauncherHelper::LaunchOnLauncherThread() {
+  DCHECK_CURRENTLY_ON(BrowserThread::PROCESS_LAUNCHER);
+
+  begin_launch_time_ = base::TimeTicks::Now();
+
+  std::unique_ptr<FileMappedForLaunch> files_to_register = GetFilesToMap();
+
+  bool is_synchronous_launch = true;
+  int launch_result = LAUNCH_RESULT_FAILURE;
+  base::LaunchOptions options;
+  BeforeLaunchOnLauncherThread(*files_to_register, &options);
+
+  Process process = LaunchProcessOnLauncherThread(options,
+                                                  std::move(files_to_register),
+                                                  &is_synchronous_launch,
+                                                  &launch_result);
+
+  AfterLaunchOnLauncherThread(process, options);
+
+  if (is_synchronous_launch) {
+    PostLaunchOnLauncherThread(std::move(process), launch_result);
+  }
+}
+```
+
+​		可以看到这里调用了前处理、启动、后处理函数，各个平台有不同的实现。
+
+函数LaunchProcessOnLauncherThread的实现如下所示：
+
+```c++
+ChildProcessLauncherHelper::Process
+ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
+    const base::LaunchOptions& options,
+    std::unique_ptr<FileMappedForLaunch> files_to_register,
+    bool* is_synchronous_launch,
+    int* launch_result) {
+  DCHECK_CURRENTLY_ON(BrowserThread::PROCESS_LAUNCHER);
+  *is_synchronous_launch = true;
+  if (delegate_->ShouldLaunchElevated()) {
+    // When establishing a Mojo connection, the pipe path has already been added
+    // to the command line.
+    base::LaunchOptions win_options;
+    win_options.start_hidden = true;
+    ChildProcessLauncherHelper::Process process;
+    process.process = base::LaunchElevatedProcess(*command_line(), win_options);
+    return process;
+  }
+  base::HandlesToInheritVector handles;
+  handles.push_back(mojo_client_handle().handle);
+  base::FieldTrialList::AppendFieldTrialHandleIfNeeded(&handles);
+  command_line()->AppendSwitchASCII(
+      mojo::edk::PlatformChannelPair::kMojoPlatformChannelHandleSwitch,
+      base::UintToString(base::win::HandleToUint32(handles[0])));
+  ChildProcessLauncherHelper::Process process;
+  *launch_result = StartSandboxedProcess(
+      delegate_.get(),
+      command_line(),
+      handles,
+      &process.process);
+  return process;
+}
+```
+
+
+
+
+
+启动时的 cmd line:
+
+![image-20240113191633881](markdownimage/image-20240113191633881.png)
+
+
+
+![image-20240113191651047](markdownimage/image-20240113191651047.png)
+
+
+
+​		在Render进程的主线程，也就是当前线程，通过类型为MessagePumpDefault的消息泵进入运行状态之前，会创建一个RenderProcessImpl对象和一个RenderThreadImpl对象。前面分析网页不在单独的Render进程中加载时，我们已经分析过RenderProcessImpl对象和RenderThreadImpl对象的创建过程了。其中，RenderProcessImpl对象的创建过程将会触发在当前进程中启动一个IO线程，用来执行IPC，而RenderThreadImpl对象的创建过程会触发在当前进程中创建一个Client端的IPC通信通道，并且该IPC通信通道是通过从Global Descriptors中获取ID值为kPrimaryIPCChannel的文件描述符创建的，具体可以参考前面分析的ChannelPosix类的成员函数CreatePipe的实现。
+
+## 总结
+
+​    至此，我们就分析完成了Chromium的Render进程的启动过程。对于Chromium的GPU进程和Plugin进程来说，它们的启动过程也是类似的，最主要的区别就是最后执行函数RunNamedProcessTypeMain时，通过不同的入口点函数进入运行状态。因此，后面我们分析GPU进程和Plugin进程的启动过程时，会跳过中间的过程直接进入到对应的运行入口点函数进行分析。例如，对于GPU进程，直接进入到GpuMain函数分析，而对于Pepper Plugin进程来说，直接进入到PpapiPluginMain函数分析。
+
+​    回到Chromium的Render进程的启动过程来，总的来说，它主要做的事情就是与Browser进程建立IPC通信通道。这个建立过程如下所示：
+
+1. Browser进程在启动Render进程之前，会创建一个MOJO，并且使用该MOJO的Server端文件描述符创建一个 Server 端的 IPC 通信通道。
+
+2. Browser 进程在启动 Render 进程之后，会通过 Binder IPC将前面创建的 MOJO 的Client端文件描述符传递给 Render 进程。
+
+3. Render 进程在进入运行状态之前，会使用前面获得的 Client 端文件描述符创建一个 Client 端的 IPC 通信通道。
+
+​    由于 Browser 进程和 Render 进程创建的 IPC 通信通道使用的是同一个 UNIX Socket 的 Server 端和 Client 端文件描述符，因此它们就可以通过该 MOJO 进行相互通信了。Browser进程和Render进程之间是通过传递IPC消息进行通信的，也就是通过 MOJO 来传递IPC消息。了解这些IPC消息的传递过程，对阅读Chromium的源代码是非常有帮助的，因为Chromium的源代码到处充斥着IPC消息发送、接收和分发处理逻辑，就如同Android系统里面的Binder IPC一样普遍。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
