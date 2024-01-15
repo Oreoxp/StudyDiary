@@ -646,7 +646,385 @@ void NavigationControllerImpl::LoadURLWithParams(const LoadURLParams& params) {
 }
 ```
 
-​		NavigationControllerImpl 类的成员函数 LoadURLWithParams 首先创建一个 NavigationEntryImpl 对象并装填一些信息，如下所示：
+​		NavigationControllerImpl 类的成员函数 LoadURLWithParams 首先创建一个 NavigationEntryImpl 对象并装填一些信息，它将要加载的URL封装在一个NavigationEntryImpl对象之后，传递给另外一个成员函数LoadEntry，让后者执行加载URL的操作。
+
+​		NavigationControllerImpl 类的成员函数 LoadEntry 的实现如下所示：
+
+```c++
+void NavigationControllerImpl::LoadEntry(
+    std::unique_ptr<NavigationEntryImpl> entry) {
+  // Remember the last pending entry for which we haven't received a response
+  // yet. This will be deleted in the NavigateToPendingEntry() function.
+  DCHECK_EQ(nullptr, last_pending_entry_);
+  DCHECK_EQ(-1, last_pending_entry_index_);
+  last_pending_entry_ = pending_entry_;
+  last_pending_entry_index_ = pending_entry_index_;
+  last_transient_entry_index_ = transient_entry_index_;
+
+  pending_entry_ = nullptr;
+  pending_entry_index_ = -1;
+  // When navigating to a new page, we don't know for sure if we will actually
+  // end up leaving the current page.  The new page load could for example
+  // result in a download or a 'no content' response (e.g., a mailto: URL).
+  SetPendingEntry(std::move(entry));
+  NavigateToPendingEntry(ReloadType::NONE);
+}
+```
+
+​		NavigationControllerImpl 类的成员函数 LoadEntry 首先调用另外一个成员函数 SetPendingEntry <u>将参数 entry 指向的一个 NavigationEntryImpl 对象保存在成员变量 pending_entry_ 中，表示NavigationEntryImpl 对象封装的 URL 正在等待加载</u>，如下所示：
+
+```c++
+void NavigationControllerImpl::SetPendingEntry(
+    std::unique_ptr<NavigationEntryImpl> entry) {
+  ......
+  pending_entry_ = entry.release();
+  ......
+}
+```
+
+​		回到 NavigationControllerImpl 类的成员函数 LoadEntry 中，将要加载的 URL 保存在成员变量pending_entry_ 之后，接下来就调用另外一个成员函数 NavigateToPendingEntry 对其进行加载，如下所示：
+
+```c++
+void NavigationControllerImpl::NavigateToPendingEntry(ReloadType reload_type) {
+  ......
+  bool success = NavigateToPendingEntryInternal(reload_type);
+  ......
+}
+```
+
+​		WebContentsImpl 类的成员函数 NavigateToPendingEntryInternal 的实现如下所示：
+
+```c++
+bool NavigationControllerImpl::NavigateToPendingEntryInternal(
+    ReloadType reload_type) {
+  DCHECK(pending_entry_);
+  FrameTreeNode* root = delegate_->GetFrameTree()->root();
+
+  // Compare FrameNavigationEntries to see which frames in the tree need to be
+  // navigated.
+  FrameLoadVector same_document_loads;
+  FrameLoadVector different_document_loads;
+  if (GetLastCommittedEntry()) {
+    FindFramesToNavigate(root, &same_document_loads, &different_document_loads);
+  }
+
+  if (same_document_loads.empty() && different_document_loads.empty()) {
+    // If we don't have any frames to navigate at this point, either
+    // (1) there is no previous history entry to compare against, or
+    // (2) we were unable to match any frames by name. In the first case,
+    // doing a different document navigation to the root item is the only valid
+    // thing to do. In the second case, we should have been able to find a
+    // frame to navigate based on names if this were a same document
+    // navigation, so we can safely assume this is the different document case.
+    different_document_loads.push_back(
+        std::make_pair(root, pending_entry_->GetFrameEntry(root)));
+  }
+
+  // If all the frame loads fail, we will discard the pending entry.
+  bool success = false;
+
+  // Send all the same document frame loads before the different document loads.
+  for (const auto& item : same_document_loads) {
+    FrameTreeNode* frame = item.first;
+    success |= frame->navigator()->NavigateToPendingEntry(frame, *item.second,
+                                                          reload_type, true);
+  }
+  for (const auto& item : different_document_loads) {
+    FrameTreeNode* frame = item.first;
+    success |= frame->navigator()->NavigateToPendingEntry(frame, *item.second,
+                                                          reload_type, false);
+  }
+  return success;
+}
+```
+
+​		从前面的分析可以知道，WebContentsImpl 类的成员变量 delegate_ 指向的是一个 WebContentsImpl 对象，调用这个FrameTree对象的成员函数 root 可以获得一个FrameTreeNode对象。这个 FrameTreeNode 对象代表的就是正在等待加载的网页的 Main Frame。再从 root 中找到需要导航的网页，然后通知网页进行导航，其中：先通知相同的文档，再通知不同的文档。
+
+​		FrameTreeNode 类的成员函数 navigator 的实现如下所示：
+
+```c++
+class CONTENT_EXPORT FrameTreeNode {
+ public:
+  ......
+ 
+  Navigator* navigator() {
+    return navigator_.get();
+  }
+ 
+  ......
+ 
+ private:
+  ......
+ 
+  scoped_refptr<Navigator> navigator_;
+ 
+  ......
+}
+```
+
+​		从前面的分析可以知道，FrameTreeNode 类的成员变量 navigator_ 指向的是一个 NavigatorImpl 对象，FrameTreeNode 对象的成员函数 navigator 会将这个 NavigatorImpl 对象返回给调用者。
+
+​		NavigateToPendingEntry 加载正在等待加载的 URL，如下所示：
+
+```c++
+bool NavigatorImpl::NavigateToPendingEntry(
+    FrameTreeNode* frame_tree_node,
+    const FrameNavigationEntry& frame_entry,
+    ReloadType reload_type,
+    bool is_same_document_history_load) {
+  return NavigateToEntry(frame_tree_node, frame_entry,
+                         *controller_->GetPendingEntry(), reload_type,
+                         is_same_document_history_load, false, true, nullptr);
+}
+```
+
+​		从前面的分析可以知道，NavigatorImpl 类的成员变量 controller_ 描述的是一个NavigationControllerImpl 对象，NavigatorImpl 对象的成员函数 NavigateToPendingEntry 首先会调用这个 NavigationControllerImpl 对象的成员函数 GetPendingEntry 获得正在等待加载的 URL，如下所示：
+
+```c++
+NavigationEntryImpl* NavigationControllerImpl::GetPendingEntry() const {
+  .......
+  return pending_entry_;
+}
+```
+
+​		NavigationControllerImpl 对象的成员函数 GetPendingEntry 返回的是成员变量 pending_entry_ 描述的一个 NavigationEntryImpl 对象。从前面的分析可以知道，这个 NavigationEntryImpl 对象描述的就是正在等待加载的 URL。
+
+​		回到 NavigatorImpl 类的成员函数 NavigateToPendingEntry 中，获得了等待加载的 URL 之后，它接下来调用另外一个成员函数 NavigateToEntry 对该 URL 进行加载，如下所示：
+
+```c++
+bool NavigatorImpl::NavigateToEntry(
+    FrameTreeNode* frame_tree_node,
+    const FrameNavigationEntry& frame_entry,
+    const NavigationEntryImpl& entry,
+    ReloadType reload_type,
+    bool is_same_document_history_load,
+    bool is_history_navigation_in_new_child,
+    bool is_pending_entry,
+    const scoped_refptr<ResourceRequestBody>& post_body) {
+  ......
+    RenderFrameHostImpl* dest_render_frame_host =
+        frame_tree_node->render_manager()->Navigate(
+            dest_url, frame_entry, entry, reload_type != ReloadType::NONE);
+    ......
+    if (!is_transfer_to_same) {
+      navigation_data_.reset(new NavigationMetricsData(
+          navigation_start, dest_url, entry.restore_type()));
+      // Create the navigation parameters.
+      FrameMsg_Navigate_Type::Value navigation_type = GetNavigationType(
+          frame_tree_node->current_url(),  // old_url
+          dest_url,                        // new_url
+          reload_type,                     // reload_type
+          entry,                           // entry
+          frame_entry,                     // frame_entry
+          is_same_document_history_load);  // is_same_document_history_load
+
+      dest_render_frame_host->Navigate(
+          entry.ConstructCommonNavigationParams(
+              frame_entry, post_body, dest_url, dest_referrer, navigation_type,
+              previews_state, navigation_start),
+          entry.ConstructStartNavigationParams(),
+          entry.ConstructRequestNavigationParams(
+              frame_entry, GURL(), std::string(),
+              is_history_navigation_in_new_child,
+              entry.GetSubframeUniqueNames(frame_tree_node),
+              frame_tree_node->has_committed_real_load(),
+              controller_->GetPendingEntryIndex() == -1,
+              controller_->GetIndexOfEntry(&entry),
+              controller_->GetLastCommittedEntryIndex(),
+              controller_->GetEntryCount()));
+    } else {
+      dest_render_frame_host->navigation_handle()->set_is_transferring(false);
+    }
+......
+}
+```
+
+​		从前面的调用过程可以知道，参数 frame_tree_node 描述的就是前面 for 循环中的 FrameTreeNode 对象。NavigatorImpl 类的成员函数 Navigate 首先获得这个 RenderFrameHostImpl 对象对应的 Frame Tree Node 所关联的 RenderFrameHostManager 对象（dest_render_frame_host）。有了这个RenderFrameHostManager 对象之后，NavigatorImpl 类的成员函数 NavigateToEntry 就调用它的成员函数 Navigate，用来通知它即将要导航到指定的 URL 去。
+
+​		RenderFrameHostManager 类的成员函数 Navigate 会返回一个 RenderFrameHostImpl 对象dest_render_frame_host。RenderFrameHostImpl 对象 dest_render_frame_host 与RenderFrameHostImpl 对象 render_frame_host 有可能是相同的，也有可能是不同的。什么情况下相同呢？如果上述 RenderFrameHostManager 对象即将要导航到的 URL 与它之前已经导航至的 URL 属于相同站点，那么就是相同的。反之则是不同的。无论是哪一种情况，导航至指定的 URL 的操作最后都是通过调用RenderFrameHostImpl 对象 dest_render_frame_host 的成员函数 Navigate 完成的。
+
+​		接下来我们就先分析 RenderFrameHostManager 类的成员函数 Navigate 的实现，然后再分析RenderFrameHostImpl 类的成员函数 Navigate 的实现。
+
+​		RenderFrameHostManager 类的成员函数 Navigate 的实现如下所示：
+
+```c++
+RenderFrameHostImpl* RenderFrameHostManager::Navigate(
+    const GURL& dest_url,
+    const FrameNavigationEntry& frame_entry,
+    const NavigationEntryImpl& entry,
+    bool is_reload) {
+  ......
+  RenderFrameHostImpl* dest_render_frame_host = UpdateStateForNavigate(
+      dest_url, frame_entry.source_site_instance(), frame_entry.site_instance(),
+      entry.GetTransitionType(), entry.restore_type() != RestoreType::NONE,
+      entry.IsViewSourceMode(), entry.transferred_global_request_id(),
+      entry.bindings(), is_reload);
+  ......
+  if (!dest_render_frame_host->IsRenderFrameLive()) {
+    .......
+    if (!ReinitializeRenderFrame(dest_render_frame_host))
+      return nullptr;
+
+    ......
+  }
+......
+
+  return dest_render_frame_host;
+}
+
+```
+
+​		RenderFrameHostManager 类的成员函数 Navigate 首先调用另外一个成员函数UpdateStateForNavigate 获得与即将要加载的 URL 对应的一个 RenderFrameHostImpl 对象。获得了这个RenderFrameHostImpl 对象之后，调用它的成员函数 render_view_host 可以获得一个RenderViewHostImpl 对象。这个 RenderViewHostImpl 对象是在前面分析的RenderFrameHostManager 类的成员函数 CreateRenderFrameHost 中创建的。有了这个RenderViewHostImpl 对象之后，就可以调用它的成员函数 IsRenderViewLive 判断它是否关联有一个Render View 控件。这个 Render View 控件是一个由平台实现的控件，描述的是用来显示网页的一个区域。
+
+​		在两种情况下，一个 RenderViewHostImpl 对象没有关联一个 Render View 控件。第一种情况是这个RenderViewHostImpl 对象还没有加载过 URL。第二种情况下是这个 RenderViewHostImpl 对象加载过 URL，但是由于某种原因，负责加载该 URL 的 Render 进程崩溃了。在第二种情况下，一个RenderViewHostImpl 对象关联的 Render View 控件会被销毁，所以会导致它没有关联 Render View 控件。无论是上述两种情况的哪一种，RenderFrameHostManager 类的成员函数 Navigate 都会调用另外一个成员函数 ReinitializeRenderFrame 为其关联一个 Render View 控件。
+
+​		 接下来，我们就分别分析 RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 和InitRenderView 的实现。
+
+​		RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 的实现如下所示：
+
+```c++
+RenderFrameHostImpl* RenderFrameHostManager::UpdateStateForNavigate(
+    const GURL& dest_url,
+    SiteInstance* source_instance,
+    SiteInstance* dest_instance,
+    ui::PageTransition transition,
+    bool dest_is_restore,
+    bool dest_is_view_source_mode,
+    const GlobalRequestID& transferred_request_id,
+    int bindings,
+    bool is_reload) {
+  SiteInstance* current_instance = render_frame_host_->GetSiteInstance();
+  bool was_server_redirect = transfer_navigation_handle_ &&
+                             transfer_navigation_handle_->WasServerRedirect();
+  scoped_refptr<SiteInstance> new_instance = GetSiteInstanceForNavigation(
+      dest_url, source_instance, dest_instance, nullptr, transition,
+      dest_is_restore, dest_is_view_source_mode, was_server_redirect);
+
+  ......
+    RenderFrameHostImpl* transferring_rfh =
+        transfer_navigation_handle_->GetRenderFrameHost();
+    bool transfer_started_from_current_rfh =
+        transferring_rfh == render_frame_host_.get();
+    bool should_transfer =
+        new_instance.get() != transferring_rfh->GetSiteInstance() &&
+        (!transfer_started_from_current_rfh || allowed_to_swap_process);
+    if (should_transfer)
+      transfer_navigation_handle_->Transfer();
+  }
+......
+
+  if (new_instance.get() != current_instance && allowed_to_swap_process) {
+    ......
+      return render_frame_host_.get();
+    }
+.....
+
+  return render_frame_host_.get();
+}
+```
+
+​		RenderFrameHostManager 类的成员变量 render_frame_host_ 描述的是一个RenderFrameHostImpl 对象。这个 RenderFrameHostImpl对 象是在前面分析的RenderFrameHostFactory 类的静态成员函数 Create 中创建的，与前面分析的 NavigatorImpl 类的成员函数 NavigateToEntry 的参数 render_frame_host 描述的 RenderFrameHostImpl 对象是相同的。
+
+​		RenderFrameHostManager 类的成员函数 **<u>UpdateStateForNavigate 主要做的事情就是检查即将要加载的 URL，即参数 entry 描述的一个 URL，与当前已经加载的 URL，是否属于相同的站点。如果是不相同的站点，那么 RenderFrameHostManager 类的成员变量 pending_render_frame_host_ 会指向另外一个 RenderFrameHostImpl 对象。这个 RenderFrameHostImpl 对象负责加载参数 entry 描述的URL。因此，这个 RenderFrameHostImpl 对象会返回给调用者。</u>**
+
+​		另一方面，如果即将要加载的 URL 与当前已经加载的 URL 是相同的站点，那么RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 返回的是成员变量render_frame_host_ 描述的 RenderFrameHostImpl 对象。
+
+​		回到 RenderFrameHostManager 类的成员函数 Navigate 中，我们假设它通过调用成员函数UpdateStateForNavigate 获得的 RenderFrameHostImpl 对象还没有关联一个 Render View 控件，这时候它就会调用另外一个成员函数 InitRenderView 为这个 RenderFrameHostImpl 关联一个 Render View 控件。
+
+​		RenderFrameHostManager 类的成员函数 InitRenderView 的实现如下所示：
+
+```c++
+bool RenderFrameHostManager::InitRenderView(
+    RenderViewHostImpl* render_view_host,
+    RenderFrameProxyHost* proxy) {
+  .......
+
+  bool created = delegate_->CreateRenderViewForRenderManager(
+      render_view_host, opener_frame_routing_id,
+      proxy ? proxy->GetRoutingID() : MSG_ROUTING_NONE,
+      frame_tree_node_->devtools_frame_token(),
+      frame_tree_node_->current_replication_state());
+
+  if (created && proxy)
+    proxy->set_render_frame_proxy_created(true);
+
+  return created;
+}
+```
+
+​		从前面的分析可以知道，RenderFrameHostManager 类的成员变量 delegate_ 描述的是一个WebContentsImpl 对象。RenderFrameHostManager 类的成员函数 InitRenderView 调用这个WebContentsImpl 对象的成员函数 CreateRenderViewForRenderManager  为参数 render_view_host 描述的一个 RenderViewHostImpl 对象创建一个 Render View 控件。这个 RenderViewHostImpl 对象是与RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 返回的 RenderFrameHostImpl 对象关联的，因此，这里调用成员变量 delegate_ 描述的 WebContentsImpl 对象的成员函数CreateRenderViewForRenderManager 实际上是为该 RenderFrameHostImpl 对象创建一个 Render View 控件。
+
+​		WebContentsImpl 类的成员函数 CreateRenderViewForRenderManager 的实现如下所示：
+
+```c++
+bool WebContentsImpl::CreateRenderViewForRenderManager(
+    RenderViewHost* render_view_host,
+    int opener_frame_routing_id,
+    int proxy_routing_id,
+    const base::UnguessableToken& devtools_frame_token,
+    const FrameReplicationState& replicated_frame_state) {
+  TRACE_EVENT0("browser,navigation",
+               "WebContentsImpl::CreateRenderViewForRenderManager");
+
+  if (proxy_routing_id == MSG_ROUTING_NONE)
+    CreateRenderWidgetHostViewForRenderManager(render_view_host);
+
+  if (!static_cast<RenderViewHostImpl*>(render_view_host)
+           ->CreateRenderView(opener_frame_routing_id, proxy_routing_id,
+                              devtools_frame_token, replicated_frame_state,
+                              created_with_opener_)) {
+    return false;
+  }
+
+  SetHistoryOffsetAndLengthForView(render_view_host,
+                                   controller_.GetLastCommittedEntryIndex(),
+                                   controller_.GetEntryCount());
+
+  RenderWidgetHostView* rwh_view = render_view_host->GetWidget()->GetView();
+  if (rwh_view) {
+    if (RenderWidgetHost* render_widget_host = rwh_view->GetRenderWidgetHost())
+      render_widget_host->WasResized();
+  }
+
+  return true;
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
