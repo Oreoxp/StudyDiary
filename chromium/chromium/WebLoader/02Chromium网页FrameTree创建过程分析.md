@@ -646,7 +646,7 @@ void NavigationControllerImpl::LoadURLWithParams(const LoadURLParams& params) {
 }
 ```
 
-​		NavigationControllerImpl 类的成员函数 LoadURLWithParams 首先创建一个 NavigationEntryImpl 对象并装填一些信息，它将要加载的URL封装在一个NavigationEntryImpl对象之后，传递给另外一个成员函数LoadEntry，让后者执行加载URL的操作。
+​		NavigationControllerImpl 类的成员函数 LoadURLWithParams 首先创建一个 NavigationEntryImpl 对象并装填一些信息，它将要加载的 URL 封装在一个 NavigationEntryImpl 对象之后，传递给另外一个成员函数LoadEntry，让后者执行加载 URL 的操作。
 
 ​		NavigationControllerImpl 类的成员函数 LoadEntry 的实现如下所示：
 
@@ -671,7 +671,7 @@ void NavigationControllerImpl::LoadEntry(
 }
 ```
 
-​		NavigationControllerImpl 类的成员函数 LoadEntry 首先调用另外一个成员函数 SetPendingEntry <u>将参数 entry 指向的一个 NavigationEntryImpl 对象保存在成员变量 pending_entry_ 中，表示NavigationEntryImpl 对象封装的 URL 正在等待加载</u>，如下所示：
+​		NavigationControllerImpl 类的成员函数 LoadEntry 首先调用另外一个成员函数 SetPendingEntry <u>将参数 entry 指向的一个 NavigationEntryImpl 对象保存在成员变量 pending\_entry_ 中，表示NavigationEntryImpl 对象封装的 URL 正在等待加载</u>，如下所示：
 
 ```c++
 void NavigationControllerImpl::SetPendingEntry(
@@ -738,7 +738,7 @@ bool NavigationControllerImpl::NavigateToPendingEntryInternal(
 }
 ```
 
-​		从前面的分析可以知道，WebContentsImpl 类的成员变量 delegate_ 指向的是一个 WebContentsImpl 对象，调用这个FrameTree对象的成员函数 root 可以获得一个FrameTreeNode对象。这个 FrameTreeNode 对象代表的就是正在等待加载的网页的 Main Frame。再从 root 中找到需要导航的网页，然后通知网页进行导航，其中：先通知相同的文档，再通知不同的文档。
+​		从前面的分析可以知道，WebContentsImpl 类的成员变量 delegate_ 指向的是一个 WebContentsImpl 对象，调用这个 FrameTree 对象的成员函数 root 可以获得一个 FrameTreeNode 对象。这个 FrameTreeNode 对象代表的就是正在等待加载的网页的 Main Frame。再从 root 中找到需要导航的网页，然后通知网页进行导航，其中：先通知相同的文档，再通知不同的文档。
 
 ​		FrameTreeNode 类的成员函数 navigator 的实现如下所示：
 
@@ -871,12 +871,11 @@ RenderFrameHostImpl* RenderFrameHostManager::Navigate(
 
   return dest_render_frame_host;
 }
-
 ```
 
-​		RenderFrameHostManager 类的成员函数 Navigate 首先调用另外一个成员函数UpdateStateForNavigate 获得与即将要加载的 URL 对应的一个 RenderFrameHostImpl 对象。获得了这个RenderFrameHostImpl 对象之后，调用它的成员函数 render_view_host 可以获得一个RenderViewHostImpl 对象。这个 RenderViewHostImpl 对象是在前面分析的RenderFrameHostManager 类的成员函数 CreateRenderFrameHost 中创建的。有了这个RenderViewHostImpl 对象之后，就可以调用它的成员函数 IsRenderViewLive 判断它是否关联有一个Render View 控件。这个 Render View 控件是一个由平台实现的控件，描述的是用来显示网页的一个区域。
+​		RenderFrameHostManager 类的成员函数 Navigate 首先调用另外一个成员函数 UpdateStateForNavigate  获得与即将要加载的 URL 对应的一个 RenderFrameHostImpl 对象。获得了这个 RenderFrameHostImpl 对象之后，调用它的成员函数 render_view_host 可以获得一个 RenderViewHostImpl 对象。这个 RenderViewHostImpl 对象是在前面分析的 RenderFrameHostManager 类的成员函数 CreateRenderFrameHost 中创建的。有了这个 RenderViewHostImpl 对象之后，就可以调用它的成员函数 IsRenderViewLive 判断它是否关联有一个 Render View 控件。这个 RenderView 控件是一个由平台实现的控件，描述的是用来显示网页的一个区域。
 
-​		在两种情况下，一个 RenderViewHostImpl 对象没有关联一个 Render View 控件。第一种情况是这个RenderViewHostImpl 对象还没有加载过 URL。第二种情况下是这个 RenderViewHostImpl 对象加载过 URL，但是由于某种原因，负责加载该 URL 的 Render 进程崩溃了。在第二种情况下，一个RenderViewHostImpl 对象关联的 Render View 控件会被销毁，所以会导致它没有关联 Render View 控件。无论是上述两种情况的哪一种，RenderFrameHostManager 类的成员函数 Navigate 都会调用另外一个成员函数 ReinitializeRenderFrame 为其关联一个 Render View 控件。
+​		在两种情况下，一个 RenderViewHostImpl 对象没有关联一个 Render View 控件。第一种情况是这个RenderViewHostImpl 对象还没有加载过 URL。第二种情况下是这个 RenderViewHostImpl 对象加载过 URL，但是由于某种原因，负责加载该 URL 的 Render 进程崩溃了。在第二种情况下，一个 RenderViewHostImpl 对象关联的 Render View 控件会被销毁，所以会导致它没有关联 Render View 控件。无论是上述两种情况的哪一种，RenderFrameHostManager 类的成员函数 Navigate 都会调用另外一个成员函数 ReinitializeRenderFrame 为其关联一个 RenderView 控件。
 
 ​		 接下来，我们就分别分析 RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 和InitRenderView 的实现。
 
@@ -923,13 +922,38 @@ RenderFrameHostImpl* RenderFrameHostManager::UpdateStateForNavigate(
 }
 ```
 
-​		RenderFrameHostManager 类的成员变量 render_frame_host_ 描述的是一个RenderFrameHostImpl 对象。这个 RenderFrameHostImpl对 象是在前面分析的RenderFrameHostFactory 类的静态成员函数 Create 中创建的，与前面分析的 NavigatorImpl 类的成员函数 NavigateToEntry 的参数 render_frame_host 描述的 RenderFrameHostImpl 对象是相同的。
+​		RenderFrameHostManager 类的成员变量 render_frame_host_ 描述的是一个RenderFrameHostImpl 对象。这个 RenderFrameHostImpl 对象是在前面分析的 RenderFrameHostFactory 类的静态成员函数 Create 中创建的，与前面分析的 NavigatorImpl 类的成员函数 NavigateToEntry 的参数 render_frame_host 描述的 RenderFrameHostImpl 对象是相同的。
 
-​		RenderFrameHostManager 类的成员函数 **<u>UpdateStateForNavigate 主要做的事情就是检查即将要加载的 URL，即参数 entry 描述的一个 URL，与当前已经加载的 URL，是否属于相同的站点。如果是不相同的站点，那么 RenderFrameHostManager 类的成员变量 pending_render_frame_host_ 会指向另外一个 RenderFrameHostImpl 对象。这个 RenderFrameHostImpl 对象负责加载参数 entry 描述的URL。因此，这个 RenderFrameHostImpl 对象会返回给调用者。</u>**
+​		RenderFrameHostManager 类的成员函数 **<u>UpdateStateForNavigate 主要做的事情就是检查即将要加载的 URL，即参数 entry 描述的一个 URL，与当前已经加载的 URL，是否属于相同的站点。如果是不相同的站点，那么 RenderFrameHostManager 类的成员变量 pending\_render\_frame\_host_ 会指向另外一个 RenderFrameHostImpl 对象。这个 RenderFrameHostImpl 对象负责加载参数 entry 描述的URL。因此，这个 RenderFrameHostImpl 对象会返回给调用者。</u>**
 
 ​		另一方面，如果即将要加载的 URL 与当前已经加载的 URL 是相同的站点，那么RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 返回的是成员变量render_frame_host_ 描述的 RenderFrameHostImpl 对象。
 
-​		回到 RenderFrameHostManager 类的成员函数 Navigate 中，我们假设它通过调用成员函数UpdateStateForNavigate 获得的 RenderFrameHostImpl 对象还没有关联一个 Render View 控件，这时候它就会调用另外一个成员函数 InitRenderView 为这个 RenderFrameHostImpl 关联一个 Render View 控件。
+​		回到 RenderFrameHostManager 类的成员函数 Navigate 中，我们假设它通过调用成员函数UpdateStateForNavigate 获得的 RenderFrameHostImpl 对象还没有关联一个 RenderView 控件，这时候它就会调用另外一个成员函数 InitRenderView 为这个 RenderFrameHostImpl 关联一个 RenderView 控件。
+
+ReinitializeRenderFrame 的实现如下所示：
+
+```c++
+bool RenderFrameHostManager::ReinitializeRenderFrame(
+    RenderFrameHostImpl* render_frame_host) {
+  CreateOpenerProxies(render_frame_host->GetSiteInstance(), frame_tree_node_);
+
+  if (!frame_tree_node_->parent()) {
+    DCHECK(!GetRenderFrameProxyHost(render_frame_host->GetSiteInstance()));
+    if (!InitRenderView(render_frame_host->render_view_host(), nullptr))
+      return false;
+  } else {
+    if (!InitRenderFrame(render_frame_host))
+      return false;
+    RenderFrameProxyHost* proxy_to_parent = GetProxyToParent();
+    if (proxy_to_parent)
+      GetProxyToParent()->SetChildRWHView(render_frame_host->GetView());
+  }
+
+  return true;
+}
+```
+
+​		对于跨进程子帧，InitRenderView 不会重新创建 RenderFrame，因此改用 InitRenderFrame。
 
 ​		RenderFrameHostManager 类的成员函数 InitRenderView 的实现如下所示：
 
@@ -952,7 +976,7 @@ bool RenderFrameHostManager::InitRenderView(
 }
 ```
 
-​		从前面的分析可以知道，RenderFrameHostManager 类的成员变量 delegate_ 描述的是一个WebContentsImpl 对象。RenderFrameHostManager 类的成员函数 InitRenderView 调用这个WebContentsImpl 对象的成员函数 CreateRenderViewForRenderManager  为参数 render_view_host 描述的一个 RenderViewHostImpl 对象创建一个 Render View 控件。这个 RenderViewHostImpl 对象是与RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 返回的 RenderFrameHostImpl 对象关联的，因此，这里调用成员变量 delegate_ 描述的 WebContentsImpl 对象的成员函数CreateRenderViewForRenderManager 实际上是为该 RenderFrameHostImpl 对象创建一个 Render View 控件。
+​		从前面的分析可以知道，RenderFrameHostManager 类的成员变量 delegate_ 描述的是一个WebContentsImpl 对象。RenderFrameHostManager 类的成员函数 InitRenderView 调用这个WebContentsImpl 对象的成员函数 CreateRenderViewForRenderManager  为参数 render_view_host 描述的一个 RenderViewHostImpl 对象创建一个 RenderView 控件。这个 RenderViewHostImpl 对象是与RenderFrameHostManager 类的成员函数 UpdateStateForNavigate 返回的 RenderFrameHostImpl 对象关联的，因此，这里调用成员变量 delegate_ 描述的 WebContentsImpl 对象的成员函数CreateRenderViewForRenderManager 实际上是为该 RenderFrameHostImpl 对象创建一个 RenderView 控件。
 
 ​		WebContentsImpl 类的成员函数 CreateRenderViewForRenderManager 的实现如下所示：
 
@@ -963,9 +987,7 @@ bool WebContentsImpl::CreateRenderViewForRenderManager(
     int proxy_routing_id,
     const base::UnguessableToken& devtools_frame_token,
     const FrameReplicationState& replicated_frame_state) {
-  TRACE_EVENT0("browser,navigation",
-               "WebContentsImpl::CreateRenderViewForRenderManager");
-
+    .....
   if (proxy_routing_id == MSG_ROUTING_NONE)
     CreateRenderWidgetHostViewForRenderManager(render_view_host);
 
@@ -975,40 +997,149 @@ bool WebContentsImpl::CreateRenderViewForRenderManager(
                               created_with_opener_)) {
     return false;
   }
+    .......
 
-  SetHistoryOffsetAndLengthForView(render_view_host,
-                                   controller_.GetLastCommittedEntryIndex(),
-                                   controller_.GetEntryCount());
+  return true;
+}
 
-  RenderWidgetHostView* rwh_view = render_view_host->GetWidget()->GetView();
-  if (rwh_view) {
-    if (RenderWidgetHost* render_widget_host = rwh_view->GetRenderWidgetHost())
-      render_widget_host->WasResized();
+void WebContentsImpl::CreateRenderWidgetHostViewForRenderManager(
+    RenderViewHost* render_view_host) {
+  RenderWidgetHostViewBase* rwh_view =
+      view_->CreateViewForWidget(render_view_host->GetWidget(), false);
+	......
+}
+```
+
+​		当参数 proxy_routing_id 的值等于 MSG_ROUTING_NONE 的时候，表示 WebContentsImpl 类的成员函数CreateRenderViewForRenderManager 要为一个网页的 Main Frame 创建一个 Render View 控件，而当参数
+
+​		从这里可以看到，网页的 Main Frame 关联的 Render View 控件是通过调用 WebContentsImpl 类的成员变量 view_ 指向的一个 CreateViewForWidget 创建的。
+
+​		为参数 render_view_host 描述的 RenderViewHostImpl 对象创建了一个 Render View 控件之后，WebContentsImpl 类的成员函数 CreateRenderViewForRenderManager 接下来还会调用这个RenderViewHostImpl 对象的成员函数 CreateRenderView 请求<u>在对应的 Render 进程中创建一个RenderFrameImpl 对象</u>。这个 RenderFrameImpl 对象与前面通过调用成员函数 UpdateStateForNavigate 获得的 RenderFrameHostImpl 对象相对应，也就是这两个对象以后可以进行 Render Frame 相关的进程间通信操作。
+
+​		RenderViewHostImpl 类的成员函数 CreateRenderView 的实现如下所示：
+
+```c++
+bool RenderViewHostImpl::CreateRenderView(
+    int opener_frame_route_id,
+    int proxy_route_id,
+    const base::UnguessableToken& devtools_frame_token,
+    const FrameReplicationState& replicated_frame_state,
+    bool window_was_created_with_opener) {
+......
+  mojom::CreateViewParamsPtr params = mojom::CreateViewParams::New();
+  params->renderer_preferences =
+      delegate_->GetRendererPrefs(GetProcess()->GetBrowserContext());
+  GetPlatformSpecificPrefs(&params->renderer_preferences);
+  params->web_preferences = GetWebkitPreferences();
+  params->view_id = GetRoutingID();
+  params->main_frame_routing_id = main_frame_routing_id_;
+  if (main_frame_routing_id_ != MSG_ROUTING_NONE) {
+    RenderFrameHostImpl* main_rfh = RenderFrameHostImpl::FromID(
+        GetProcess()->GetID(), main_frame_routing_id_);
+    DCHECK(main_rfh);
+    RenderWidgetHostImpl* main_rwh = main_rfh->GetRenderWidgetHost();
+    params->main_frame_widget_routing_id = main_rwh->GetRoutingID();
   }
+  params->session_storage_namespace_id =
+      delegate_->GetSessionStorageNamespace(instance_.get())->id();
+  // Ensure the RenderView sets its opener correctly.
+  params->opener_frame_route_id = opener_frame_route_id;
+  params->swapped_out = !is_active_;
+  params->replicated_frame_state = replicated_frame_state;
+  params->proxy_routing_id = proxy_route_id;
+  params->hidden = is_active_ ? GetWidget()->is_hidden()
+                              : GetWidget()->delegate()->IsHidden();
+  params->never_visible = delegate_->IsNeverVisible();
+  params->window_was_created_with_opener = window_was_created_with_opener;
+  params->enable_auto_resize = GetWidget()->auto_resize_enabled();
+  params->min_size = GetWidget()->min_size_for_auto_resize();
+  params->max_size = GetWidget()->max_size_for_auto_resize();
+  params->page_zoom_level = delegate_->GetPendingPageZoomLevel();
+  params->devtools_main_frame_token = devtools_frame_token;
+
+  GetWidget()->GetResizeParams(&params->initial_size);
+  GetWidget()->SetInitialRenderSizeParams(params->initial_size);
+
+  GetProcess()->GetRendererInterface()->CreateView(std::move(params));
+
+  // Let our delegate know that we created a RenderView.
+  DispatchRenderViewCreated();
+
+  // Since this method can create the main RenderFrame in the renderer process,
+  // set the proper state on its corresponding RenderFrameHost.
+  if (main_frame_routing_id_ != MSG_ROUTING_NONE) {
+    RenderFrameHostImpl::FromID(GetProcess()->GetID(), main_frame_routing_id_)
+        ->SetRenderFrameCreated(true);
+  }
+  GetWidget()->delegate()->SendScreenRects();
+  PostRenderViewReady();
 
   return true;
 }
 ```
 
+​		RenderViewHostImpl 类的成员函数 CreateRenderView 主要就是向与当前正在处理的RenderViewHostImpl 对象对应的 Render 进程发送一个类型为 ViewMsg_New 的 IPC 消息。方式是调用 CreateView。 这个 Render 进程是在创建当前正在处理的 RenderViewHostImpl对象 时启动的，这一点可以参考前面分析的RenderViewHostFactory 类的静态成员函数 Create。
+
+​		CreateView 的实现如下：
+
+```c++
+void RendererProxy::CreateView(
+    CreateViewParamsPtr in_params) {
+  const bool kExpectsResponse = false;
+  const bool kIsSync = false;
+  
+  const uint32_t kFlags =
+      ((kExpectsResponse) ? mojo::Message::kFlagExpectsResponse : 0) |
+      ((kIsSync) ? mojo::Message::kFlagIsSync : 0);
+  
+  mojo::Message message(
+      internal::kRenderer_CreateView_Name, kFlags, 0, 0, nullptr);
+  auto* buffer = message.payload_buffer();
+  ::content::mojom::internal::Renderer_CreateView_Params_Data::BufferWriter
+      params;
+  mojo::internal::SerializationContext serialization_context;
+  params.Allocate(buffer);
+  typename decltype(params->params)::BaseType::BufferWriter
+      params_writer;
+  mojo::internal::Serialize<::content::mojom::CreateViewParamsDataView>(
+      in_params, buffer, &params_writer, &serialization_context);
+  params->params.Set(
+      params_writer.is_null() ? nullptr : params_writer.data());
+  MOJO_INTERNAL_DLOG_SERIALIZATION_WARNING(
+      params->params.is_null(),
+      mojo::internal::VALIDATION_ERROR_UNEXPECTED_NULL_POINTER,
+      "null params in Renderer.CreateView request");
+  message.AttachHandlesFromSerializationContext(
+      &serialization_context);
+  // This return value may be ignored as false implies the Connector has
+  // encountered an error, which will be visible through other means.
+  ignore_result(receiver_->Accept(&message));
+}
+```
+
+​		主要就是向与当前正在处理的 RenderViewHostImpl 对象对应的 Render 进程发送一个 IPC 消息。
 
 
 
+​		在 Render 进程中，类型 IPC 消息由 RenderThreadImpl 类的成员函数 OnControlMessageReceived 进行接收，如下所示：
 
+```c++
+bool RenderThreadImpl::OnControlMessageReceived(const IPC::Message& msg) {
+  for (auto& observer : observers_) {
+    if (observer.OnControlMessageReceived(msg))
+      return true;
+  }
 
+  // Some messages are handled by delegates.
+  if (appcache_dispatcher_->OnMessageReceived(msg) ||
+      dom_storage_dispatcher_->OnMessageReceived(msg)) {
+    return true;
+  }
+  return false;
+}
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+​		从这里可以看到，RenderThreadImpl 类的成员函数 OnControlMessageReceived 将类型为 ViewMsg_New的 IPC 消息分发给成员函数 OnCreateNewView 处理。
 
 
 
