@@ -1199,13 +1199,268 @@ RenderViewImpl* RenderViewImpl::Create(
 
 ​		RenderViewImpl 类的成员函数 Initialize 的实现如下所示：
 
-```
+```c++
+void RenderViewImpl::Initialize(
+    const mojom::CreateViewParams& params,
+    const RenderWidget::ShowCallback& show_callback) {
+......
+
+  webview_ = WebView::Create(this, is_hidden()
+                                       ? blink::kWebPageVisibilityStateHidden
+                                       : blink::kWebPageVisibilityStateVisible);
+  RenderWidget::Init(show_callback, webview_->GetWidget());
+.......
+  WebFrame* opener_frame =
+      RenderFrameImpl::ResolveOpener(params.opener_frame_route_id);
+
+  if (params.main_frame_routing_id != MSG_ROUTING_NONE) {
+    main_render_frame_ = RenderFrameImpl::CreateMainFrame(
+        this, params.main_frame_routing_id, params.main_frame_widget_routing_id,
+        params.hidden, screen_info(), compositor_deps_, opener_frame,
+        params.devtools_main_frame_token, params.replicated_frame_state);
+  }
+
+......
+
+  if (main_render_frame_)
+    main_render_frame_->Initialize();
+
+  // If this RenderView's creation was initiated by an opener page in this
+  // process, (e.g. window.open()), we won't be visible until we ask the opener,
+  // via show_callback, to make us visible. Otherwise, we went through a
+  // browser-initiated creation, and show() won't be called.
+  if (!was_created_by_renderer)
+    did_show_ = true;
+
+  // TODO(davidben): Move this state from Blink into content.
+  if (params.window_was_created_with_opener)
+    webview()->SetOpenedByDOM();
+
+  UpdateWebViewWithDeviceScaleFactor();
+  OnSetRendererPrefs(params.renderer_preferences);
+
+  if (!params.enable_auto_resize) {
+    OnResize(params.initial_size);
+  } else {
+    OnEnableAutoResize(params.min_size, params.max_size);
+  }
+
+  idle_user_detector_.reset(new IdleUserDetector(this));
+
+  GetContentClient()->renderer()->RenderViewCreated(this);
+
+  page_zoom_level_ = params.page_zoom_level;
+}
 
 ```
 
+​		WebViewImpl 类的静态成员函数 create 根据这个 RenderViewImpl 对象创建了一个 WebViewImpl 对象，并且返回给调用者。
+
+```c++
+WebView* WebView::Create(WebViewClient* client,
+                         WebPageVisibilityState visibility_state) {
+  return WebViewImpl::Create(client, visibility_state);
+}
+
+WebViewImpl* WebViewImpl::Create(WebViewClient* client,
+                                 WebPageVisibilityState visibility_state) {
+  // Pass the WebViewImpl's self-reference to the caller.
+  auto web_view = WTF::AdoptRef(new WebViewImpl(client, visibility_state));
+  web_view->AddRef();
+  return web_view.get();
+}
+```
+
+​		WebViewImpl对象的创建过程，即WebViewImpl类的构造函数的实现，如下所示：
+
+```c++
+WebViewImpl::WebViewImpl(WebViewClient* client,
+                         WebPageVisibilityState visibility_state)
+    : client_(client),
+     ...... {
+  Page::PageClients page_clients;
+  page_clients.chrome_client = chrome_client_.Get();
+  page_clients.context_menu_client = &context_menu_client_;
+  page_clients.editor_client = &editor_client_;
+  page_clients.spell_checker_client = &spell_checker_client_impl_;
+
+  page_ = Page::CreateOrdinary(page_clients);
+  CoreInitializer::GetInstance().ProvideModulesToPage(*page_, client_);
+  page_->SetValidationMessageClient(ValidationMessageClientImpl::Create(*this));
+  SetVisibilityState(visibility_state, true);
+
+  InitializeLayerTreeView();
+
+  dev_tools_emulator_ = DevToolsEmulator::Create(this);
+
+  AllInstances().insert(this);
+
+  page_importance_signals_.SetObserver(client);
+  resize_viewport_anchor_ = new ResizeViewportAnchor(*page_);
+}
+```
+
+​		WebViewImpl 类的构造函数将参数 RenderViewImpl 指向的一个 RenderViewImpl 对象保存在成员变量client_ 中，并且还会创建一个Page对象，保存在成员变量 page_ 中。
 
 
 
+​		RenderViewImpl 类的成员函数 Initialize 首先调用 RenderFrameImpl 类的静态成员函数 CreateMainFrame 创建了一个 RenderFrameImpl 对象，如下所示：
+
+```c++
+// static
+RenderFrameImpl* RenderFrameImpl::CreateMainFrame(
+    RenderViewImpl* render_view,
+    int32_t routing_id,
+    int32_t widget_routing_id,
+    bool hidden,
+    const ScreenInfo& screen_info,
+    CompositorDependencies* compositor_deps,
+    blink::WebFrame* opener,
+    const base::UnguessableToken& devtools_frame_token,
+    const FrameReplicationState& replicated_state) {
+    
+  RenderFrameImpl* render_frame =
+      RenderFrameImpl::Create(render_view, routing_id, devtools_frame_token);
+  render_frame->InitializeBlameContext(nullptr);
+  WebLocalFrame* web_frame = WebLocalFrame::CreateMainFrame(
+      render_view->webview(), render_frame,
+      render_frame->blink_interface_registry_.get(), opener,
+      // This conversion is a little sad, as this often comes from a
+      // WebString...
+      WebString::FromUTF8(replicated_state.name),
+      replicated_state.sandbox_flags);
+  render_frame->render_widget_ = RenderWidget::CreateForFrame(
+      widget_routing_id, hidden, screen_info, compositor_deps, web_frame);
+  // TODO(avi): This DCHECK is to track cleanup for https://crbug.com/545684
+  DCHECK_EQ(render_view->GetWidget(), render_frame->render_widget_)
+      << "Main frame is no longer reusing the RenderView as its widget! "
+      << "Does the RenderFrame need to register itself with the RenderWidget?";
+  render_frame->in_frame_tree_ = true;
+  return render_frame;
+}
+
+// static
+RenderFrameImpl* RenderFrameImpl::Create(
+    RenderViewImpl* render_view,
+    int32_t routing_id,
+    const base::UnguessableToken& devtools_frame_token) {
+  DCHECK(routing_id != MSG_ROUTING_NONE);
+  CreateParams params(render_view, routing_id, devtools_frame_token);
+
+  if (g_create_render_frame_impl)
+    return g_create_render_frame_impl(params);
+  else
+    return new RenderFrameImpl(params);
+}
+```
+
+​		从这里可以看到，RenderFrameImpl 类的静态成员函数 Create 创建的是一个 RenderFrameImpl 对象。这个 RenderFrameImpl 对象保存在 RenderViewImpl 类的成员变量 main_render_frame_ 中。
+
+​		它接下来调用 WebLocalFrame 类的静态成员函数 CreateMainFrame 创建一个 WebLocalFrameImpl 对象，如下所示：
+
+```c++
+WebLocalFrame* WebLocalFrame::CreateMainFrame(
+    WebView* web_view,
+    WebFrameClient* client,
+    InterfaceRegistry* interface_registry,
+    WebFrame* opener,
+    const WebString& name,
+    WebSandboxFlags sandbox_flags) {
+  return WebLocalFrameImpl::CreateMainFrame(
+      web_view, client, interface_registry, opener, name, sandbox_flags);
+}
+```
+
+​		这个 WebLocalFrameImpl 对象返回到 RenderFrameImpl 类的成员函数 CreateMainFrame 之后，会调用 RenderWidget 的静态函数 CreateForFrame 来根据这个 MainFrame 生成一个 RenderWidget 对象。
+
+​		RenderWidget::CreateForFrame 的实现如下：
+
+```c++
+// static
+RenderWidget* RenderWidget::CreateForFrame(
+    int widget_routing_id,
+    bool hidden,
+    const ScreenInfo& screen_info,
+    CompositorDependencies* compositor_deps,
+    blink::WebLocalFrame* frame) {
+  CHECK_NE(widget_routing_id, MSG_ROUTING_NONE);
+  // TODO(avi): Before RenderViewImpl has-a RenderWidget, the browser passes the
+  // same routing ID for both the view routing ID and the main frame widget
+  // routing ID. https://crbug.com/545684
+  RenderViewImpl* view = RenderViewImpl::FromRoutingID(widget_routing_id);
+  if (view) {
+    view->AttachWebFrameWidget(
+        RenderWidget::CreateWebFrameWidget(view->GetWidget(), frame));
+    return view->GetWidget();
+  }
+  scoped_refptr<RenderWidget> widget(
+      g_create_render_widget
+          ? g_create_render_widget(widget_routing_id, compositor_deps,
+                                   blink::kWebPopupTypeNone, screen_info, false,
+                                   hidden, false)
+          : new RenderWidget(widget_routing_id, compositor_deps,
+                             blink::kWebPopupTypeNone, screen_info, false,
+                             hidden, false));
+  widget->for_oopif_ = true;
+  // Init increments the reference count on |widget|, keeping it alive after
+  // this function returns.
+  widget->Init(RenderWidget::ShowCallback(),
+               RenderWidget::CreateWebFrameWidget(widget.get(), frame));
+
+  if (g_render_widget_initialized)
+    g_render_widget_initialized(widget.get());
+  return widget.get();
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+​		这一步执行完成后，Render 进程就处理完毕从 Browser 进程发送过来的 IPC 消息。Render 进程在处理 IPC消息的过程中，主要就是创建了一个 RenderViewImpl 对象、一个 RenderFrameImpl 对象、一个WebLocalFrameImpl 对象、一个 LocalFrame 对象。这些对象的关系和作用可以参考前面 Chromium 网页加载过程简要介绍和学习计划一文的介绍。创建这些对象是为后面加载网页内容作准备的。
+
+​		回到 NavigatorImpl 类的成员函数 NavigateToEntry，它向 Render 进程发送了一个类型为 ViewMsg_New 的 IPC 消息之后，接下来又会调用 RenderFrameHostImpl 类的成员函数 Navigate 请求导航到指定的 URL。
+
+​		RenderFrameHostImpl 类的成员函数Navigate的实现如下所示：
+
+```c++
+void RenderFrameHostImpl::Navigate(
+    const CommonNavigationParams& common_params,
+    const StartNavigationParams& start_params,
+    const RequestNavigationParams& request_params) {
+......
+  // Only send the message if we aren't suspended at the start of a cross-site
+  // request.
+  if (navigations_suspended_) {
+    // This may replace an existing set of params, if this is a pending RFH that
+    // is navigated twice consecutively.
+    suspended_nav_params_.reset(
+        new NavigationParams(common_params, start_params, request_params));
+  } else {
+    // Get back to a clean state, in case we start a new navigation without
+    // completing an unload handler.
+    ResetWaitingState();
+    SendNavigateMessage(common_params, start_params, request_params);
+  }
+......
+}
+```
+
+​		从前面的分析可以知道，RenderFrameHostImpl 类的成员变量 render_view_host_ 描述的是一个RenderViewHostImpl 对象。当这个 RenderViewHostImpl 对象的成员变量 navigations_suspended_ 的值等于true 的时候，表示参数 params 描述的 URL 被挂起加载，这时候 RenderFrameHostImpl 类的成员函数 Navigate 将要加载的 URL 记录起来，等到挂起被恢复时，再进行加载。
+
+​		另一方面，RenderFrameHostImpl 类的成员变量 render_view_host_ 描述的 RenderViewHostImpl 对象的成员变量 navigations_suspended_ 的值等于 false 时，表示要马上加载参数 params 描述的 URL，这时候RenderFrameHostImpl 类的成员函数 Navigate 就会向一个 Render 进程发送一个类型为 FrameMsg_Navigate的 IPC 消息，请求该 Render 进程加载该 URL 对应的网页。Render 进程加载网页的过程，我们在接下来的一篇文章中再分析。
+
+### 总结
+
+​		至此，我们就分析完成一个网页对应的 Frame Tree 的创建过程了。这个 Frame Tree 是在网页内容加载过程之前在 Browser 进程中创建的。要加载的网页对应于这个 Frame Tree 的一个 Node。这个 Node 又关联有一个RenderFrameHostImpl 对象。这个 RenderFrameHostImpl 对象在 Render 进程又对应有一个RenderFrameImpl 对象。RenderFrameHostImpl 对象和 RenderFrameImpl 对象负责在 Browser 进程和Render 进程之间处理网页导航相关的操作。
 
 
 
