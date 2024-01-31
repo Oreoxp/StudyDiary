@@ -1117,41 +1117,91 @@ void RendererProxy::CreateView(
 }
 ```
 
-​		主要就是向与当前正在处理的 RenderViewHostImpl 对象对应的 Render 进程发送一个 IPC 消息。
+​		主要就是向与当前正在处理的 RenderViewHostImpl 对象对应的 Render 进程发送一个 IPC **Accept** 消息。
 
 
 
-​		在 Render 进程中，类型 IPC 消息由 RenderThreadImpl 类的成员函数 OnControlMessageReceived 进行接收，如下所示：
+​		在 Render 进程中，类型 IPC 消息由 RendererStubDispatch 类的成员函数 **Accept** 进行接收，如下所示：
 
 ```c++
-bool RenderThreadImpl::OnControlMessageReceived(const IPC::Message& msg) {
-  for (auto& observer : observers_) {
-    if (observer.OnControlMessageReceived(msg))
-      return true;
-  }
+// static
+bool RendererStubDispatch::Accept(
+    Renderer* impl,
+    mojo::Message* message) {
+  switch (message->header()->name) {
+    case internal::kRenderer_CreateView_Name: {
+      mojo::internal::MessageDispatchContext context(message);
 
-  // Some messages are handled by delegates.
-  if (appcache_dispatcher_->OnMessageReceived(msg) ||
-      dom_storage_dispatcher_->OnMessageReceived(msg)) {
-    return true;
+      DCHECK(message->is_serialized());
+      internal::Renderer_CreateView_Params_Data* params =
+          reinterpret_cast<internal::Renderer_CreateView_Params_Data*>(
+              message->mutable_payload());
+      
+      mojo::internal::SerializationContext serialization_context;
+      serialization_context.TakeHandlesFromMessage(message);
+      bool success = true;
+      CreateViewParamsPtr p_params{};
+      Renderer_CreateView_ParamsDataView input_data_view(params, &serialization_context);
+      
+      if (!input_data_view.ReadParams(&p_params))
+        success = false;
+      if (!success) {
+        ReportValidationErrorForMessage(
+            message,
+            mojo::internal::VALIDATION_ERROR_DESERIALIZATION_FAILED,
+            "Renderer::CreateView deserializer");
+        return false;
+      }
+      // A null |impl| means no implementation was bound.
+      assert(impl);
+      impl->CreateView(
+std::move(p_params));
+      return true;
+    }
   }
-  return false;
+......
 }
 ```
 
-​		从这里可以看到，RenderThreadImpl 类的成员函数 OnControlMessageReceived 将类型为 ViewMsg_New的 IPC 消息分发给成员函数 OnCreateNewView 处理。
+​		从这里可以看到，RendererStubDispatch 中直接调用 RenderThreadImpl 静态成员函数 CreateView 创建一个 RenderViewImpl 对象
 
+```c++
+void RenderThreadImpl::CreateView(mojom::CreateViewParamsPtr params) {
+  CompositorDependencies* compositor_deps = this;
+  is_scroll_animator_enabled_ = params->web_preferences.enable_scroll_animator;
+  // When bringing in render_view, also bring in webkit's glue and jsbindings.
+  RenderViewImpl::Create(compositor_deps, *params,
+                         RenderWidget::ShowCallback());
+}
+```
 
+​		RenderViewImpl 类的静态成员函数 Create 创建一个 RenderViewImpl 对象，RenderViewImpl 类的静态成员函数 Create 的实现如下所示：
 
+```c++
+/*static*/
+RenderViewImpl* RenderViewImpl::Create(
+    CompositorDependencies* compositor_deps,
+    const mojom::CreateViewParams& params,
+    const RenderWidget::ShowCallback& show_callback) {
+  DCHECK(params.view_id != MSG_ROUTING_NONE);
+  RenderViewImpl* render_view = NULL;
+  if (g_create_render_view_impl)
+    render_view = g_create_render_view_impl(compositor_deps, params);
+  else
+    render_view = new RenderViewImpl(compositor_deps, params);
 
+  render_view->Initialize(params, show_callback);
+  return render_view;
+}
+```
 
+​		RenderViewImpl 类的静态成员函数 Create 主要就是创建了一个 RenderViewImpl 对象，并且调用这个RenderViewImpl 对象的成员函数 Initialize 对其进行初始化。
 
+​		RenderViewImpl 类的成员函数 Initialize 的实现如下所示：
 
+```
 
-
-
-
-
+```
 
 
 
