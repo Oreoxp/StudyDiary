@@ -1462,9 +1462,9 @@ void RenderFrameHostImpl::Navigate(
 
 ​		至此，我们就分析完成一个网页对应的 Frame Tree 的创建过程了。这个 Frame Tree 是在网页内容加载过程之前在 Browser 进程中创建的。要加载的网页对应于这个 Frame Tree 的一个 Node。这个 Node 又关联有一个RenderFrameHostImpl 对象。这个 RenderFrameHostImpl 对象在 Render 进程又对应有一个RenderFrameImpl 对象。RenderFrameHostImpl 对象和 RenderFrameImpl 对象负责在 Browser 进程和Render 进程之间处理网页导航相关的操作。
 
+![FrameTree.drawio](markdownimage/FrameTree.drawio.png)
 
-
-
+(待完成)
 
 
 

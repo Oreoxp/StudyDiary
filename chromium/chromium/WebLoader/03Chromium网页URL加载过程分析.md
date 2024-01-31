@@ -1,0 +1,3 @@
+# Chromium 网页URL 加载过程分析
+
+​		Chromium 在 Browser进程中为网页创建了一个Frame Tree之后，会将网页的URL发送给Render进程进行加载。Render进程接收到网页URL加载请求之后，会做一些必要的初始化工作，然后请求Browser进程下载网页的内容。Browser进程一边下载网页内容，一边又通过共享内存将网页内容传递给Render进程解析，也就是创建DOM Tree。本文接下来就分析网页URL的加载过程。
