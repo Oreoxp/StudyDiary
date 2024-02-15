@@ -869,6 +869,160 @@ bool AsyncResourceHandler::OnReadCompleted(int bytes_read, bool* defer) {
 
 ### DOM Tree
 
+​		接下来我们就继续分析 Render 进程接收和处理类型为 ResourceMsg_SetDataBuffer 和ResourceMsg_DataReceived 的 IPC 消息的过程。
+
+​		Render 进程是通过 ResourceDispatcher 类的成员函数 DispatchMessage 接收类型为ResourceMsg_SetDataBuffer 和 ResourceMsg_DataReceived 的 IPC 消息的，如下所示：
+
+```c++
+void ResourceDispatcher::DispatchMessage(const IPC::Message& message) {
+  IPC_BEGIN_MESSAGE_MAP(ResourceDispatcher, message)
+    ......
+    IPC_MESSAGE_HANDLER(ResourceMsg_SetDataBuffer, OnSetDataBuffer)
+    IPC_MESSAGE_HANDLER(ResourceMsg_DataReceived, OnReceivedData)
+    ......
+  IPC_END_MESSAGE_MAP()
+}
+```
+
+​		从这里可以看到，ResourceDispatcher 类的成员函数 DispatchMessage把 为ResourceMsg_SetDataBuffer 的 IPC 消息分发给成员函数 OnSetDataBuffer 处理，把类型为ResourceMsg_DataReceived 的 IPC 消息分发给成员函数 OnReceivedData 处理。
+
+​		ResourceDispatcher 类的成员函数 OnSetDataBuffer 的实现如下所示：
+
+```c++
+void ResourceDispatcher::OnSetDataBuffer(int request_id,
+                                         base::SharedMemoryHandle shm_handle,
+                                         int shm_size,
+                                         base::ProcessId renderer_pid) {
+  ......
+  PendingRequestInfo* request_info = GetPendingRequestInfo(request_id);
+  ......
+ 
+  request_info->buffer.reset(
+      new base::SharedMemory(shm_handle, true));  // read only
+ 
+  bool ok = request_info->buffer->Map(shm_size);
+  ......
+ 
+  request_info->buffer_size = shm_size;
+
+```
+
+​		从前面的分析可以知道，Render 进程在请求 Browser 进程下载指定 URL 对应的网页内容之前，会创建一个 PendingRequestInfo 对象。这个 PendingRequestInfo 对象以一个 Request ID 为键值保存在ResourceDispatcher 类的内部。这个 Request ID 即为参数 request_id 描述的 Request ID。因此，ResourceDispatcher 类的成员函数 OnSetDataBuffer 可以通过参数 request_id 获得一个PendingRequestInfo 对象。有了这个 PendingRequestInfo 对象之后，ResourceDispatcher 类的成员函数OnSetDataBuffer 就根据参数 shm_handle 描述的句柄创建一个 ShareMemory 对象，保存在它的成员变量buffer 中。
+
+​		ResourceDispatcher 类的成员函数 OnSetDataBuffer 最后调用上述 ShareMemory 对象的成员函数Map 即可将 Browser 进程传递过来的共享内存映射到当前进程的地址空间来，这样以后就可以直接从这块共享内存读出 Browser 进程下载回来的网页内容。
+
+​		ResourceDispatcher 类的成员函数 OnReceivedData 的实现如下所示：
+
+```c++
+void ResourceDispatcher::OnReceivedData(int request_id,
+                                        int data_offset,
+                                        int data_length,
+                                        int encoded_data_length) {
+  ......
+  PendingRequestInfo* request_info = GetPendingRequestInfo(request_id);
+  ......
+  if (request_info && data_length > 0) {
+    ......
+    linked_ptr<base::SharedMemory> retain_buffer(request_info->buffer);
+    ......
+ 
+    const char* data_start = static_cast<char*>(request_info->buffer->memory());
+    ......
+    const char* data_ptr = data_start + data_offset;
+    ......
+ 
+    // Check whether this response data is compliant with our cross-site
+    // document blocking policy. We only do this for the first packet.
+    std::string alternative_data;
+    if (request_info->site_isolation_metadata.get()) {
+      request_info->blocked_response =
+          SiteIsolationPolicy::ShouldBlockResponse(
+              request_info->site_isolation_metadata, data_ptr, data_length,
+              &alternative_data);
+      request_info->site_isolation_metadata.reset();
+ 
+      // When the response is blocked we may have any alternative data to
+      // send to the renderer. When |alternative_data| is zero-sized, we do not
+      // call peer's callback.
+      if (request_info->blocked_response && !alternative_data.empty()) {
+        data_ptr = alternative_data.data();
+        data_length = alternative_data.size();
+        encoded_data_length = alternative_data.size();
+      }
+    }
+ 
+    if (!request_info->blocked_response || !alternative_data.empty()) {
+      if (request_info->threaded_data_provider) {
+        request_info->threaded_data_provider->OnReceivedDataOnForegroundThread(
+            data_ptr, data_length, encoded_data_length);
+        // A threaded data provider will take care of its own ACKing, as the
+        // data may be processed later on another thread.
+        send_ack = false;
+      } else {
+        request_info->peer->OnReceivedData(
+            data_ptr, data_length, encoded_data_length);
+      }
+    }
+ 
+    ......
+  }
+ 
+  ......
+}
+```
+
+​		ResourceDispatcher 类的成员函数 OnReceivedData 首先获得参数 request_id 对应的一个PendingRequestInfo 对象，保存在本地变量 request_info 中。有了这个 PendingRequestInfo 对象之后，就可以根据参数 data_offset 和 data_length 从它的成员变量 buffer 描述的共享内存中获得 Browser 进程下载回来的网页内容。
+
+​		如果这是一个跨站（cross-site）请求下载回来的内容，ResourceDispatcher 类的成员函数OnReceivedData 会调用 SiteIsolationPolicy 类的静态成员函数 ShouldBlockResponse 根据 Cross-Site Document Blocking Policy 决定是否需要阻止下载回来的内容在当前 Render 进程中加载。关于 Chromium的 Cross-Site Document Blocking Policy，可以参考 Site Isolation 和 Blocking Cross-Site Documents for Site Isolation 这两篇文章。
+
+​		如果 SiteIsolationPolicy 类的静态成员函数 ShouldBlockResponse 表明要阻止下载回来的内容在当前Render 进程中加载，那么本地变量 request_info 指向的 PendingRequestInfo 对象的成员变量blocked_response 的值就会等于 true。这时候如果 SiteIsolationPolicy 类的静态成员函数ShouldBlockResponse 还返回了 Alternative Data，那么这个 Alternative Data 就会替换下载回来的网页内容交给 WebKit 处理。
+
+​		如果 SiteIsolationPolicy 类的静态成员函数 ShouldBlockResponse 没有阻止下载回来的内容在当前Render 进程中加载，或者阻止的同时也提供了 Alternative Data，那么 ResourceDispatcher 类的成员函数OnReceivedData 接下来继续判断本地变量 request_info 指向的 PendingRequestInfo 对象的成员变量threaded_data_provider 是否指向了一个 ThreadedDataProvider 对象。如果指向了一个ThreadedDataProvider 对象，那么 ResourceDispatcher 类的成员函数 OnReceivedData 会将下载回来的网页内容交给这个 ThreadedDataProvider 对象的成员函数 OnReceivedDataOnForegroundThread 处理。否则的话，下载回来的网页内容将会交给本地变量 request_info 指向的 PendingRequestInfo 对象的成员变量 peer 描述的一个 WebURLLoaderImpl::Context 对象的成员函数 OnReceivedData 处理。
+
+​		WebKit 在请求 Chromium  的 Content 模块下载指定 URL 对应的网页内容时，可以指定将下载回来的网页内容交给一个后台线程进行接收和解析，这时候本地变量 request_info 指向的 PendingRequestInfo对 象的成员变量 threaded_data_provider 就会指向一个 ThreadedDataProvider 对象。这个ThreadedDataProvider 对象就会将下载回来的网页内容交给一个后台线程接收和解析。我们不考虑这种情况，因此接下来我们继续分析 WebURLLoaderImpl::Context 类的成员函数 OnReceivedData 的实现，如下所示：
+
+```c++
+void WebURLLoaderImpl::Context::OnReceivedData(const char* data,
+                                               int data_length,
+                                               int encoded_data_length) {
+  ......
+ 
+  if (ftp_listing_delegate_) {
+    // The FTP listing delegate will make the appropriate calls to
+    // client_->didReceiveData and client_->didReceiveResponse.
+    ftp_listing_delegate_->OnReceivedData(data, data_length);
+  } else if (multipart_delegate_) {
+    // The multipart delegate will make the appropriate calls to
+    // client_->didReceiveData and client_->didReceiveResponse.
+    multipart_delegate_->OnReceivedData(data, data_length, encoded_data_length);
+  } else {
+    client_->didReceiveData(loader_, data, data_length, encoded_data_length);
+  }
+}
+```
+
+​		当从 Web 服务器返回来的网页内容的 MIME 类型为 “text/vnd.chromium.ftp-dir” 时，WebURLLoaderImpl::Context 类的成员变量 ftp_listing_delegate_ 指向一个FtpDirectoryListingResponseDelegate 对象。这时候从 Web 服务器返回来的网页内容是一些 FTP 目录，上述 FtpDirectoryListingResponseDelegate 对象对这些网页内容进行一些排版处理后，再交给 WebKit 处理，也就是 ResourceLoader 类的成员变量 client_ 描述的一个 ResourceLoader 对象处理。
+
+​		当从 Web 服务器返回来的网页内容的 MIME 类型为 “multipart/x-mixed-replace” 时，WebURLLoaderImpl::Context 类的成员变量 multipart_delegate_ 指向一个MultipartResponseDelegate 对象。这时候从 Web 服务器返回来的网页内容包含若干个数据块，每一个数据块都有单独的 MIME 类型，并且它们之间通过一个 Boundary String。上述 MultipartResponseDelegate 对象根据 Boundary String 解析出每一数据块之后，再交给 WebKit 处理，也就是 ResourceLoader 类的成员变量 client_ 描述的一个 ResourceLoader 对象处理。
+
+​		在其余情况下，WebURLLoaderImpl::Context 类的成员函数 OnReceivedData 直接把 Web 服务器返回来的网页内容交给 WebKit 处理，也就是调用 ResourceLoader 类的成员变量 client_ 描述的一个ResourceLoader 对象的成员函数 didReceiveData 进行处理。
+
+​		至此，我们就分析完成 Chromium下载指定 URL 对应的网页内容的过程了。下载回来的网页内容将由WebKit 进行处理，也就是由 ResourceLoader 类的成员函数 didReceiveData 进行处理。这个处理过程即为网页内容的解析过程，解析后就会得到一棵 DOM Tree。有了 DOM Tree 之后，接下来就可以对下载回来的网页内容进行渲染了。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
