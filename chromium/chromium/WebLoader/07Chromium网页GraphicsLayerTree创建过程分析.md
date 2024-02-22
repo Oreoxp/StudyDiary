@@ -22,6 +22,12 @@
 
 ​        其中，第 1 个任务它完成之后就可以获得一个 Graphics Layer Tree，第 3 个任务要求按照一定的顺序对Composited Layer 进行绘制。注意，这个绘制顺序非常重要，否则最终合成出来的 UI 就会出现不正确的 Overlapping。同时，这个绘制顺序对理解 Graphics Layer Tree 的组成也非常重要。因此，接下来我们首先介绍与这个绘制顺序有关的概念。为了方便描述，本文将上述绘制顺序称为 Composited Layer 的绘制顺序。
 
+### Graphics Layer Tree 与 Render Layer Tree 区别
+
+- **目的和应用**：Graphics Layer Tree 更多关注于图层的硬件加速和复合操作，而 Render Layer Tree 侧重于页面的视觉结构和元素的渲染。Graphics Layer Tree 是对 Render Layer Tree 的一种优化和补充，用于提升性能和动画效果。
+- **内容和结构**：Graphics Layer Tree 关注的是如何将页面分解为可以独立处理的图层，以及这些图层如何通过硬件加速来提升渲染性能。Render Layer Tree 则是基于DOM和CSSOM的视觉表示，它描述了页面中的渲染层及其属性。
+- **渲染过程中的角色**：在渲染过程中，Render Layer Tree 通常先被构建，基于它，浏览器决定哪些部分需要被提升为独立图层，进而生成 Graphics Layer Tree，最终利用这些图层进行高效的渲染和复合。
+
 ### Composited Layer 的绘制顺序
 
 ​		在介绍 Composited Layer 的绘制顺序之前，我们还需要回答一个问题：**为什么要采用 Layer Compositing 这种 UI 渲染机制？**主要有两个原因：

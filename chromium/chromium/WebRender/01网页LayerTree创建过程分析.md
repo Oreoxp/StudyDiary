@@ -8,7 +8,7 @@
 
 ![img](markdownimage/20160323014354693)
 
-​		也就是说，每一个 Graphics Layer 都对应有一个 CC Layer。不过，Graphics Layer 与 CC Layer 不是直接的一一对应的，它们是透过另外两个 Layer 才对应起来的，如图2所示：
+​		也就是说，每一个 Graphics Layer 都对应有一个 CC Layer。不过，Graphics Layer 与 CC Layer **不是直接的一一对应的**，它们是透过另外两个 Layer 才对应起来的，如图2所示：
 
 ![img](markdownimage/20160323024815959)
 
@@ -70,6 +70,47 @@ WebContentLayerImpl::WebContentLayerImpl(blink::WebContentLayerClient* client)
   ......
 }
 ```
+
+​		从这里可以看到，WebCompositorSupportImpl 类的成员函数 createContentLayer 创建了一个WebContentLayerImpl 对象返回给调用者。
+
+​		WebContentLayerImpl 对象的创建过程，即 WebContentLayerImpl 类的构造函数的实现，如下所示：
+
+```c++
+WebContentLayerImpl::WebContentLayerImpl(blink::WebContentLayerClient* client)
+    : client_(client), ...... {
+  if (WebLayerImpl::UsingPictureLayer())
+    layer_ = make_scoped_ptr(new WebLayerImpl(PictureLayer::Create(this)));
+  else
+    layer_ = make_scoped_ptr(new WebLayerImpl(ContentLayer::Create(this)));
+  ......
+}
+```
+
+​		从前面的调用过程可以知道，参数 client 指向的实际上是一个 OpaqueRectTrackingContentLayerDelegate 对象，WebContentLayerImpl 类的构造函数首先将它保存在成员变量 client_ 中 。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
