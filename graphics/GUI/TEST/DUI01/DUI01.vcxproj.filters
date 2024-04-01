@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{8eb7b518-0190-426b-bced-d9f93f992c1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src">
+      <UniqueIdentifier>{586de1df-c129-40bc-9cda-b78290e75c26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Controller">
+      <UniqueIdentifier>{89e4fb75-48dd-46a4-8bb5-5310feca3cf5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Render">
+      <UniqueIdentifier>{c6c5f81f-85c5-4033-b260-06803fd83544}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Controller\BaseController">
+      <UniqueIdentifier>{693a9a6c-623f-4107-b048-2d88ebd09521}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Controller\Button">
+      <UniqueIdentifier>{f697ef01-7725-41f0-a5b0-4ffa0aa1ddc3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Src\Controller\BaseController\BaseController.cc">
+      <Filter>Src\Controller\BaseController</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Controller\Button\DUIButton.cc">
+      <Filter>Src\Controller\Button</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Render\Shader.cc">
+      <Filter>Src\Render</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Src\Controller\BaseController\BaseController.h">
+      <Filter>Src\Controller\BaseController</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Render\Shader.h">
+      <Filter>Src\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Controller\Button\DUIButton.h">
+      <Filter>Src\Controller\Button</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
