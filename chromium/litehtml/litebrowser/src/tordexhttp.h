@@ -1,7 +1,6 @@
 #pragma once
 
-#include <Windows.h>
-#include <winhttp.h>
+#include "httplib.h"
 #include <stdlib.h>
 #include <vector>
 #include <string>
@@ -14,7 +13,7 @@ namespace tordex
 	public:
 		typedef std::vector<http_request*>	vector;
 	protected:
-		HINTERNET			m_hConnection;
+		/*HINTERNET			m_hConnection;
 		HINTERNET			m_hRequest;
 		CRITICAL_SECTION	m_sync;
 		http*				m_http;
@@ -24,7 +23,8 @@ namespace tordex
 		ULONG64				m_downloaded_length;
 		DWORD				m_status;
 		std::wstring		m_url;
-		LONG				m_refCount;
+		LONG				m_refCount;*/
+		std::string m_url;
 	public:
 		http_request();
 		virtual ~http_request();
