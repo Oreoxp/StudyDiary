@@ -1,7 +1,5 @@
 #include "tordexhttp.h"
 
-#pragma comment(lib, "winhttp.lib")
-
 tordex::http::http()
 {
 	m_hSession					= NULL;
