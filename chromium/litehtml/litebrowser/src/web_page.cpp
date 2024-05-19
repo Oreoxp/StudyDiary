@@ -7,7 +7,6 @@ web_page::web_page(CHTMLViewWnd* parent)
 {
 	m_refCount		= 1;
 	m_parent		= parent;
-	m_http.open(L"litebrowser/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS);
 }
 
 web_page::~web_page()
@@ -156,9 +155,9 @@ void web_page::make_url(const char* url, const char* basepath, litehtml::string&
 	}
 }
 
-void web_page::load( LPCWSTR url )
+void web_page::load(const std::string& url )
 {
-	m_url = cairo_font::wchar_to_utf8(url);
+	m_url = url;
 	m_base_path	= m_url;
 	if(PathIsURL(url))
 	{
@@ -169,7 +168,7 @@ void web_page::load( LPCWSTR url )
 	}
 }
 
-void web_page::on_document_loaded(LPCWSTR file, LPCWSTR encoding, LPCWSTR realUrl)
+void web_page::on_document_loaded(const std::string& file, const std::string& encoding, const std::string& realUrl)
 {
 	if (realUrl)
 	{
@@ -191,7 +190,7 @@ void web_page::on_document_loaded(LPCWSTR file, LPCWSTR encoding, LPCWSTR realUr
 	PostMessage(m_parent->wnd(), WM_PAGE_LOADED, 0, 0);
 }
 
-void web_page::on_document_error(DWORD dwError, LPCWSTR errMsg)
+void web_page::on_document_error(int status, const std::string& errMsg)
 {
 	std::string txt = "<h1>Something Wrong</h1>";
 	if(errMsg)
@@ -206,7 +205,7 @@ void web_page::on_document_error(DWORD dwError, LPCWSTR errMsg)
 	PostMessage(m_parent->wnd(), WM_PAGE_LOADED, 0, 0);
 }
 
-void web_page::on_image_loaded( LPCWSTR file, LPCWSTR url, bool redraw_only )
+void web_page::on_image_loaded(const std::string& file, const std::string& url, bool redraw_only)
 {
 	CTxDIB img;
 	if(img.load(file))
@@ -220,7 +219,7 @@ void web_page::on_image_loaded( LPCWSTR file, LPCWSTR url, bool redraw_only )
 	}
 }
 
-BOOL web_page::download_and_wait( LPCWSTR url )
+BOOL web_page::download_and_wait(std::string& url)
 {
 	if(PathIsURL(url))
 	{
@@ -244,7 +243,7 @@ BOOL web_page::download_and_wait( LPCWSTR url )
 	return FALSE;
 }
 
-void web_page::on_waited_finished( DWORD dwError, LPCWSTR file )
+void web_page::on_waited_finished(int status, const std::string& file)
 {
 	if(dwError)
 	{
@@ -291,7 +290,7 @@ void web_page::get_url( std::wstring& url )
 	}
 }
 
-char* web_page::load_text_file(LPCWSTR path, bool is_html, LPCWSTR defEncoding, LPCWSTR forceEncoding)
+char* web_page::load_text_file(const std::string& path, bool is_html, const std::string& defEncoding, const std::string& forceEncoding)
 {
 	char* ret = NULL;
 
@@ -410,85 +409,67 @@ char* web_page::load_text_file(LPCWSTR path, bool is_html, LPCWSTR defEncoding, 
 
 //////////////////////////////////////////////////////////////////////////
 
-web_file::web_file( web_page* page, web_file_type type, LPVOID data )
-{
-	m_data	= data;
-	m_page	= page;
-	m_type	= type;
-	WCHAR path[MAX_PATH];
-	GetTempPath(MAX_PATH, path);
-	GetTempFileName(path, L"lbr", 0, m_file);
-	m_hFile = CreateFile(m_file, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+web_file::web_file(web_page* page, web_file_type type, LPVOID data)
+    : m_page(page), m_type(type), m_data(data) {
+    char path[MAX_PATH];
+    GetTempPathA(MAX_PATH, path);
+    GetTempFileNameA(path, "lbr", 0, &m_file[0]);
+    m_ofs.open(m_file, std::ios::binary);
 
-	m_page->add_ref();
+    m_page->add_ref();
 }
 
-web_file::~web_file()
-{
-	if(m_hFile)
-	{
-		CloseHandle(m_hFile);
-		m_hFile = NULL;
-	}
-	if(m_type != web_file_waited)
-	{
-		DeleteFile(m_file);
-	}
-	if(m_page)
-	{
-		m_page->release();
-	}
+web_file::~web_file() {
+    if (m_ofs.is_open()) {
+        m_ofs.close();
+    }
+    if (m_type != web_file_waited) {
+        std::remove(m_file.c_str());
+    }
+    if (m_page) {
+        m_page->release();
+    }
 }
 
-void web_file::OnFinish( DWORD dwError, LPCWSTR errMsg )
-{
-	if(m_hFile)
-	{
-		CloseHandle(m_hFile);
-		m_hFile = NULL;
-	}
-	if(dwError)
-	{
-		std::wstring fileName = m_file;
-		switch(m_type)
-		{
-		case web_file_document:
-			m_page->on_document_error(dwError, errMsg);
-			break;
-		case web_file_waited:
-			m_page->on_waited_finished(dwError, m_file);
-			break;
-		}
-	} else
-	{
-		switch(m_type)
-		{
-		case web_file_document:
-			m_page->on_document_loaded(m_file, m_encoding.empty() ? NULL : m_encoding.c_str(), m_realUrl.empty() ? NULL : m_realUrl.c_str());
-			break;
-		case web_file_image_redraw:
-			m_page->on_image_loaded(m_file, m_url.c_str(), true);
-			break;
-		case web_file_image_rerender:
-			m_page->on_image_loaded(m_file, m_url.c_str(), false);
-			break;
-		case web_file_waited:
-			m_page->on_waited_finished(dwError, m_file);
-			break;
-		}		
-	}
+void web_file::OnFinish(int status, const std::string& errorMsg) {
+    if (m_ofs.is_open()) {
+        m_ofs.close();
+    }
+    if (status != 200) {
+        switch (m_type) {
+        case web_file_document:
+            m_page->on_document_error(status, errorMsg);
+            break;
+        case web_file_waited:
+            m_page->on_waited_finished(status, m_file);
+            break;
+        }
+    } else {
+        switch (m_type) {
+        case web_file_document:
+            m_page->on_document_loaded(m_file, m_encoding, m_realUrl);
+            break;
+        case web_file_image_redraw:
+            m_page->on_image_loaded(m_file, m_realUrl, true);
+            break;
+        case web_file_image_rerender:
+            m_page->on_image_loaded(m_file, m_realUrl, false);
+            break;
+        case web_file_waited:
+            m_page->on_waited_finished(status, m_file);
+            break;
+        }
+    }
 }
 
-void web_file::OnData( LPCBYTE data, DWORD len, ULONG64 downloaded, ULONG64 total )
-{
-	if(m_hFile)
-	{
-		DWORD cbWritten = 0;
-		WriteFile(m_hFile, data, len, &cbWritten, NULL);
-	}
+void web_file::OnData(const char* data, size_t len, size_t downloaded, size_t total) {
+    if (m_ofs.is_open()) {
+        m_ofs.write(data, len);
+    }
 }
 
-void web_file::OnHeadersReady( HINTERNET hRequest )
+
+void web_file::OnHeadersReady()
 {
 	WCHAR buf[2048];
 	DWORD len = sizeof(buf);

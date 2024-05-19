@@ -119,6 +119,9 @@
     <ClInclude Include="..\libs\litehtml\containers\cairo\cairo_images_cache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="httplib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="html\addr-center.png">
