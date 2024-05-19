@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <string>
 
 #define JPEG_QUALITY_SUPER		0
 #define JPEG_QUALITY_GOOD		1
@@ -27,6 +28,7 @@ public:
 	void operator=(const CTxDIB& val);
 
 	BOOL	load(LPCWSTR fileName);
+	bool  load(const std::string& fileName);
 	BOOL	load(HRSRC hRes, HMODULE hModule = NULL);
 	BOOL	load(LPBYTE data, DWORD size);
 	BOOL	savePNG(LPCWSTR fileName, int dpi = 96);

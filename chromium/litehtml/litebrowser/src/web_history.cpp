@@ -12,7 +12,7 @@ web_history::~web_history()
 
 }
 
-void web_history::url_opened( const std::wstring& url )
+void web_history::url_opened( const std::string& url )
 {
 	if(!m_items.empty())
 	{
@@ -48,7 +48,7 @@ void web_history::url_opened( const std::wstring& url )
 	}
 }
 
-bool web_history::back( std::wstring& url )
+bool web_history::back( std::string& url )
 {
 	if(m_items.empty())	return false;
 	
@@ -60,7 +60,7 @@ bool web_history::back( std::wstring& url )
 	return false;
 }
 
-bool web_history::forward( std::wstring& url )
+bool web_history::forward( std::string& url )
 {
 	if(m_items.empty())	return false;
 

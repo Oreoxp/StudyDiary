@@ -25,7 +25,7 @@ void el_omnibox::update_position()
 	m_edit.setRect(&rcPos);
 }
 
-void el_omnibox::set_url(LPCWSTR url)
+void el_omnibox::set_url(LPCSTR url)
 {
 	m_edit.setText(url);
 }
@@ -72,21 +72,21 @@ void el_omnibox::KillFocus()
 	m_haveFocus = FALSE;
 }
 
-std::wstring el_omnibox::get_url()
+std::string el_omnibox::get_url()
 {
-	std::wstring str = m_edit.getText();
+	std::string str = m_edit.getText();
 
 	if (!PathIsURL(str.c_str()))
 	{
 		if (!PathFileExists(str.c_str()))
 		{
 			DWORD sz = (DWORD)str.length() + 32;
-			LPWSTR outUrl = new WCHAR[sz];
+			LPSTR outUrl = new CHAR[sz];
 			HRESULT res = UrlApplyScheme(str.c_str(), outUrl, &sz, URL_APPLY_DEFAULT);
 			if (res == E_POINTER)
 			{
 				delete outUrl;
-				LPWSTR outUrl = new WCHAR[sz];
+				LPSTR outUrl = new CHAR[sz];
 				if (UrlApplyScheme(str.c_str(), outUrl, &sz, URL_APPLY_DEFAULT) == S_OK)
 				{
 					str = outUrl;

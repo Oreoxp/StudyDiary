@@ -4,6 +4,7 @@
 #include "../containers/windows/cairo/cairo_font.h"
 #include "../containers/cairo/cairo_images_cache.h"
 #include "tordexhttp.h"
+#include <fstream>
 
 class CHTMLViewWnd;
 
@@ -15,12 +16,12 @@ public:
 	tordex::http				m_http;
 	std::string					m_url;
 	litehtml::document::ptr		m_doc;
-	std::wstring				m_caption;
-	std::wstring				m_cursor;
+	std::string				m_caption;
+	std::string				m_cursor;
 	std::string					m_base_path;
 	HANDLE						m_hWaitDownload;
-	std::wstring				m_waited_file;
-	std::wstring				m_hash;
+	std::string				m_waited_file;
+	std::string				m_hash;
 	cairo_images_cache			m_images;
 public:
 	web_page(CHTMLViewWnd* parent);
@@ -44,7 +45,7 @@ public:
 	void on_anchor_click(const char* url, const litehtml::element::ptr& el) override;
 	void set_cursor(const char* cursor) override;
 	void load_image(const char* src, const char* baseurl, bool redraw_on_ready) override;
-	void make_url(const char* url, const char* basepath, litehtml::string& out) override;
+	void make_url(const std::string& url, std::string basepath, litehtml::string& out) override;
 
 	cairo_surface_t* get_image(const std::string& url) override;
 	void get_client_rect(litehtml::position& client) const  override;

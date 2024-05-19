@@ -43,7 +43,7 @@ BOOL CSingleLineEditCtrl::OnKeyDown( WPARAM wParam, LPARAM lParam )
 			if (OpenClipboard(m_parent))
 			{
 				EmptyClipboard();
-				std::wstring strCopy;
+				std::string strCopy;
 				if(m_selStart >= 0)
 				{
 					int start = std::min(m_selStart, m_selEnd);
@@ -54,7 +54,7 @@ BOOL CSingleLineEditCtrl::OnKeyDown( WPARAM wParam, LPARAM lParam )
 					strCopy = m_text;
 				}
 				HGLOBAL hText = GlobalAlloc(GHND, (strCopy.length() + 1) * sizeof(TCHAR));
-				LPWSTR text = (LPWSTR) GlobalLock((HGLOBAL) hText);
+				LPSTR text = (LPSTR) GlobalLock((HGLOBAL) hText);
 				lstrcpy(text, strCopy.c_str());
 				GlobalUnlock(hText);
 				SetClipboardData(CF_UNICODETEXT, hText);
@@ -69,7 +69,7 @@ BOOL CSingleLineEditCtrl::OnKeyDown( WPARAM wParam, LPARAM lParam )
 			if (OpenClipboard(m_parent))
 			{
 				EmptyClipboard();
-				std::wstring strCopy;
+				std::string strCopy;
 				if(m_selStart >= 0)
 				{
 					int start = std::min(m_selStart, m_selEnd);
@@ -79,10 +79,10 @@ BOOL CSingleLineEditCtrl::OnKeyDown( WPARAM wParam, LPARAM lParam )
 				} else
 				{
 					strCopy = m_text;
-					setText(L"");
+					setText("");
 				}
 				HGLOBAL hText = GlobalAlloc(GHND, (strCopy.length() + 1) * sizeof(TCHAR));
-				LPWSTR text = (LPWSTR) GlobalLock((HGLOBAL) hText);
+				LPSTR text = (LPSTR) GlobalLock((HGLOBAL) hText);
 				lstrcpy(text, strCopy.c_str());
 				GlobalUnlock(hText);
 				SetClipboardData(CF_UNICODETEXT, hText);
@@ -99,7 +99,7 @@ BOOL CSingleLineEditCtrl::OnKeyDown( WPARAM wParam, LPARAM lParam )
 				HANDLE hText = GetClipboardData(CF_UNICODETEXT);
 				if(hText)
 				{
-					LPWSTR text = (LPWSTR) GlobalLock((HGLOBAL) hText);
+					LPSTR text = (LPSTR) GlobalLock((HGLOBAL) hText);
 					replaceSel(text);
 					m_caretPos += lstrlen(text);
 					GlobalUnlock(hText);
@@ -118,7 +118,7 @@ BOOL CSingleLineEditCtrl::OnKeyDown( WPARAM wParam, LPARAM lParam )
 				HANDLE hText = GetClipboardData(CF_UNICODETEXT);
 				if(hText)
 				{
-					LPWSTR text = (LPWSTR) GlobalLock((HGLOBAL) hText);
+					LPSTR text = (LPSTR) GlobalLock((HGLOBAL) hText);
 					replaceSel(text);
 					m_caretPos += lstrlen(text);
 					GlobalUnlock(hText);
@@ -490,7 +490,7 @@ void CSingleLineEditCtrl::setSelection( int start, int end )
 	UpdateCarret();
 }
 
-void CSingleLineEditCtrl::replaceSel( LPCWSTR text )
+void CSingleLineEditCtrl::replaceSel( LPCSTR text )
 {
 	delSelection();
 	m_text.insert(m_caretPos, text);
@@ -563,7 +563,7 @@ int CSingleLineEditCtrl::getCaretPosXY( int x, int y )
 	return pos;
 }
 
-void CSingleLineEditCtrl::setText( LPCWSTR text )
+void CSingleLineEditCtrl::setText( LPCSTR text )
 {
 	m_caretPos	= 0;
 	m_text		= text;
@@ -578,9 +578,9 @@ void CSingleLineEditCtrl::setText( LPCWSTR text )
 	UpdateControl();
 }
 
-void CSingleLineEditCtrl::drawText(cairo_t* cr, LPCWSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor)
+void CSingleLineEditCtrl::drawText(cairo_t* cr, LPCSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor)
 {
-	std::wstring str;
+	std::string str;
 	if (cbText < 0)
 	{
 		str = text;
@@ -596,13 +596,12 @@ void CSingleLineEditCtrl::drawText(cairo_t* cr, LPCWSTR text, int cbText, LPRECT
 	pos.width = rcText->right - rcText->left;
 	pos.height = rcText->bottom - rcText->top;
 
-	auto str_utf8 = cairo_font::wchar_to_utf8(str.c_str());
-	m_container->draw_text((litehtml::uint_ptr) cr, str_utf8.c_str(), (litehtml::uint_ptr)m_hFont, textColor, pos);
+	m_container->draw_text((litehtml::uint_ptr) cr, str.c_str(), (litehtml::uint_ptr)m_hFont, textColor, pos);
 }
 
-void CSingleLineEditCtrl::getTextExtentPoint( LPCWSTR text, int cbText, LPSIZE sz )
+void CSingleLineEditCtrl::getTextExtentPoint( LPCSTR text, int cbText, LPSIZE sz )
 {
-	std::wstring str;
+	std::string str;
 	if (cbText < 0)
 	{
 		str = text;
@@ -611,8 +610,7 @@ void CSingleLineEditCtrl::getTextExtentPoint( LPCWSTR text, int cbText, LPSIZE s
 	{
 		str.append(text, cbText);
 	}
-	auto str_utf8 = cairo_font::wchar_to_utf8(str);
-	sz->cx = m_container->text_width(str_utf8.c_str(), (litehtml::uint_ptr)m_hFont);
+	sz->cx = m_container->text_width(str.c_str(), (litehtml::uint_ptr)m_hFont);
 	sz->cy = m_hFont->metrics().height;
 }
 

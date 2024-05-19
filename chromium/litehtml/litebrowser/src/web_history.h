@@ -1,6 +1,6 @@
 #pragma once
 
-typedef std::vector<std::wstring> string_vector;
+typedef std::vector<std::string> string_vector;
 
 class web_history
 {
@@ -10,7 +10,7 @@ public:
 	web_history();
 	virtual ~web_history();
 
-	void url_opened(const std::wstring& url);
-	bool back(std::wstring& url);
-	bool forward(std::wstring& url);
+	void url_opened(const std::string& url);
+	bool back(std::string& url);
+	bool forward(std::string& url);
 };

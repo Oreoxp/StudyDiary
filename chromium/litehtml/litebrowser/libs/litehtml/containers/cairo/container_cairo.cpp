@@ -171,7 +171,7 @@ void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<
 	cairo_restore(cr);
 }
 
-void container_cairo::make_url(const char* url, const char* /*basepath*/, litehtml::string& out)
+void container_cairo::make_url(const std::string& url, std::string basepath, litehtml::string& out)
 {
 	out = url;
 }

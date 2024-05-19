@@ -3,7 +3,7 @@
 #include "dib.h"
 #include "el_omnibox.h"
 
-#define TOOLBARWND_CLASS	L"TOOLBAR_WINDOW"
+#define TOOLBARWND_CLASS	"TOOLBAR_WINDOW"
 
 class CBrowserWnd;
 
@@ -31,7 +31,7 @@ public:
 		return 0;
 	}
 	int set_width(int width);
-	void on_page_loaded(LPCWSTR url);
+	void on_page_loaded(LPCSTR url);
 
 	// cairo_container members
 	cairo_surface_t* get_image(const std::string& url) override;

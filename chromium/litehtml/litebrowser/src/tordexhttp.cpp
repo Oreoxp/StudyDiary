@@ -1,4 +1,5 @@
 #include "tordexhttp.h"
+#include "httplib.h"
 
 tordex::http::http()
 {
@@ -65,4 +66,8 @@ void tordex::http_request::cancel()
 	if(m_client) {
 		m_client->stop();
 	}
+}
+
+void tordex::http_request::OnHeadersReady() {
+
 }

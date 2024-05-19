@@ -71,7 +71,7 @@ LRESULT CALLBACK CToolbarWnd::WndProc( HWND hWnd, UINT uMessage, WPARAM wParam, 
 			{
 			case VK_RETURN:
 				{
-					std::wstring url = pThis->m_omnibox->get_url();
+					std::string url = pThis->m_omnibox->get_url();
 					pThis->m_omnibox->select_all();
 					pThis->m_parent->open(url.c_str());
 				}
@@ -199,7 +199,7 @@ void CToolbarWnd::render_toolbar(int width)
 
 void CToolbarWnd::update_cursor()
 {
-	LPCWSTR defArrow = IDC_ARROW;
+	LPCSTR defArrow = IDC_ARROW;
 
 	if (m_cursor == "pointer")
 	{
@@ -258,7 +258,7 @@ void CToolbarWnd::create( int x, int y, int width, HWND parent )
 {
 	LPSTR html = NULL;
 
-	HRSRC hResource = ::FindResource(m_hInst, L"toolbar.html", RT_HTML);
+	HRSRC hResource = ::FindResource(m_hInst, "toolbar.html", RT_HTML);
 	if(hResource)
 	{
 		DWORD imageSize = ::SizeofResource(m_hInst, hResource);
@@ -273,7 +273,7 @@ void CToolbarWnd::create( int x, int y, int width, HWND parent )
 			}
 		}
 	}
-	m_hWnd = CreateWindow(TOOLBARWND_CLASS, L"toolbar", WS_CHILD | WS_VISIBLE, x, y, width, 1, parent, NULL, m_hInst, (LPVOID) this);
+	m_hWnd = CreateWindow(TOOLBARWND_CLASS, "toolbar", WS_CHILD | WS_VISIBLE, x, y, width, 1, parent, NULL, m_hInst, (LPVOID) this);
 
 	m_doc = litehtml::document::createFromString(html, this, "html,div,body { display: block; } head,style { display: none; }");
 	delete html;
@@ -284,7 +284,7 @@ void CToolbarWnd::create( int x, int y, int width, HWND parent )
 cairo_surface_t* CToolbarWnd::get_image(const std::string& url)
 {
 	CTxDIB img;
-	if (img.load(FindResource(m_hInst, cairo_font::utf8_to_wchar(url).c_str(), RT_HTML), m_hInst))
+	if (img.load(FindResource(m_hInst, url.c_str(), RT_HTML), m_hInst))
 	{
 		return dib_to_surface(img);
 	}
@@ -318,7 +318,7 @@ int CToolbarWnd::set_width( int width )
 	return 0;
 }
 
-void CToolbarWnd::on_page_loaded(LPCWSTR url)
+void CToolbarWnd::on_page_loaded(LPCSTR url)
 {
 	if (m_omnibox)
 	{
@@ -443,17 +443,17 @@ void CToolbarWnd::OnLButtonUp( int x, int y )
 
 struct
 {
-	LPCWSTR	name;
-	LPCWSTR	url;
+	LPCSTR	name;
+	LPCSTR	url;
 } g_bookmarks[] = 
 {
-	{L"Wiki: Alexei Navalny",	L"https://en.wikipedia.org/wiki/Alexei_Navalny?useskin=vector"},
-	{L"litehtml website",		L"http://www.litehtml.com/"},
-	{L"True Launch Bar",		L"http://www.truelaunchbar.com/"},
-	{L"Tordex",					L"http://www.tordex.com/"},
-	{L"Wiki: Web Browser",		L"http://en.wikipedia.org/wiki/Web_browser?useskin=vector"},
-	{L"Wiki: Obama",			L"http://en.wikipedia.org/wiki/Obama?useskin=vector"},
-	{L"std::vector",			L"https://en.cppreference.com/w/cpp/container/vector"},
+	{"Wiki: Alexei Navalny",	"https://en.wikipedia.org/wiki/Alexei_Navalny?useskin=vector"},
+	{"litehtml website",		"http://www.litehtml.com/"},
+	{"True Launch Bar",		"http://www.truelaunchbar.com/"},
+	{"Tordex",					"http://www.tordex.com/"},
+	{"Wiki: Web Browser",		"http://en.wikipedia.org/wiki/Web_browser?useskin=vector"},
+	{"Wiki: Obama",			"http://en.wikipedia.org/wiki/Obama?useskin=vector"},
+	{"std::vector",			"https://en.cppreference.com/w/cpp/container/vector"},
 
 	{NULL,						NULL},
 };
@@ -501,15 +501,15 @@ void CToolbarWnd::on_anchor_click( const char* url, const litehtml::element::ptr
 
 		HMENU hMenu = CreatePopupMenu();
 
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1, L"Calculate Render Time");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 3, L"Calculate Render Time (10)");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 4, L"Calculate Render Time (100)");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, L"");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 5, L"Calculate Draw Time");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 6, L"Calculate Draw Time (10)");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 7, L"Calculate Draw Time (100)");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, L"");
-		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING,	2, L"Exit");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1, "Calculate Render Time");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 3, "Calculate Render Time (10)");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 4, "Calculate Render Time (100)");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 5, "Calculate Draw Time");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 6, "Calculate Draw Time (10)");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 7, "Calculate Draw Time (100)");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
+		InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING,	2, "Exit");
 
 		int ret = TrackPopupMenu(hMenu, TPM_RIGHTALIGN | TPM_TOPALIGN | TPM_NONOTIFY | TPM_RETURNCMD, pt.x, pt.y, 0, m_hWnd, NULL);
 		DestroyMenu(hMenu);

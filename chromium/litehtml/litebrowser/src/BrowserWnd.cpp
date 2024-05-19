@@ -126,13 +126,13 @@ void CBrowserWnd::OnDestroy()
 
 void CBrowserWnd::create()
 {
-	m_hWnd = CreateWindow(BROWSERWND_CLASS, L"Light HTML", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+	m_hWnd = CreateWindow(BROWSERWND_CLASS, "Light HTML", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
 		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, m_hInst, (LPVOID) this);
 
 	ShowWindow(m_hWnd, SW_SHOW);
 }
 
-void CBrowserWnd::open( LPCWSTR path )
+void CBrowserWnd::open( LPCSTR path )
 {
 	if(m_view)
 	{
@@ -180,7 +180,7 @@ void CBrowserWnd::calc_redraw(int calc_repeat)
 	}
 }
 
-void CBrowserWnd::on_page_loaded(LPCWSTR url)
+void CBrowserWnd::on_page_loaded(LPCSTR url)
 {
 	if (m_view)
 	{
