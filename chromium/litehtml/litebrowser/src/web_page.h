@@ -26,16 +26,16 @@ public:
 	web_page(CHTMLViewWnd* parent);
 	virtual ~web_page();
 
-	void load(LPCWSTR url);
+    void load(const std::string& url);
 	// encoding: as specified in Content-Type HTTP header
 	//   it is NULL for local files or if Content-Type header is not present or Content-Type header doesn't contain "charset="
-	void on_document_loaded(LPCWSTR file, LPCWSTR encoding, LPCWSTR realUrl);
-	void on_image_loaded(LPCWSTR file, LPCWSTR url, bool redraw_only);
-	void on_document_error(DWORD dwError, LPCWSTR errMsg);
-	void on_waited_finished(DWORD dwError, LPCWSTR file);
+    void on_document_loaded(const std::string& file, const std::string& encoding, const std::string& realUrl);
+    void on_image_loaded(const std::string& file, const std::string& url, bool redraw_only);
+    void on_document_error(int status, const std::string& errMsg);
+    void on_waited_finished(int status, const std::string& file);
 	void add_ref();
 	void release();
-	void get_url(std::wstring& url);
+    void get_url(std::string& url);
 
 	// litehtml::document_container members
 	void set_caption(const char* caption) override;
@@ -49,8 +49,8 @@ public:
 	cairo_surface_t* get_image(const std::string& url) override;
 	void get_client_rect(litehtml::position& client) const  override;
 private:
-	char*	load_text_file(LPCWSTR path, bool is_html, LPCWSTR defEncoding = L"UTF-8", LPCWSTR forceEncoding = NULL);
-	BOOL	download_and_wait(LPCWSTR url);
+    char* load_text_file(const std::string& path, bool is_html, const std::string& defEncoding = "UTF-8", const std::string& forceEncoding = "");
+    bool download_and_wait(const std::string& url);
 };
 
 enum web_file_type
@@ -63,19 +63,19 @@ enum web_file_type
 
 class web_file : public tordex::http_request
 {
-	WCHAR			m_file[MAX_PATH];
-	web_page*		m_page;
-	web_file_type	m_type;
-	HANDLE			m_hFile;
-	LPVOID			m_data;
-	std::wstring	m_realUrl;
-	std::wstring	m_encoding;
+    std::string m_file;
+    web_page* m_page;
+    web_file_type m_type;
+    std::ofstream m_ofs;
+    LPVOID m_data;
+    std::string m_realUrl;
+    std::string m_encoding;
 public:
-	web_file(web_page* page, web_file_type type, LPVOID data = NULL);
-	virtual ~web_file();
+    web_file(web_page* page, web_file_type type, LPVOID data = NULL);
+    virtual ~web_file();
 
-	virtual void OnFinish(DWORD dwError, LPCWSTR errMsg);
-	virtual void OnData(LPCBYTE data, DWORD len, ULONG64 downloaded, ULONG64 total);
-	virtual void OnHeadersReady(HINTERNET hRequest);
+    virtual void OnFinish(int status, const std::string& errorMsg) override;
+    virtual void OnData(const char* data, size_t len, size_t downloaded, size_t total) override;
+    virtual void OnHeadersReady() override;
 
 };

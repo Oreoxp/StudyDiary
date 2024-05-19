@@ -4,8 +4,12 @@
 
 #define GDIPVER	0x0110
 
+//#define WIN32_LEAN_AND_MEAN
+
 #include "targetver.h"
+#include <winsock2.h>
 #include <windows.h>
+#include <ws2tcpip.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>

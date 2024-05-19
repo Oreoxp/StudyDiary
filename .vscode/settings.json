@@ -91,7 +91,12 @@
     "memory_resource": "cpp",
     "numeric": "cpp",
     "random": "cpp",
-    "set": "cpp"
+    "set": "cpp",
+    "condition_variable": "cpp",
+    "csignal": "cpp",
+    "unordered_set": "cpp",
+    "regex": "cpp",
+    "thread": "cpp"
   },
   "code-runner.clearPreviousOutput": true,
   "code-runner.saveAllFilesBeforeRun": true,
