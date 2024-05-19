@@ -65,7 +65,7 @@ public:
 	static CRITICAL_SECTION	m_sync;
 
 	cairo_font(IMLangFontLink2* fl, HFONT hFont, int size);
-	cairo_font(IMLangFontLink2* fl, LPCWSTR facename, int size, int weight, BOOL italic, BOOL strikeout, BOOL underline);
+	cairo_font(IMLangFontLink2* fl, LPCSTR facename, int size, int weight, BOOL italic, BOOL strikeout, BOOL underline);
 
 	void init();
 	~cairo_font();

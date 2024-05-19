@@ -25,14 +25,14 @@ windows_container::~windows_container(void)
 
 litehtml::uint_ptr windows_container::create_font( const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm )
 {
-	std::wstring fnt_name = L"sans-serif";
+	std::string fnt_name = "sans-serif";
 
 	litehtml::string_vector fonts;
 	litehtml::split_string(faceName, fonts, ",");
 	if(!fonts.empty())
 	{
 		litehtml::trim(fonts[0]);
-		fnt_name = cairo_font::utf8_to_wchar(fonts[0]);
+		fnt_name = fonts[0];
 		if (fnt_name.front() == L'"' || fnt_name.front() == L'\'')
 		{
 			fnt_name.erase(0, 1);

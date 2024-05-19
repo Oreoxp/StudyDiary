@@ -212,16 +212,16 @@ void CHTMLViewWnd::OnDestroy()
 
 void CHTMLViewWnd::create( int x, int y, int width, int height, HWND parent )
 {
-	m_hWnd = CreateWindow(HTMLVIEWWND_CLASS, L"htmlview", WS_CHILD | WS_VISIBLE, x, y, width, height, parent, NULL, m_hInst, (LPVOID) this);
+	m_hWnd = CreateWindow(HTMLVIEWWND_CLASS, "htmlview", WS_CHILD | WS_VISIBLE, x, y, width, height, parent, NULL, m_hInst, (LPVOID) this);
 }
 
-void CHTMLViewWnd::open( LPCWSTR url, bool reload )
+void CHTMLViewWnd::open( LPCSTR url, bool reload )
 {
-	std::wstring hash;
-	std::wstring s_url = url;
+	std::string hash;
+	std::string s_url = url;
 
-	std::wstring::size_type hash_pos = s_url.find_first_of(L'#');
-	if(hash_pos != std::wstring::npos)
+	std::string::size_type hash_pos = s_url.find_first_of(L'#');
+	if(hash_pos != std::string::npos)
 	{
 		hash = s_url.substr(hash_pos + 1);
 		s_url.erase(hash_pos);
@@ -233,7 +233,7 @@ void CHTMLViewWnd::open( LPCWSTR url, bool reload )
 
 	if(m_page)
 	{
-		if (cairo_font::utf8_to_wchar(m_page->m_url) == s_url && !reload)
+		if (m_page->m_url == s_url && !reload)
 		{
 			open_hash_only = true;
 		} else
@@ -275,9 +275,9 @@ void CHTMLViewWnd::calc_draw(int calc_repeat)
 		redraw(&rcClient, TRUE);
 	}
 	DWORD tic2 = GetTickCount();	
-	WCHAR msg[255];
-	StringCchPrintf(msg, 255, L"Draw time: %d msec", tic2 - tic1);
-	MessageBox(m_hWnd, msg, L"litebrowser", MB_ICONINFORMATION | MB_OK);
+	CHAR msg[255];
+	StringCchPrintf(msg, 255, "Draw time: %d msec", tic2 - tic1);
+	MessageBox(m_hWnd, msg, "litebrowser", MB_ICONINFORMATION | MB_OK);
 }
 
 void CHTMLViewWnd::render(BOOL calc_time, BOOL do_redraw, int calc_repeat)
@@ -306,9 +306,9 @@ void CHTMLViewWnd::render(BOOL calc_time, BOOL do_redraw, int calc_repeat)
 				page->m_doc->render(width);
 			}
 			DWORD tic2 = GetTickCount();
-			WCHAR msg[255];
-			StringCchPrintf(msg, 255, L"Render time: %d msec", tic2 - tic1);
-			MessageBox(m_hWnd, msg, L"litebrowser", MB_ICONINFORMATION | MB_OK);
+			CHAR msg[255];
+			StringCchPrintf(msg, 255, "Render time: %d msec", tic2 - tic1);
+			MessageBox(m_hWnd, msg, "litebrowser", MB_ICONINFORMATION | MB_OK);
 		} else
 		{
 			page->m_doc->render(width);
@@ -566,7 +566,7 @@ void CHTMLViewWnd::refresh()
 
 	if(page)
 	{
-		open(cairo_font::utf8_to_wchar(page->m_url.c_str()).c_str(), true);
+		open(page->m_url.c_str(), true);
 
 		page->release();
 	}
@@ -578,7 +578,7 @@ void CHTMLViewWnd::set_caption()
 
 	if(!page)
 	{
-		SetWindowText(GetParent(m_hWnd), L"litebrowser");
+		SetWindowText(GetParent(m_hWnd), "litebrowser");
 	} else
 	{
 		SetWindowText(GetParent(m_hWnd), page->m_caption.c_str());
@@ -695,7 +695,7 @@ void CHTMLViewWnd::OnLButtonUp( int x, int y )
 
 void CHTMLViewWnd::back()
 {
-	std::wstring url;
+	std::string url;
 	if(m_history.back(url))
 	{
 		open(url.c_str(), false);
@@ -704,7 +704,7 @@ void CHTMLViewWnd::back()
 
 void CHTMLViewWnd::forward()
 {
-	std::wstring url;
+	std::string url;
 	if(m_history.forward(url))
 	{
 		open(url.c_str(), false);
@@ -713,7 +713,7 @@ void CHTMLViewWnd::forward()
 
 void CHTMLViewWnd::update_cursor()
 {
-	LPCWSTR defArrow = m_page_next ? IDC_APPSTARTING : IDC_ARROW;
+	LPCSTR defArrow = m_page_next ? IDC_APPSTARTING : IDC_ARROW;
 
 	web_page* page = get_page();
 
@@ -722,7 +722,7 @@ void CHTMLViewWnd::update_cursor()
 		SetCursor(LoadCursor(NULL, defArrow));
 	} else
 	{
-		if(page->m_cursor == L"pointer")
+		if(page->m_cursor == "pointer")
 		{
 			SetCursor(LoadCursor(NULL, IDC_HAND));
 		} else
@@ -787,12 +787,12 @@ web_page* CHTMLViewWnd::get_page(bool with_lock)
 
 void CHTMLViewWnd::OnPageReady()
 {
-	std::wstring url;
+	std::string url;
 	lock();
 	web_page* page = m_page_next;
 	unlock();
 
-	std::wstring hash;
+	std::string hash;
 
 	bool is_ok = false;
 
@@ -808,7 +808,7 @@ void CHTMLViewWnd::OnPageReady()
 		m_page_next = NULL;
 		is_ok = true;
 		hash = m_page->m_hash;
-		url = cairo_font::utf8_to_wchar(m_page->m_url);
+		url = m_page->m_url;
 	}
 
 	unlock();
@@ -827,7 +827,7 @@ void CHTMLViewWnd::OnPageReady()
 	}
 }
 
-void CHTMLViewWnd::show_hash(std::wstring& hash)
+void CHTMLViewWnd::show_hash(std::string& hash)
 {
 	web_page* page = get_page();
 	if(page)
@@ -835,7 +835,7 @@ void CHTMLViewWnd::show_hash(std::wstring& hash)
 		if(!hash.empty())
 		{
 			char selector[255];
-			auto hashA = cairo_font::wchar_to_utf8(hash);
+			auto hashA = hash;
 			StringCchPrintfA(selector, 255, "#%s", hashA.c_str());
 			element::ptr el = page->m_doc->root()->select_one(selector);
 			if(!el)
@@ -866,7 +866,7 @@ void CHTMLViewWnd::update_history()
 
 	if(page)
 	{
-		std::wstring url;
+		std::string url;
 		page->get_url(url);
 		
 		m_history.url_opened(url);

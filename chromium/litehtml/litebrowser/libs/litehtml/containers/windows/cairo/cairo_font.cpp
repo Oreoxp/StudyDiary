@@ -12,7 +12,7 @@ cairo_font::cairo_font(IMLangFontLink2* fl, HFONT hFont, int size )
 	set_font(hFont);
 }
 
-cairo_font::cairo_font(IMLangFontLink2* fl, LPCWSTR facename, int size, int weight, BOOL italic, BOOL strikeout, BOOL underline )
+cairo_font::cairo_font(IMLangFontLink2* fl, LPCSTR facename, int size, int weight, BOOL italic, BOOL strikeout, BOOL underline )
 {
 	init();
 	m_size = size;
@@ -24,24 +24,24 @@ cairo_font::cairo_font(IMLangFontLink2* fl, LPCWSTR facename, int size, int weig
 
 	LOGFONT lf;
 	ZeroMemory(&lf, sizeof(lf));
-	if(!lstrcmpi(facename, L"monospace"))
+	if(!lstrcmpi(facename, "monospace"))
 	{
-		wcscpy_s(lf.lfFaceName, LF_FACESIZE, L"Courier New");
-	} else if(!lstrcmpi(facename, L"serif"))
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, "Courier New");
+	} else if(!lstrcmpi(facename, "serif"))
 	{
-		wcscpy_s(lf.lfFaceName, LF_FACESIZE, L"Times New Roman");
-	} else if(!lstrcmpi(facename, L"sans-serif"))
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, "Times New Roman");
+	} else if(!lstrcmpi(facename, "sans-serif"))
 	{
-		wcscpy_s(lf.lfFaceName, LF_FACESIZE, L"Arial");
-	} else if(!lstrcmpi(facename, L"fantasy"))
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, "Arial");
+	} else if(!lstrcmpi(facename, "fantasy"))
 	{
-		wcscpy_s(lf.lfFaceName, LF_FACESIZE, L"Impact");
-	} else if(!lstrcmpi(facename, L"cursive"))
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, "Impact");
+	} else if(!lstrcmpi(facename, "cursive"))
 	{
-		wcscpy_s(lf.lfFaceName, LF_FACESIZE, L"Comic Sans MS");
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, "Comic Sans MS");
 	} else
 	{
-		wcscpy_s(lf.lfFaceName, LF_FACESIZE, facename);
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, facename);
 	}
 
 	lf.lfHeight			= -size;
@@ -234,8 +234,8 @@ void cairo_font::free_text_chunks( text_chunk::vector& chunks )
 
 cairo_font_face_t* cairo_font::create_font_face( HFONT fnt )
 {
-	LOGFONT lf;
-	GetObject(fnt, sizeof(LOGFONT), &lf);
+	LOGFONTW lf;
+	GetObject(fnt, sizeof(LOGFONTW), &lf);
 	return cairo_win32_font_face_create_for_logfontw(&lf);
 }
 

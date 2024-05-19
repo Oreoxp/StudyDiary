@@ -56,7 +56,7 @@ public:
 	void set_clip(const litehtml::position& pos, const litehtml::border_radiuses& bdr_radius) override;
 	void del_clip() override;
 
-	virtual void make_url( const char* url, const char* basepath, litehtml::string& out );
+	virtual void make_url(const std::string& url, std::string basepath, litehtml::string& out);
 	virtual cairo_surface_t* get_image(const std::string& url) = 0;
 	virtual double get_screen_dpi() const = 0;
 	virtual int get_screen_width() const = 0;

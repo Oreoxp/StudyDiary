@@ -1,6 +1,6 @@
 #pragma once
 
-#define BROWSERWND_CLASS	L"BROWSER_WINDOW"
+#define BROWSERWND_CLASS	"BROWSER_WINDOW"
 
 class CHTMLViewWnd;
 class CToolbarWnd;
@@ -18,14 +18,14 @@ public:
 	virtual ~CBrowserWnd(void);
 
 	void create();
-	void open(LPCWSTR path);
+	void open(LPCSTR path);
 
 	void back();
 	void forward();
 	void reload();
 	void calc_time(int calc_repeat = 1);
 	void calc_redraw(int calc_repeat = 1);
-	void on_page_loaded(LPCWSTR url);
+	void on_page_loaded(LPCSTR url);
 
 protected:
 	virtual void OnCreate();

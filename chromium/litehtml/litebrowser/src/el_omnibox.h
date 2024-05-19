@@ -21,8 +21,8 @@ public:
 		return m_haveFocus;
 	}
 	void update_position();
-	void set_url(LPCWSTR url);
-	std::wstring get_url();
+	void set_url(LPCSTR url);
+	std::string get_url();
 	void set_parent(HWND parent);
 	void SetFocus();
 	void KillFocus();

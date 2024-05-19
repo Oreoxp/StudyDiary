@@ -13,7 +13,7 @@ class CSingleLineEditCtrl : public CTxThread
 private:
 	windows_container*	m_container;
 	HWND				m_parent;
-	std::wstring		m_text;
+	std::string		m_text;
 	cairo_font*			m_hFont;
 	litehtml::web_color	m_textColor;
 	int					m_lineHeight;
@@ -42,12 +42,12 @@ public:
 	void	OnLButtonDblClick(int x, int y);
 	void	OnMouseMove(int x, int y);
 	void	setRect(LPRECT rcText);
-	void	setText(LPCWSTR text);
-	LPCWSTR getText()	{ return m_text.c_str(); }
+	void	setText(LPCSTR text);
+	LPCSTR getText()	{ return m_text.c_str(); }
 	void	setFont(cairo_font* font, litehtml::web_color& color);
 	void	draw(cairo_t* cr);
 	void	setSelection(int start, int end);
-	void	replaceSel(LPCWSTR text);
+	void	replaceSel(LPCSTR text);
 	void	hideCaret();
 	void	showCaret();
 	void	set_parent(HWND parent);
@@ -67,7 +67,7 @@ private:
 	void	fillSelRect(cairo_t* cr, LPRECT rcFill);
 	int		getCaretPosXY(int x, int y);
 
-	void	drawText(cairo_t* cr, LPCWSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor);
-	void	getTextExtentPoint(LPCWSTR text, int cbText, LPSIZE sz);
+	void	drawText(cairo_t* cr, LPCSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor);
+	void	getTextExtentPoint(LPCSTR text, int cbText, LPSIZE sz);
 	void	set_color(cairo_t* cr, litehtml::web_color color)	{ cairo_set_source_rgba(cr, color.red / 255.0, color.green / 255.0, color.blue / 255.0, color.alpha / 255.0); }
 };

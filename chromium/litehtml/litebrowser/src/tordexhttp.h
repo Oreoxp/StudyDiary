@@ -1,9 +1,12 @@
 #pragma once
-#include "httplib.h"
 #include <stdlib.h>
 #include <vector>
 #include <string>
+#include <memory>
 
+namespace httplib {
+	class Client;
+}
 namespace tordex
 {
 	class http_request
@@ -11,12 +14,10 @@ namespace tordex
 		friend class http;
 	protected:
 		std::string m_url;
-		LONG m_refCount = 1;
 		std::shared_ptr<httplib::Client> m_client;
-		ULONG64 m_content_length;
-		ULONG64 m_downloaded_length;
+		int m_content_length;
+		int m_downloaded_length;
 		int m_status;
-		httplib::Headers m_headers;
 		std::string m_response_body;
 	public:
 		http_request();

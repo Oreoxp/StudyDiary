@@ -16,15 +16,14 @@ web_page::~web_page()
 
 void web_page::set_caption( const char* caption )
 {
-	m_caption = cairo_font::utf8_to_wchar(caption);
+	m_caption = caption;
 }
 
 void web_page::set_base_url( const char* base_url )
 {
 	if(base_url)
 	{
-		auto bu = cairo_font::utf8_to_wchar(base_url);
-		if(PathIsRelative(bu.c_str()) && !PathIsURL(bu.c_str()))
+		if(PathIsRelative(base_url) && !PathIsURL(base_url))
 		{
 			make_url(base_url, m_url.c_str(), m_base_path);
 		} else
@@ -42,9 +41,9 @@ void web_page::import_css( litehtml::string& text, const litehtml::string& url, 
 	std::string css_url;
 	make_url(url.c_str(), baseurl.c_str(), css_url);
 
-	if(download_and_wait(cairo_font::utf8_to_wchar(css_url.c_str()).c_str()))
+	if(download_and_wait(css_url))
 	{
-		LPSTR css = load_text_file(m_waited_file.c_str(), false, L"UTF-8");
+		LPSTR css = load_text_file(m_waited_file, false, "UTF-8");
 		if(css)
 		{
 			baseurl = css_url;
@@ -57,12 +56,12 @@ void web_page::on_anchor_click( const char* url, const litehtml::element::ptr& e
 {
 	std::string anchor;
 	make_url(url, m_base_path.c_str(), anchor);
-	m_parent->open(cairo_font::utf8_to_wchar(anchor).c_str());
+	m_parent->open(anchor.c_str());
 }
 
 void web_page::set_cursor( const char* cursor )
 {
-	m_cursor = cairo_font::utf8_to_wchar(cursor);
+	m_cursor = cursor;
 }
 
 void web_page::load_image(const char* src, const char* baseurl, bool redraw_on_ready)
@@ -71,76 +70,73 @@ void web_page::load_image(const char* src, const char* baseurl, bool redraw_on_r
 	make_url(src, baseurl, url);
 	if (m_images.reserve(url))
 	{
-		if (PathIsURL(cairo_font::utf8_to_wchar(url).c_str()))
+		if (PathIsURL(url.c_str()))
 		{
 			if (redraw_on_ready)
 			{
-				m_http.download_file(cairo_font::utf8_to_wchar(url).c_str(), new web_file(this, web_file_image_redraw));
+				m_http.download_file(url, new web_file(this, web_file_image_redraw));
 			}
 			else
 			{
-				m_http.download_file(cairo_font::utf8_to_wchar(url).c_str(), new web_file(this, web_file_image_rerender));
+				m_http.download_file(url, new web_file(this, web_file_image_rerender));
 			}
 		}
 		else
 		{
-			on_image_loaded(cairo_font::utf8_to_wchar(url).c_str(), cairo_font::utf8_to_wchar(url).c_str(), redraw_on_ready);
+			on_image_loaded(url, url, redraw_on_ready);
 		}
 	}
 }
 
-void web_page::make_url(const char* url, const char* basepath, litehtml::string& out)
+void web_page::make_url(const std::string& url, std::string basepath, litehtml::string& out)
 {
-	auto urlW = cairo_font::utf8_to_wchar(url ? url : "");
-	auto basepathW = cairo_font::utf8_to_wchar(basepath ? basepath : "");
-
-	if (PathIsRelative(urlW.c_str()) && !PathIsURL(urlW.c_str()))
+	if (PathIsRelative(url.c_str()) && !PathIsURL(basepath.c_str()))
 	{
-		if (basepathW.empty())
+		if (basepath.empty())
 		{
-			basepathW = cairo_font::utf8_to_wchar(m_base_path);
+			basepath = m_base_path;
 		}
-		DWORD dl = (DWORD) urlW.length() + (DWORD) basepathW.length() + 1;
-		LPWSTR abs_url = new WCHAR[dl];
-		HRESULT res = UrlCombine(basepathW.c_str(), urlW.c_str(), abs_url, &dl, 0);
+		DWORD dl = (DWORD)url.length() + (DWORD)basepath.length() + 1;
+		LPSTR abs_url = new CHAR[dl];
+		HRESULT res = UrlCombine(basepath.c_str(), url.c_str(), abs_url, &dl, 0);
 		if (res == E_POINTER)
 		{
 			delete abs_url;
-			abs_url = new WCHAR[dl + 1];
-			if (UrlCombine(basepathW.c_str(), urlW.c_str(), abs_url, &dl, 0) == S_OK)
+			abs_url = new CHAR[dl + 1];
+			if (UrlCombine(basepath.c_str(), url.c_str(), abs_url, &dl, 0) == S_OK)
 			{
-				out = cairo_font::wchar_to_utf8(abs_url);
+				out = abs_url;
 			}
 		}
 		else if (res == S_OK)
 		{
-			out = cairo_font::wchar_to_utf8(abs_url);
+			out = abs_url;
 		}
 		delete abs_url;
 	}
 	else
 	{
-		if (PathIsURL(urlW.c_str()))
+		if (PathIsURL(url.c_str()))
 		{
 			out = url;
 		}
 		else
 		{
-			DWORD dl = (DWORD) urlW.length() + 1;
-			LPWSTR abs_url = new WCHAR[dl];
-			HRESULT res = UrlCreateFromPath(urlW.c_str(), abs_url, &dl, 0);
+			DWORD dl = (DWORD)url.length() + 1;
+			LPSTR abs_url = new CHAR[dl];
+			HRESULT res = UrlCreateFromPath(url.c_str(), abs_url, &dl, 0);
 			if (res == E_POINTER)
 			{
 				delete abs_url;
-				abs_url = new WCHAR[dl + 1];
-				if (UrlCreateFromPath(urlW.c_str(), abs_url, &dl, 0) == S_OK)
+				abs_url = new CHAR[dl + 1];
+				if (UrlCreateFromPath(url.c_str(), abs_url, &dl, 0) == S_OK)
 				{
-					out = cairo_font::wchar_to_utf8(abs_url);
+					out = abs_url;
 				}
 			}
 			else if (res == S_OK)
 			{
-				out = cairo_font::wchar_to_utf8(abs_url);
+				out = abs_url;
 			}
 			delete abs_url;
 		}
@@ -159,7 +155,7 @@ void web_page::load(const std::string& url )
 {
 	m_url = url;
 	m_base_path	= m_url;
-	if(PathIsURL(url))
+	if(PathIsURLA(url.c_str()))
 	{
 		m_http.download_file( url, new web_file(this, web_file_document) );
 	} else
@@ -170,12 +166,12 @@ void web_page::load(const std::string& url )
 
 void web_page::on_document_loaded(const std::string& file, const std::string& encoding, const std::string& realUrl)
 {
-	if (realUrl)
+	if (!realUrl.empty())
 	{
-		m_url = cairo_font::wchar_to_utf8(realUrl);
+		m_url = realUrl;
 	}
 
-	char* html_text = load_text_file(file, true, L"UTF-8", encoding);
+	char* html_text = load_text_file(file, true, "UTF-8", encoding);
 
 	if(!html_text)
 	{
@@ -193,9 +189,9 @@ void web_page::on_document_loaded(const std::string& file, const std::string& en
 void web_page::on_document_error(int status, const std::string& errMsg)
 {
 	std::string txt = "<h1>Something Wrong</h1>";
-	if(errMsg)
+	if(!errMsg.empty())
 	{
-		auto errMsg_utf8 = cairo_font::wchar_to_utf8(errMsg);
+		auto errMsg_utf8 = errMsg;
 		txt += "<p>";
 		txt += errMsg_utf8;
 		txt += "</p>";
@@ -211,19 +207,18 @@ void web_page::on_image_loaded(const std::string& file, const std::string& url, 
 	if(img.load(file))
 	{
 		cairo_surface_t* surface = dib_to_surface(img);
-		m_images.add_image(cairo_font::wchar_to_utf8(url), surface);
+		m_images.add_image(url, surface);
 		if(m_doc)
 		{
 			PostMessage(m_parent->wnd(), WM_IMAGE_LOADED, (WPARAM) (redraw_only ? 1 : 0), 0);
 		}
 	}
 }
-
-BOOL web_page::download_and_wait(std::string& url)
+bool web_page::download_and_wait(const std::string& url)
 {
-	if(PathIsURL(url))
+	if(PathIsURLA(url.c_str()))
 	{
-		m_waited_file = L"";
+		m_waited_file = "";
 		m_hWaitDownload = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if(m_http.download_file( url, new web_file(this, web_file_waited) ))
 		{
@@ -245,11 +240,9 @@ BOOL web_page::download_and_wait(std::string& url)
 
 void web_page::on_waited_finished(int status, const std::string& file)
 {
-	if(dwError)
-	{
-		m_waited_file = L"";
-	} else
-	{
+	if(status) {
+		m_waited_file = "";
+	} else {
 		m_waited_file = file;
 	}
 	SetEvent(m_hWaitDownload);
@@ -280,13 +273,13 @@ void web_page::release()
 	}
 }
 
-void web_page::get_url( std::wstring& url )
+void web_page::get_url(std::string& url )
 {
-	url = cairo_font::utf8_to_wchar(m_url);
+	url = m_url;
 	if(!m_hash.empty())
 	{
-		url += L"#";
-		url += m_hash;
+		url.append("#");
+		url.append(m_hash);
 	}
 }
 
@@ -294,7 +287,7 @@ char* web_page::load_text_file(const std::string& path, bool is_html, const std:
 {
 	char* ret = NULL;
 
-	HANDLE fl = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE fl = CreateFile(path.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if(fl != INVALID_HANDLE_VALUE)
 	{
 		DWORD size = GetFileSize(fl, NULL);
@@ -320,8 +313,8 @@ char* web_page::load_text_file(const std::string& path, bool is_html, const std:
 	// try to convert encoding
 	if(is_html)
 	{
-		std::wstring encoding;
-		if (forceEncoding)
+		std::string encoding;
+		if (!forceEncoding.empty())
 		{
 			encoding = forceEncoding;
 		}
@@ -355,7 +348,7 @@ char* web_page::load_text_file(const std::string& path, bool is_html, const std:
 				}
 			}
 
-			if (encoding.empty() && defEncoding)
+			if (encoding.empty() && !defEncoding.empty())
 			{
 				encoding = defEncoding;
 			}
@@ -363,7 +356,7 @@ char* web_page::load_text_file(const std::string& path, bool is_html, const std:
 
 		if(!encoding.empty())
 		{
-			if(!StrCmpI(encoding.c_str(), L"UTF-8"))
+			if(!StrCmpI(encoding.c_str(), "UTF-8"))
 			{
 				encoding.clear();
 			}
@@ -379,7 +372,7 @@ char* web_page::load_text_file(const std::string& path, bool is_html, const std:
 			MIMECSETINFO charset_src = {0};
 			MIMECSETINFO charset_dst = {0};
 
-			BSTR bstrCharSet = SysAllocString(encoding.c_str());
+			BSTR bstrCharSet = SysAllocString(cairo_font::utf8_to_wchar(encoding).c_str());
 			ml->GetCharsetInfo(bstrCharSet, &charset_src);
 			SysFreeString(bstrCharSet);
 
@@ -413,7 +406,9 @@ web_file::web_file(web_page* page, web_file_type type, LPVOID data)
     : m_page(page), m_type(type), m_data(data) {
     char path[MAX_PATH];
     GetTempPathA(MAX_PATH, path);
-    GetTempFileNameA(path, "lbr", 0, &m_file[0]);
+		char path2[MAX_PATH];
+    GetTempFileNameA(path, "lbr", 0, path2);
+		m_file = path2;
     m_ofs.open(m_file, std::ios::binary);
 
     m_page->add_ref();
@@ -470,7 +465,7 @@ void web_file::OnData(const char* data, size_t len, size_t downloaded, size_t to
 
 
 void web_file::OnHeadersReady()
-{
+{/*
 	WCHAR buf[2048];
 	DWORD len = sizeof(buf);
 	if (WinHttpQueryOption(m_hRequest, WINHTTP_OPTION_URL, buf, &len))
@@ -485,5 +480,5 @@ void web_file::OnHeadersReady()
 		{
 			m_encoding = pos + wcslen(L"charset=");
 		}
-	}
+	}*/
 }

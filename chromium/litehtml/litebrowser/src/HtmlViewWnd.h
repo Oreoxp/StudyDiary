@@ -2,7 +2,7 @@
 #include "web_page.h"
 #include "web_history.h"
 
-#define HTMLVIEWWND_CLASS	L"HTMLVIEW_WINDOW"
+#define HTMLVIEWWND_CLASS	"HTMLVIEW_WINDOW"
 
 #define WM_IMAGE_LOADED		(WM_USER + 1000)
 #define WM_PAGE_LOADED		(WM_USER + 1001)
@@ -29,7 +29,7 @@ public:
 	virtual ~CHTMLViewWnd(void);
 
 	void				create(int x, int y, int width, int height, HWND parent);
-	void				open(LPCWSTR url, bool reload = FALSE);
+	void				open(LPCSTR url, bool reload = FALSE);
 	HWND				wnd()	{ return m_hWnd;	}
 	void				refresh();
 	void				back();
@@ -43,7 +43,7 @@ public:
 
 	void				render(BOOL calc_time = FALSE, BOOL do_redraw = TRUE, int calc_repeat = 1);
 	void				get_client_rect(litehtml::position& client) const;
-	void				show_hash(std::wstring& hash);
+	void				show_hash(std::string& hash);
 	void				update_history();
 	void				calc_draw(int calc_repeat = 1);
 

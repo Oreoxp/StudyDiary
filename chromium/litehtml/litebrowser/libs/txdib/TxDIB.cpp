@@ -49,6 +49,18 @@ BOOL CTxDIB::load( LPCWSTR fileName )
 	return ret;
 }
 
+bool CTxDIB::load(const std::string& fileName) {
+	bool ret = FALSE;
+
+	FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(fileName.c_str());
+	FIBITMAP* dib = FreeImage_Load(fif, fileName.c_str());
+	ret = attach(dib);
+	PreMultiplyWithAlpha();
+	FreeImage_Unload(dib);
+
+	return ret;
+}
+
 BOOL CTxDIB::load( HRSRC hRes, HMODULE hModule /*= NULL*/ )
 {
 	BOOL	ret		= FALSE;
