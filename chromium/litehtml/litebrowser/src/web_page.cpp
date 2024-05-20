@@ -64,7 +64,7 @@ void web_page::set_cursor( const char* cursor )
 	m_cursor = cursor;
 }
 
-void web_page::load_image(const char* src, const char* baseurl, bool redraw_on_ready)
+void web_page::load_image(const std::string& src, const std::string& baseurl, bool redraw_on_ready)
 {
 	std::string url;
 	make_url(src, baseurl, url);
@@ -90,7 +90,7 @@ void web_page::load_image(const char* src, const char* baseurl, bool redraw_on_r
 
 void web_page::make_url(const std::string& url, std::string basepath, litehtml::string& out)
 {
-	if (PathIsRelative(url.c_str()) && !PathIsURL(basepath.c_str()))
+	if (PathIsRelative(url.c_str()) && !PathIsURL(url.c_str()))
 	{
 		if (basepath.empty())
 		{
@@ -240,7 +240,7 @@ bool web_page::download_and_wait(const std::string& url)
 
 void web_page::on_waited_finished(int status, const std::string& file)
 {
-	if(status) {
+	if(status != 200) {
 		m_waited_file = "";
 	} else {
 		m_waited_file = file;

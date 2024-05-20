@@ -71,7 +71,7 @@ void container_cairo::draw_list_marker(litehtml::uint_ptr hdc, const litehtml::l
 	}
 }
 
-void container_cairo::get_image_size(const char* src, const char* baseurl, litehtml::size& sz )
+void container_cairo::get_image_size(const std::string& src, const std::string&  baseurl, litehtml::size& sz )
 {
 	litehtml::string url;
 	make_url(src, baseurl, url);

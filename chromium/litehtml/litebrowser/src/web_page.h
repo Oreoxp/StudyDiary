@@ -44,7 +44,7 @@ public:
 	void import_css(litehtml::string& text, const litehtml::string& url, litehtml::string& baseurl) override;
 	void on_anchor_click(const char* url, const litehtml::element::ptr& el) override;
 	void set_cursor(const char* cursor) override;
-	void load_image(const char* src, const char* baseurl, bool redraw_on_ready) override;
+	void load_image(const std::string& src, const std::string& baseurl, bool redraw_on_ready) override;
 	void make_url(const std::string& url, std::string basepath, litehtml::string& out) override;
 
 	cairo_surface_t* get_image(const std::string& url) override;

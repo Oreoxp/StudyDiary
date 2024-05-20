@@ -44,7 +44,8 @@ public:
 	virtual	void	on_anchor_click(const char* url, const litehtml::element::ptr& el);
 	virtual	void	set_cursor(const char* cursor);
 	virtual std::shared_ptr<litehtml::element> create_element(const char* tag_name, const litehtml::string_map& attributes, const std::shared_ptr<litehtml::document>& doc);
-	virtual void	load_image(const char* src, const char* baseurl, bool redraw_on_ready);
+  virtual
+    void load_image(const std::string& src, const std::string& baseurl, bool redraw_on_ready);
 
 protected:
 	virtual void	OnCreate();
