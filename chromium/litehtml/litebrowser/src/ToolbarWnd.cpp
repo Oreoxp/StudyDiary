@@ -568,7 +568,7 @@ std::shared_ptr<litehtml::element> CToolbarWnd::create_element(const char* tag_n
 	return 0;
 }
 
-void CToolbarWnd::load_image(const char* src, const char* baseurl, bool redraw_on_ready)
+void CToolbarWnd::load_image(const std::string& src, const std::string& baseurl, bool redraw_on_ready)
 {
 }
 

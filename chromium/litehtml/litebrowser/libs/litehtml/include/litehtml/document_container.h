@@ -35,8 +35,8 @@ namespace litehtml
 		virtual int					get_default_font_size() const = 0;
 		virtual const char*			get_default_font_name() const = 0;
 		virtual void				draw_list_marker(litehtml::uint_ptr hdc, const litehtml::list_marker& marker) = 0;
-		virtual void				load_image(const char* src, const char* baseurl, bool redraw_on_ready) = 0;
-		virtual void				get_image_size(const char* src, const char* baseurl, litehtml::size& sz) = 0;
+    virtual void load_image(const std::string& src, const std::string& baseurl, bool redraw_on_ready) = 0;
+		virtual void				get_image_size(const std::string& src, const std::string& baseurl, litehtml::size& sz) = 0;
 		// Note: regular <img> images are also drawn with draw_background
 		// bg is guaranteed to have at least one item.
 		// backgrounds in bg are in CSS order - the last one is the farthest from the user.

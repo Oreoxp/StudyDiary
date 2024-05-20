@@ -15,9 +15,9 @@ namespace tordex
 	protected:
 		std::string m_url;
 		std::shared_ptr<httplib::Client> m_client;
-		int m_content_length;
-		int m_downloaded_length;
-		int m_status;
+		int m_content_length = 0;
+		int m_downloaded_length = 0;
+		int m_status = 0;
 		std::string m_response_body;
 	public:
 		http_request();

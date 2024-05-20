@@ -3244,6 +3244,7 @@ socket_t create_socket(const std::string &host, const std::string &ip, int port,
 #if defined __linux__ && !defined __ANDROID__
     res_init();
 #endif
+    auto a = GetLastError();
     return INVALID_SOCKET;
   }
 

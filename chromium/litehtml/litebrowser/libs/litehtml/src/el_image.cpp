@@ -9,7 +9,7 @@ litehtml::el_image::el_image(const document::ptr& doc) : html_tag(doc)
 
 void litehtml::el_image::get_content_size( size& sz, int /*max_width*/ )
 {
-	get_document()->container()->get_image_size(m_src.c_str(), nullptr, sz);
+	get_document()->container()->get_image_size(m_src.c_str(), "", sz);
 }
 
 bool litehtml::el_image::is_replaced() const
@@ -99,10 +99,10 @@ void litehtml::el_image::compute_styles(bool recursive)
 	{
 		if(!css().get_height().is_predefined() && !css().get_width().is_predefined())
 		{
-			get_document()->container()->load_image(m_src.c_str(), nullptr, true);
+			get_document()->container()->load_image(m_src.c_str(), "", true);
 		} else
 		{
-			get_document()->container()->load_image(m_src.c_str(), nullptr, false);
+			get_document()->container()->load_image(m_src.c_str(), "", false);
 		}
 	}
 }
