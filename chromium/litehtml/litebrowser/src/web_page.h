@@ -75,7 +75,7 @@ public:
     web_file(web_page* page, web_file_type type, LPVOID data = NULL);
     virtual ~web_file();
 
-    virtual void OnFinish(int status, const std::string& errorMsg) override;
+    virtual void OnFinish(int status, const std::string& errorMsg, const std::string url) override;
     virtual void OnData(const char* data, size_t len, size_t downloaded, size_t total) override;
     virtual void OnHeadersReady() override;
 

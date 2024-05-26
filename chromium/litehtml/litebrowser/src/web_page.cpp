@@ -426,7 +426,7 @@ web_file::~web_file() {
     }
 }
 
-void web_file::OnFinish(int status, const std::string& errorMsg) {
+void web_file::OnFinish(int status, const std::string& errorMsg, const std::string url) {
     if (m_ofs.is_open()) {
         m_ofs.close();
     }
@@ -442,13 +442,13 @@ void web_file::OnFinish(int status, const std::string& errorMsg) {
     } else {
         switch (m_type) {
         case web_file_document:
-            m_page->on_document_loaded(m_file, m_encoding, m_realUrl);
+            m_page->on_document_loaded(m_file, m_encoding, url);
             break;
         case web_file_image_redraw:
-            m_page->on_image_loaded(m_file, m_realUrl, true);
+            m_page->on_image_loaded(m_file, url, true);
             break;
         case web_file_image_rerender:
-            m_page->on_image_loaded(m_file, m_realUrl, false);
+            m_page->on_image_loaded(m_file, url, false);
             break;
         case web_file_waited:
             m_page->on_waited_finished(status, m_file);
