@@ -23,7 +23,7 @@ namespace tordex
 		http_request();
 		virtual ~http_request();
 
-		virtual void OnFinish(int status, const std::string& errorMsg) = 0;
+		virtual void OnFinish(int status, const std::string& errorMsg, const std::string url) = 0;
 		virtual void OnData(const char* data, size_t len, size_t downloaded, size_t total) = 0;
 		virtual void OnHeadersReady();
 

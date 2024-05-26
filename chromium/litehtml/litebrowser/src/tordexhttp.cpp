@@ -75,20 +75,21 @@ bool tordex::http_request::create(std::string url) {
       {"User-Agent", "cpp-httplib/0.10"},
       {"Accept", "text/html"}
   };
+  //m_client->enable_server_certificate_verification(false);
   auto res = m_client->Get(path, [this](const char* data, size_t size) {
     this->OnData(data, size, m_downloaded_length += size, m_content_length);
     return true;
     });
 
-  if (!res) {
-    OnFinish(-1, "Request failed");
+  if (!res) { 
+    OnFinish(-1, "Request failed", m_url);
     return false;
   }
 
   m_status = res->status;
   m_response_body = res->body;
 
-  OnFinish(m_status, "");
+  OnFinish(m_status, "", m_url);
   return true;
 }
 
