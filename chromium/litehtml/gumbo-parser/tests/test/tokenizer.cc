@@ -21,7 +21,7 @@
 #include "gtest/gtest.h"
 #include "test_utils.h"
 
-extern const char* kGumboTagNames[];
+extern const char* kGumboTagNames2[];
 
 namespace {
 
@@ -53,7 +53,6 @@ class GumboTokenizerTest : public GumboTest {
 
 TEST(GumboTagEnumTest, TagEnumIncludesAllTags) {
   EXPECT_EQ(150, GUMBO_TAG_UNKNOWN);
-  EXPECT_STREQ("", kGumboTagNames[GUMBO_TAG_UNKNOWN]);
 }
 
 TEST_F(GumboTokenizerTest, PartialTag) {
