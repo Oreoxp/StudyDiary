@@ -133,6 +133,8 @@
     <ClCompile Include="..\src\attribute.c" />
     <ClCompile Include="..\src\char_ref.c" />
     <ClCompile Include="..\src\error.c" />
+    <ClCompile Include="..\src\Node\Node.cpp" />
+    <ClCompile Include="..\src\Node\NodeWrapper.cpp" />
     <ClCompile Include="..\src\parser.c" />
     <ClCompile Include="..\src\string_buffer.c" />
     <ClCompile Include="..\src\string_piece.c" />
@@ -143,6 +145,8 @@
     <ClCompile Include="..\src\vector.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\Node\Node.h" />
+    <ClInclude Include="..\src\Node\NodeWrapper.h" />
     <ClInclude Include="include\strings.h" />
     <ClInclude Include="..\src\attribute.h" />
     <ClInclude Include="..\src\char_ref.h" />
