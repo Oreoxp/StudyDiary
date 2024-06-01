@@ -31,6 +31,7 @@
 #include "utf8.h"
 #include "util.h"
 #include "vector.h"
+#include "Node/Node.h"
 
 #define AVOID_UNUSED_VARIABLE_WARNING(i) (void)(i)
 
@@ -440,7 +441,7 @@ static void set_frameset_not_ok(GumboParser* parser) {
   gumbo_debug("Setting frameset_ok to false.\n");
   parser->_parser_state->_frameset_ok = false;
 }
-
+/*
 static GumboNode* create_node(GumboParser* parser, GumboNodeType type) {
   GumboNode* node = gumbo_parser_allocate(parser, sizeof(GumboNode));
   node->parent = NULL;
@@ -448,7 +449,7 @@ static GumboNode* create_node(GumboParser* parser, GumboNodeType type) {
   node->type = type;
   node->parse_flags = GUMBO_INSERTION_NORMAL;
   return node;
-}
+}*/
 
 static GumboNode* new_document_node(GumboParser* parser) {
   GumboNode* document_node = create_node(parser, GUMBO_NODE_DOCUMENT);
