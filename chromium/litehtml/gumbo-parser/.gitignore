@@ -15,8 +15,8 @@
 *.orig
 
 # gtest pieces
-gtest
-gtest-1.7.0
+# gtest
+# gtest-1.7.0
 
 # Other build artifacts
 /Debug
