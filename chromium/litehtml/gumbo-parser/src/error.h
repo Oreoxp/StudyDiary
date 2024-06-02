@@ -23,7 +23,7 @@
 #endif
 #include <stdint.h>
 
-#include "gumbo.h"
+#include "Output/OutputWrapper.h"
 #include "insertion_mode.h"
 #include "string_buffer.h"
 #include "token_type.h"

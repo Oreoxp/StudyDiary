@@ -17,7 +17,7 @@
 #ifndef GUMBO_STRING_PIECE_H_
 #define GUMBO_STRING_PIECE_H_
 
-#include "gumbo.h"
+#include "Output/OutputWrapper.h"
 
 #ifdef __cplusplus
 extern "C" {

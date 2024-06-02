@@ -4,11 +4,11 @@
     <Filter Include="Node">
       <UniqueIdentifier>{012a0885-72d6-4e9a-8c9c-7856407fa93d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Output">
+      <UniqueIdentifier>{073d534e-7539-48dc-8181-d784126e2a02}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Node\Node.cpp">
-      <Filter>Node</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\attribute.c" />
     <ClCompile Include="..\src\char_ref.c" />
     <ClCompile Include="..\src\error.c" />
@@ -20,14 +20,11 @@
     <ClCompile Include="..\src\utf8.c" />
     <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\vector.c" />
-    <ClCompile Include="..\src\Node\NodeWrapper.cpp">
-      <Filter>Node</Filter>
+    <ClCompile Include="..\src\Output\OutputWrapper.cpp">
+      <Filter>Output</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\Node\Node.h">
-      <Filter>Node</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\vector.h" />
     <ClInclude Include="..\src\attribute.h" />
     <ClInclude Include="..\src\char_ref.h" />
@@ -45,6 +42,9 @@
     <ClInclude Include="..\src\util.h" />
     <ClInclude Include="..\src\Node\NodeWrapper.h">
       <Filter>Node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Output\OutputWrapper.h">
+      <Filter>Output</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
