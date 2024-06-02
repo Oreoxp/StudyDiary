@@ -23,7 +23,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "gumbo.h"
+//#include "gumbo.h"
+#include "Output/OutputWrapper.h"
 #include "parser.h"
 
 // TODO(jdtang): This should be elsewhere, but there's no .c file for

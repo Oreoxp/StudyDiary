@@ -21,7 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "gumbo.h"
+//#include "gumbo.h"
+#include "Output/OutputWrapper.h"
 #include "parser.h"
 #include "string_buffer.h"
 #include "util.h"

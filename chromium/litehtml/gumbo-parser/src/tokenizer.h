@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "gumbo.h"
+#include "Output/OutputWrapper.h"
 #include "token_type.h"
 #include "tokenizer_states.h"
 

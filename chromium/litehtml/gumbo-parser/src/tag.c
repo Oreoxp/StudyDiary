@@ -14,7 +14,7 @@
 //
 // Author: jdtang@google.com (Jonathan Tang)
 
-#include "gumbo.h"
+#include "Output/OutputWrapper.h"
 
 #include <assert.h>
 #include <ctype.h>

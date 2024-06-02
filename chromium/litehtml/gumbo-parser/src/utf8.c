@@ -22,7 +22,8 @@
 #include <strings.h>  // For strncasecmp.
 
 #include "error.h"
-#include "gumbo.h"
+//#include "gumbo.h"
+#include "Output/OutputWrapper.h"
 #include "parser.h"
 #include "util.h"
 #include "vector.h"
