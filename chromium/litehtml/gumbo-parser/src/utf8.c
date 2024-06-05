@@ -26,7 +26,7 @@
 #include "Output/OutputWrapper.h"
 #include "parser.h"
 #include "util.h"
-#include "vector.h"
+#include "Vector/vectorWrapper.h"
 
 const int kUtf8ReplacementChar = 0xFFFD;
 

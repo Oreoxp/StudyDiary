@@ -14,7 +14,7 @@
 //
 // Author: jdtang@google.com (Jonathan Tang)
 
-#include "vector.h"
+#include "Vector/vectorWrapper.h"
 
 #include <stdlib.h>
 #include <string.h>

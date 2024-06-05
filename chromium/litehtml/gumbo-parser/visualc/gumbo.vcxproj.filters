@@ -7,6 +7,9 @@
     <Filter Include="Output">
       <UniqueIdentifier>{073d534e-7539-48dc-8181-d784126e2a02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Vector">
+      <UniqueIdentifier>{87177b91-0110-47fa-a48a-c271a99b7cb3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\attribute.c" />
@@ -19,13 +22,20 @@
     <ClCompile Include="..\src\tokenizer.c" />
     <ClCompile Include="..\src\utf8.c" />
     <ClCompile Include="..\src\util.c" />
-    <ClCompile Include="..\src\vector.c" />
     <ClCompile Include="..\src\Output\OutputWrapper.cpp">
       <Filter>Output</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Node\NodeWrapper.cc">
+      <Filter>Node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Vector\vectorWrapper.cc">
+      <Filter>Vector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Vector\vector.cc">
+      <Filter>Vector</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\vector.h" />
     <ClInclude Include="..\src\attribute.h" />
     <ClInclude Include="..\src\char_ref.h" />
     <ClInclude Include="..\src\error.h" />
@@ -45,6 +55,12 @@
     </ClInclude>
     <ClInclude Include="..\src\Output\OutputWrapper.h">
       <Filter>Output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Vector\vector.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Vector\vectorWrapper.h">
+      <Filter>Vector</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

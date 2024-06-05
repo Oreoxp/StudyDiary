@@ -59,7 +59,7 @@
 #include "tokenizer_states.h"
 #include "utf8.h"
 #include "util.h"
-#include "vector.h"
+#include "Vector/vectorWrapper.h"
 
 // Compared against _script_data_buffer to determine if we're in double-escaped
 // script mode.
