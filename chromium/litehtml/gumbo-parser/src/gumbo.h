@@ -45,6 +45,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include "Vector/vectorWrapper.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -105,31 +106,6 @@ bool gumbo_string_equals(
  */
 bool gumbo_string_equals_ignore_case(
     const GumboStringPiece* str1, const GumboStringPiece* str2);
-
-/**
- * A simple vector implementation.  This stores a pointer to a data array and a
- * length.  All elements are stored as void*; client code must cast to the
- * appropriate type.  Overflows upon addition result in reallocation of the data
- * array, with the size doubling to maintain O(1) amortized cost.  There is no
- * removal function, as this isn't needed for any of the operations within this
- * library.  Iteration can be done through inspecting the structure directly in
- * a for-loop.
- */
-typedef struct {
-  /** Data elements.  This points to a dynamically-allocated array of capacity
-   * elements, each a void* to the element itself.
-   */
-  void** data;
-
-  /** Number of elements currently in the vector. */
-  unsigned int length;
-
-  /** Current array capacity. */
-  unsigned int capacity;
-} GumboVector;
-
-/** An empty (0-length, 0-capacity) GumboVector. */
-extern const GumboVector kGumboEmptyVector;
 
 /**
  * Returns the first index at which an element appears in this vector (testing

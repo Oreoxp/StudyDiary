@@ -31,7 +31,7 @@
 #include "tokenizer_states.h"
 #include "utf8.h"
 #include "util.h"
-#include "vector.h"
+#include "Vector/vectorWrapper.h"
 //#include "Node/Node.h"
 
 #define AVOID_UNUSED_VARIABLE_WARNING(i) (void)(i)

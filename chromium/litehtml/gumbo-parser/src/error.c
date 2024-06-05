@@ -26,7 +26,7 @@
 #include "parser.h"
 #include "string_buffer.h"
 #include "util.h"
-#include "vector.h"
+#include "Vector/vectorWrapper.h"
 
 // Prints a formatted message to a StringBuffer.  This automatically resizes the
 // StringBuffer as necessary to fit the message.  Returns the number of bytes
