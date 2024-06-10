@@ -1,5 +1,6 @@
 #include "vector.h"
 #include "vectorWrapper.h"
+#include "parser.h"
 
 const GumboVector kGumboEmptyVector = {NULL, 0, 0, nullptr};
 
@@ -16,6 +17,7 @@ void gumbo_vector_destroy(
   if (vector->cpp_vector) {
     delete static_cast<gumbo::GumboVector*>(vector->cpp_vector);
     vector->cpp_vector = nullptr;
+    vector->data = nullptr;
   }
 }
 
