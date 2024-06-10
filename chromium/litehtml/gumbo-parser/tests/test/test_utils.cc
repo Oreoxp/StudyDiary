@@ -150,7 +150,7 @@ void SanityCheckPointers(
 static void* LeakDetectingMalloc(void* userdata, size_t size) {
   MallocStats* stats = static_cast<MallocStats*>(userdata);
   stats->bytes_allocated += size;
-  ++stats->objects_allocated;
+  //++stats->objects_allocated;
   // Arbitrary limit of 2G on allocation; parsing any reasonable document
   // shouldn't take more than that.
   assert(stats->bytes_allocated < (1 << 31));
@@ -162,7 +162,7 @@ static void* LeakDetectingMalloc(void* userdata, size_t size) {
 static void LeakDetectingFree(void* userdata, void* ptr) {
   MallocStats* stats = static_cast<MallocStats*>(userdata);
   if (ptr) {
-    ++stats->objects_freed;
+    //++stats->objects_freed;
     // gumbo_debug("Freed %x.\n");
     free(ptr);
   }
