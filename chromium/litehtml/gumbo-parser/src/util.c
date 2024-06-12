@@ -48,6 +48,7 @@ char* gumbo_copy_stringz(GumboParser* parser, const char* str) {
 
 // Debug function to trace operation of the parser.  Pass --copts=-DGUMBO_DEBUG
 // to use.
+#define GUMBO_DEBUG 1
 void gumbo_debug(const char* format, ...) {
 #ifdef GUMBO_DEBUG
   va_list args;

@@ -9,7 +9,8 @@ void gumbo_vector_init(struct GumboInternalParser* parser,
   vector->length = 0;
   vector->capacity = initial_capacity;
   vector->cpp_vector = new gumbo::GumboVector(initial_capacity);
-  vector->data = nullptr;
+  auto* cpp_vector = static_cast<gumbo::GumboVector*>(vector->cpp_vector);
+  vector->data = cpp_vector->data.data();
 }
 
 void gumbo_vector_destroy(
