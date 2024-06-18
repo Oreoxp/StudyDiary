@@ -1,5 +1,7 @@
 [TOC]
 
+## 解析流程
+
 当html解析结束后，就开始解析 Stlye 了，入口如下：
 
 ```C++
@@ -179,8 +181,8 @@ while(pos != string::npos) {
 
 函数继续解析样式规则，找到每个样式规则的选择器和样式体。
 
-```
-cpp复制代码    if(pos == string::npos) {
+```c++
+if(pos == string::npos) {
         break;
     }
 
@@ -226,6 +228,36 @@ cpp复制代码    if(pos == string::npos) {
 3. **解析样式规则**：提取并解析每个样式规则的选择器和样式体，将其转换为 `litehtml` 内部数据结构。
 
 该函数的实现逻辑清晰，利用 STL 字符串方法和自定义解析函数（如 `parse_atrule`, `parse_selectors` 等），实现了对 CSS 样式表的有效解析。
+
+
+
+## litehtml::style
+
+​		我们在流程中看到了 `litehtml::style` 起到了举足轻重的作用，**`litehtml::style` 类用于解析和存储 CSS 样式属性。它主要负责将 CSS 字符串解析成内部的样式表示形式，并提供访问和操作这些样式的方法。**以下是对该类的详细解析：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
