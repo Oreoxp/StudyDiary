@@ -219,18 +219,6 @@ if(pos == string::npos) {
 
 
 
-### 总结
-
-`litehtml::css::parse_stylesheet` 函数的核心步骤如下：
-
-1. **删除注释**：移除 CSS 样式表中的所有注释。
-2. **解析 @ 规则**：处理 `@` 开头的规则（如 `@media`、`@import` 等）。
-3. **解析样式规则**：提取并解析每个样式规则的选择器和样式体，将其转换为 `litehtml` 内部数据结构。
-
-该函数的实现逻辑清晰，利用 STL 字符串方法和自定义解析函数（如 `parse_atrule`, `parse_selectors` 等），实现了对 CSS 样式表的有效解析。
-
-
-
 ## litehtml::style
 
 ​		我们在流程中看到了 `litehtml::style` 起到了举足轻重的作用，**`litehtml::style` 类用于解析和存储 CSS 样式属性。它主要负责将 CSS 字符串解析成内部的样式表示形式，并提供访问和操作这些样式的方法。**以下是对该类的详细解析：
@@ -326,7 +314,16 @@ if(pos == string::npos) {
 
 ​		`m_valid_values` 是一个静态成员，包含了各种 CSS 属性的有效值，用于在解析过程中进行验证。
 
+​		在解析样式规则的时候，我们使用了 **style** 的 `add` 方法，
 
+```c++
+void add(const string& txt, const string& baseurl = "", document_container* container = nullptr)
+{
+    parse(txt, baseurl, container);
+}
+
+
+```
 
 
 
