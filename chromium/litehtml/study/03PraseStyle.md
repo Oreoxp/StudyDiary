@@ -321,9 +321,127 @@ void add(const string& txt, const string& baseurl = "", document_container* cont
 {
     parse(txt, baseurl, container);
 }
-
-
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+我们接着往下分析，当解析完 CSS 后，`document::createFromString` 继续执行：
+
+```c++
+	// Let's process created elements tree
+	if (doc->m_root){
+		doc->container()->get_media_features(doc->m_media);
+
+		doc->m_root->set_pseudo_class(_root_, true);
+
+		// apply master CSS
+		doc->m_root->apply_stylesheet(doc->m_master_css);
+
+		// parse elements attributes
+		doc->m_root->parse_attributes();
+
+		// parse style sheets linked in document
+		media_query_list::ptr media;
+		for (const auto& css : doc->m_css){
+			if (!css.media.empty()){
+				media = media_query_list::create_from_string(css.media, doc);
+			}else{
+				media = nullptr;
+			}
+			doc->m_styles.parse_stylesheet(css.text.c_str(), css.baseurl.c_str(), doc, media);
+		}
+		// Sort css selectors using CSS rules.
+		doc->m_styles.sort_selectors();
+
+		// get current media features
+		if (!doc->m_media_lists.empty()){
+			doc->update_media_lists(doc->m_media);
+		}
+
+		// Apply parsed styles.
+		doc->m_root->apply_stylesheet(doc->m_styles);
+
+		// Apply user styles if any
+		doc->m_root->apply_stylesheet(doc->m_user_css);
+
+		// Initialize m_css
+		doc->m_root->compute_styles();
+
+		// Create rendering tree
+		doc->m_root_render = doc->m_root->create_render_item(nullptr);
+
+		// Now the m_tabular_elements is filled with tabular elements.
+		// We have to check the tabular elements for missing table elements 
+		// and create the anonymous boxes in visual table layout
+		doc->fix_tables_layout();
+
+		// Finally initialize elements
+		// init() returns pointer to the render_init element because it can change its type
+		doc->m_root_render = doc->m_root_render->init();
+	}
+```
+
+#### 第一步：
+
+​		首先，调用了 `container_cairo::get_media_features` 获取<u>媒体特性</u>。<u>媒体特性</u>是为了允许根据设备的特性（如屏幕尺寸、分辨率、方向等）应用不同的 CSS 规则。例如，<u>通过媒体查询，您可以在小屏幕设备上应用一种样式，而在大屏幕设备上应用另一种样式。</u>
+
+#### 第二步：
+
+​		`doc->m_root->set_pseudo_class(_root_, true);` 设置**伪类（pseudo-class）**
+
+​		伪类（pseudo-class）是一种用于定义元素特殊状态的CSS选择器。常见的伪类包括：
+
+- `:hover`：当用户悬停在元素上时应用样式。
+
+- `:active`：当元素被激活时（例如被点击）应用样式。
+
+- `:focus`：当元素获得焦点时应用样式。
+
+- `:first-child`：选择作为父元素的第一个子元素的元素。
+
+- `:nth-child(n)`：选择作为父元素的第n个子元素的元素。
+
+  ​        伪类在网页交互和动态样式应用中起到重要作用。在 litehtml 中，`_root_`  伪类通常用于标识文档的根元素，即 `<html>` 标签。这是一个自定义的伪类，用于在渲染引擎内部区分根元素和其他普通元素。
+
+  ​		这行代码的作用是将 `_root_` 伪类设置为 `true`，表示 `doc->m_root` 这个根元素处于 `_root_` 状态
+
+#### 第三步  解析应用主CSS样式表的代码：
+
+
+
+
+
+
+
+
+
+
 
 
 
