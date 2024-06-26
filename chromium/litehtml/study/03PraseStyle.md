@@ -1144,14 +1144,11 @@ if (src_el()->css().get_display() == display_list_item && src_el()->css().get_li
 ```c++
 // Split inline blocks with box blocks inside
 auto iter = m_children.begin();
-while (iter != m_children.end())
-{
+while (iter != m_children.end()) {
     const auto &el = *iter;
-    if (el->src_el()->css().get_display() == display_inline && !el->children().empty())
-    {
+    if (el->src_el()->css().get_display() == display_inline && !el->children().empty()) {
         auto split_el = el->split_inlines();
-        if (std::get<0>(split_el))
-        {
+        if (std::get<0>(split_el)) {
             iter = m_children.erase(iter);
             iter = m_children.insert(iter, std::get<2>(split_el));
             iter = m_children.insert(iter, std::get<1>(split_el));
@@ -1170,15 +1167,112 @@ while (iter != m_children.end())
 - 遍历子元素，如果子元素是内联显示并且包含子元素，则拆分为多个渲染项。
 - 更新子元素列表，插入拆分后的渲染项，并设置这些新渲染项的父元素。
 
+##### 3. 检查是否同时包含块级和内联元素
+
+```c++
+bool has_block_level = false;
+bool has_inlines = false;
+for (const auto &el : m_children) {
+    if (!el->src_el()->is_float()) {
+        if (el->src_el()->is_block_box()) {
+            has_block_level = true;
+        } else if (el->src_el()->is_inline()) {
+            has_inlines = true;
+        }
+    }
+    if (has_block_level && has_inlines)
+        break;
+}
+```
+
+- 遍历子元素，检查是否同时包含块级元素和内联元素。
+
+##### 4. 如果包含块级元素，创建块级上下文渲染项
+
+```c++
+if (has_block_level) {
+    ret = std::make_shared<render_item_block_context>(src_el());
+    ret->parent(parent());
+
+    auto doc = src_el()->get_document();
+    decltype(m_children) new_children;
+    decltype(m_children) inlines;
+    bool not_ws_added = false;
+    for (const auto &el : m_children) {
+        if (el->src_el()->is_inline()) {
+            inlines.push_back(el);
+            if (!el->src_el()->is_white_space())
+                not_ws_added = true;
+        } else {
+            if (not_ws_added) {
+                auto anon_el = std::make_shared<html_tag>(src_el());
+                auto anon_ri = std::make_shared<render_item_block>(anon_el);
+                for (const auto &inl : inlines) {
+                    anon_ri->add_child(inl);
+                }
+
+                not_ws_added = false;
+                new_children.push_back(anon_ri);
+                anon_ri->parent(ret);
+            }
+            new_children.push_back(el);
+            el->parent(ret);
+            inlines.clear();
+        }
+    }
+    if (!inlines.empty() && not_ws_added) {
+        auto anon_el = std::make_shared<html_tag>(src_el());
+        auto anon_ri = std::make_shared<render_item_block>(anon_el);
+        for (const auto &inl : inlines) {
+            anon_ri->add_child(inl);
+        }
+
+        new_children.push_back(anon_ri);
+        anon_ri->parent(ret);
+    }
+    ret->children() = new_children;
+}
+```
+
+- 如果包含块级元素，创建 `render_item_block_context` 渲染项，并设置其父节点。
+- 遍历子元素，将内联元素和块级元素分开处理。内联元素合并为匿名块级渲染项，块级元素直接添加到新子元素列表中。
+
+##### 5. 如果没有块级元素，创建内联上下文渲染项
+
+```c++
+if (!ret) {
+    ret = std::make_shared<render_item_inline_context>(src_el());
+    ret->parent(parent());
+    ret->children() = children();
+    for (const auto &el : ret->children()) {
+        el->parent(ret);
+    }
+}
+```
+
+- 如果没有块级元素，创建 `render_item_inline_context` 渲染项，并设置其父节点和子节点。
+
+##### 6. 为渲染项添加源元素并递归初始化子节点
+
+```c++
+ret->src_el()->add_render(ret);
+
+for (auto &el : ret->children()) {
+    el = el->init();
+}
+
+return ret;
+```
+
+- 为渲染项添加源元素。
+- 递归初始化子节点。
+- 返回初始化后的渲染项。
 
 
 
 
 
-
-
-
-
+至此，构建一个完整的 DOM 树和渲染树，从而实现正确的网页布局和显示。
 
 
 
