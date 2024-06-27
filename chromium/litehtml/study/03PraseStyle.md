@@ -817,39 +817,40 @@ doc->m_root_render = doc->m_root->create_render_item(nullptr);
 ```c++
 std::shared_ptr<render_item> element::create_render_item(const std::shared_ptr<render_item>& parent_ri) {
 	std::shared_ptr<render_item> ret;
+	auto css_display = css().get_display();
 
-	if(css().get_display() == display_table_column ||
-	   css().get_display() == display_table_column_group ||
-	   css().get_display() == display_table_footer_group ||
-	   css().get_display() == display_table_header_group ||
-	   css().get_display() == display_table_row_group) {
+	if(css_display == display_table_column ||
+	   css_display == display_table_column_group ||
+	   css_display == display_table_footer_group ||
+	   css_display == display_table_header_group ||
+	   css_display == display_table_row_group) {
 		ret = std::make_shared<render_item_table_part>(shared_from_this());
-	} else if(css().get_display() == display_table_row) {
+	} else if(css_display == display_table_row) {
 		ret = std::make_shared<render_item_table_row>(shared_from_this());
-	} else if(css().get_display() == display_block ||
-				css().get_display() == display_table_cell ||
-				css().get_display() == display_table_caption ||
-				css().get_display() == display_list_item ||
-				css().get_display() == display_inline_block) {
+	} else if(css_display == display_block ||
+				css_display == display_table_cell ||
+				css_display == display_table_caption ||
+				css_display == display_list_item ||
+				css_display == display_inline_block) {
 		ret = std::make_shared<render_item_block>(shared_from_this());
-	} else if(css().get_display() == display_table || css().get_display() == display_inline_table) {
+	} else if(css_display == display_table || css_display == display_inline_table) {
 		ret = std::make_shared<render_item_table>(shared_from_this());
-	} else if(css().get_display() == display_inline || css().get_display() == display_inline_text) {
+	} else if(css_display == display_inline || css_display == display_inline_text) {
 		ret = std::make_shared<render_item_inline>(shared_from_this());
-	} else if(css().get_display() == display_flex || css().get_display() == display_inline_flex) {
+	} else if(css_display == display_flex || css_display == display_inline_flex) {
 		ret = std::make_shared<render_item_flex>(shared_from_this());
 	}
 	if(ret) {
-		if (css().get_display() == display_table ||
-			css().get_display() == display_inline_table ||
-			css().get_display() == display_table_caption ||
-			css().get_display() == display_table_cell ||
-			css().get_display() == display_table_column ||
-			css().get_display() == display_table_column_group ||
-			css().get_display() == display_table_footer_group ||
-			css().get_display() == display_table_header_group ||
-			css().get_display() == display_table_row ||
-			css().get_display() == display_table_row_group) {
+		if (css_display == display_table ||
+			css_display == display_inline_table ||
+			css_display == display_table_caption ||
+			css_display == display_table_cell ||
+			css_display == display_table_column ||
+			css_display == display_table_column_group ||
+			css_display == display_table_footer_group ||
+			css_display == display_table_header_group ||
+			css_display == display_table_row ||
+			css_display == display_table_row_group) {
 			get_document()->add_tabular(ret);
 		}
 
