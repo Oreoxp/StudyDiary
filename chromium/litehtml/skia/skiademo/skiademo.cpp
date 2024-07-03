@@ -1,10 +1,4 @@
-﻿/*
- * Copyright 2023 Google LLC
- *
- * Use of this source code is governed by a BSD-style license that can be
- * found in the LICENSE file.
- */
-
+﻿#include <fontconfig/fontconfig.h>
 #include "include/core/SkAlphaType.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColor.h"
@@ -18,16 +12,7 @@
 #include "include/core/SkSurface.h"
 #include "include/core/SkStream.h"
 #include "include/encode/SkPngEncoder.h"
-
-#if defined(SK_FONTMGR_FONTCONFIG_AVAILABLE)
 #include "include/ports/SkFontMgr_fontconfig.h"
-#endif
-
-#if defined(SK_FONTMGR_CORETEXT_AVAILABLE)
-#include "include/ports/SkFontMgr_mac_ct.h"
-#endif
-
-#include <cstdio>
 
 int main(int argc, char** argv) {
   SkFILEWStream output("output.png");
@@ -37,23 +22,15 @@ int main(int argc, char** argv) {
   }
   sk_sp<SkSurface> surface = SkSurfaces::Raster(SkImageInfo::MakeN32(100, 50, kOpaque_SkAlphaType));
   SkCanvas* canvas = surface->getCanvas();
-  sk_sp<SkTypeface> fTypeface;
-  sk_sp<SkFontMgr> mgr = SkFontMgr::RefEmpty();
-  sk_sp<SkTypeface> defaultTypeface = mgr->makeFromFile("F:\\Github\\StudyDiary\\chromium\\litehtml\\skia\\skiademo\\roboto.ttf");
-  int FamilyCount = mgr->countFamilies();
-  fTypeface = mgr->legacyMakeTypeface("Microsoft YaHei", SkFontStyle::Normal());
-#if defined(SK_FONTMGR_FONTCONFIG_AVAILABLE)
+
   sk_sp<SkFontMgr> mgr = SkFontMgr_New_FontConfig(nullptr);
-#endif
-#if defined(SK_FONTMGR_CORETEXT_AVAILABLE)
-  sk_sp<SkFontMgr> mgr = SkFontMgr_New_CoreText(nullptr);
-#endif
 
   sk_sp<SkTypeface> face = mgr->matchFamilyStyle("Microsoft YaHei", SkFontStyle());
   if (!face) {
     printf("Cannot open typeface\n");
     return 1;
   }
+
   SkFont font(face, 14);
   SkPaint paint;
   paint.setColor(SK_ColorGREEN);
