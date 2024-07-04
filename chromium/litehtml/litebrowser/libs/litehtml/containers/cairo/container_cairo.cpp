@@ -89,86 +89,103 @@ void container_cairo::get_image_size(const std::string& src, const std::string& 
 	}
 }
 
-void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bgvec )
-{
-	auto* cr = (cairo_t*) hdc;
-	cairo_save(cr);
-	apply_clip(cr);
+#include "windows.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkSurface.h"
+#include "include/core/SkRRect.h"
+#include "include/core/SkData.h"
+#include "include/effects/SkImageFilters.h"
+#include "TxDIB.h"
 
+void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bgvec) {
+	SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
+	//canvas->save();
+
+	// 处理背景
 	const auto& bg = bgvec.back();
 
-	rounded_rectangle(cr, bg.border_box, bg.border_radius);
-	cairo_clip(cr);
+	// 创建并应用剪裁区域
+	SkRRect borderRect = SkRRect::MakeRectXY(
+		SkRect::MakeXYWH(bg.border_box.x, bg.border_box.y, bg.border_box.width, bg.border_box.height),
+		bg.border_radius.top_left_x, bg.border_radius.top_left_y
+	);
+	canvas->clipRRect(borderRect, true);
 
-	cairo_rectangle(cr, bg.clip_box.x, bg.clip_box.y, bg.clip_box.width, bg.clip_box.height);
-	cairo_clip(cr);
+	SkRect clipRect = SkRect::MakeXYWH(bg.clip_box.x, bg.clip_box.y, bg.clip_box.width, bg.clip_box.height);
+	canvas->clipRect(clipRect, true);
 
-	if(bg.color.alpha)
+	// 绘制背景颜色
+	if (bg.color.alpha)
 	{
-		set_color(cr, bg.color);
-		cairo_paint(cr);
+		SkPaint paint;
+		paint.setColor(SkColorSetARGB(bg.color.alpha, bg.color.red, bg.color.green, bg.color.blue));
+		canvas->drawPaint(paint);
 	}
 
-	for (int i = (int)bgvec.size() - 1; i >= 0; i--)
+	// 绘制背景图像
+	for (int i = static_cast<int>(bgvec.size()) - 1; i >= 0; --i)
 	{
 		const auto& bg = bgvec[i];
 
-		if(bg.image_size.height == 0 || bg.image_size.width == 0) continue;
+		if (bg.image_size.width == 0 || bg.image_size.height == 0)
+		{
+			continue;
+		}
 
-		cairo_rectangle(cr, bg.clip_box.x, bg.clip_box.y, bg.clip_box.width, bg.clip_box.height);
-		cairo_clip(cr);
+		SkRect imageRect = SkRect::MakeXYWH(bg.clip_box.x, bg.clip_box.y, bg.clip_box.width, bg.clip_box.height);
+		canvas->clipRect(imageRect, true);
 
 		std::string url;
 		make_url(bg.image.c_str(), bg.baseurl.c_str(), url);
 
-		auto bgbmp = get_image(url);
-		if(bgbmp)
-		{
-			if(bg.image_size.width != cairo_image_surface_get_width(bgbmp) || bg.image_size.height != cairo_image_surface_get_height(bgbmp))
-			{
-				auto new_img = scale_surface(bgbmp, bg.image_size.width, bg.image_size.height);
-				cairo_surface_destroy(bgbmp);
-				bgbmp = new_img;
+		sk_sp<SkImage> image;
+		CTxDIB img;
+		if (img.load(url.c_str())) {
+			int width = img.getWidth();
+			int height = img.getHeight();
+			int rowBytes = width * 4;  // 假设每个像素是4字节（RGBA）
+
+			// 从 CTxDIB 获取像素数据
+			const void* pixels = img.getBits();
+
+			// 创建 SkImage
+			SkImageInfo info = SkImageInfo::Make(width, height, kN32_SkColorType, kPremul_SkAlphaType);
+			sk_sp<SkData> data = SkData::MakeWithoutCopy(pixels, height * rowBytes);
+			image = SkImages::DeferredFromEncodedData(data);
+		}
+
+		if (image) {
+			if (bg.image_size.width != image->width() || bg.image_size.height != image->height()) {
+				//sk_sp<SkImage> new_image = image->resize(bg.image_size.width, bg.image_size.height);
+				//image = new_image;
 			}
 
-			cairo_pattern_t *pattern = cairo_pattern_create_for_surface(bgbmp);
-			cairo_matrix_t flib_m;
-			cairo_matrix_init_identity(&flib_m);
-			cairo_matrix_translate(&flib_m, -bg.position_x, -bg.position_y);
-			cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REPEAT);
-			cairo_pattern_set_matrix (pattern, &flib_m);
+			SkMatrix matrix;
+			matrix.setTranslate(-bg.position_x, -bg.position_y);
 
-			switch(bg.repeat)
+			SkPaint paint;
+			paint.setShader(image->makeShader(SkTileMode::kRepeat, SkTileMode::kRepeat, SkSamplingOptions(), &matrix));
+
+			switch (bg.repeat)
 			{
 			case litehtml::background_repeat_no_repeat:
-				draw_pixbuf(cr, bgbmp, bg.position_x, bg.position_y, cairo_image_surface_get_width(bgbmp), cairo_image_surface_get_height(bgbmp));
+				canvas->drawImage(image.get(), bg.position_x, bg.position_y);
 				break;
-
 			case litehtml::background_repeat_repeat_x:
-				cairo_set_source(cr, pattern);
-				cairo_rectangle(cr, bg.clip_box.left(), bg.position_y, bg.clip_box.width, cairo_image_surface_get_height(bgbmp));
-				cairo_fill(cr);
+				canvas->drawRect(SkRect::MakeXYWH(bg.clip_box.left(), bg.position_y, bg.clip_box.width, image->height()), paint);
 				break;
-
 			case litehtml::background_repeat_repeat_y:
-				cairo_set_source(cr, pattern);
-				cairo_rectangle(cr, bg.position_x, bg.clip_box.top(), cairo_image_surface_get_width(bgbmp), bg.clip_box.height);
-				cairo_fill(cr);
+				canvas->drawRect(SkRect::MakeXYWH(bg.position_x, bg.clip_box.top(), image->width(), bg.clip_box.height), paint);
 				break;
-
 			case litehtml::background_repeat_repeat:
-				cairo_set_source(cr, pattern);
-				cairo_rectangle(cr, bg.clip_box.left(), bg.clip_box.top(), bg.clip_box.width, bg.clip_box.height);
-				cairo_fill(cr);
+				canvas->drawRect(SkRect::MakeXYWH(bg.clip_box.left(), bg.clip_box.top(), bg.clip_box.width, bg.clip_box.height), paint);
 				break;
 			}
-
-			cairo_pattern_destroy(pattern);
-			cairo_surface_destroy(bgbmp);
 		}
 	}
 
-	cairo_restore(cr);
+	canvas->restore();
 }
 
 void container_cairo::make_url(const std::string& url, std::string basepath, litehtml::string& out)

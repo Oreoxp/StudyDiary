@@ -201,5 +201,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="html\toolbar.html" />
+    <None Include="..\test.html" />
   </ItemGroup>
 </Project>

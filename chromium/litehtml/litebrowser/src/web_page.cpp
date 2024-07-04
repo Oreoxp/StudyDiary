@@ -160,7 +160,7 @@ void web_page::load(const std::string& url )
 		m_http.download_file( url, new web_file(this, web_file_document) );
 	} else
 	{
-		on_document_loaded(url, NULL, NULL);
+		on_document_loaded(url, "", "");
 	}
 }
 

@@ -33,7 +33,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			wnd.open(lpCmdLine);
 		} else
 		{
-			wnd.open("http://www.litehtml.com/");
+			wnd.open("H:/code/StudyDiary/chromium/litehtml/litebrowser/test.html");
 		}
 
 		MSG msg;

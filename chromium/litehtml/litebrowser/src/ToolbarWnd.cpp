@@ -220,27 +220,41 @@ void CToolbarWnd::OnCreate()
 
 }
 
-void CToolbarWnd::OnPaint( simpledib::dib* dib, LPRECT rcDraw )
-{
-	if(m_doc)
-	{
-		cairo_surface_t* surface = cairo_image_surface_create_for_data((unsigned char*) dib->bits(), CAIRO_FORMAT_ARGB32, dib->width(), dib->height(), dib->width() * 4);
-		cairo_t* cr = cairo_create(surface);
+#include "include/core/SkCanvas.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkSurface.h"
+#include "include/core/SkImageInfo.h"
 
-		POINT pt;
-		GetWindowOrgEx(dib->hdc(), &pt);
-		if(pt.x != 0 || pt.y != 0)
-		{
-			cairo_translate(cr, -pt.x, -pt.y);
+void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw) {
+	if (m_doc) {
+		// 创建Skia绘图表面
+		SkImageInfo info = SkImageInfo::MakeN32Premul(dib->width(), dib->height());
+		sk_sp<SkSurface> surface = SkSurfaces::Raster(SkImageInfo::MakeN32(dib->width(), dib->height(), kOpaque_SkAlphaType));
+
+		if (surface) {
+			SkCanvas* canvas = surface->getCanvas();
+
+			// 获取窗口原点
+			POINT pt;
+			GetWindowOrgEx(dib->hdc(), &pt);
+			if (pt.x != 0 || pt.y != 0) {
+				canvas->translate(-pt.x, -pt.y);
+			}
+
+			// 填充背景为白色
+			SkPaint paint;
+			paint.setColor(SK_ColorWHITE);
+			canvas->drawRect(SkRect::MakeWH(dib->width(), dib->height()), paint);
+
+			// 设置剪辑区域
+			litehtml::position clip(rcDraw->left, rcDraw->top, rcDraw->right - rcDraw->left, rcDraw->bottom - rcDraw->top);
+
+			// 绘制文档内容
+			m_doc->draw((litehtml::uint_ptr)canvas, 0, 0, &clip);
+
+			// 释放Skia表面
+			surface->unref();
 		}
-		cairo_set_source_rgb(cr, 1, 1, 1);
-		cairo_paint(cr);
-
-		litehtml::position clip(rcDraw->left, rcDraw->top, rcDraw->right - rcDraw->left, rcDraw->bottom - rcDraw->top);
-		m_doc->draw((litehtml::uint_ptr) cr, 0, 0, &clip);
-
-		cairo_destroy(cr);
-		cairo_surface_destroy(surface);
 	}
 }
 
