@@ -11,10 +11,61 @@
 #include "include/core/SkPixmap.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkStream.h"
+#include "include/codec/SkCodec.h"
 #include "include/encode/SkPngEncoder.h"
 #include "include/ports/SKTypeface_win.h"
+#include "include/codec/SkJpegDecoder.h"
+#include "include/core/SkBitmap.h"
 
 #include <Windows.h>
+
+std::string toUtf8(const char* gb2312) {
+  int len = MultiByteToWideChar(CP_ACP, 0, gb2312, -1, NULL, 0);
+  wchar_t* wstr = new wchar_t[len + 1];
+  memset(wstr, 0, len + 1);
+  MultiByteToWideChar(CP_ACP, 0, gb2312, -1, wstr, len);
+  len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+  char* str = new char[len + 1];
+  memset(str, 0, len + 1);
+  WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
+  if (wstr) delete[] wstr;
+  std::string strUtf8 = str;
+  if (str) delete[] str;
+  return strUtf8;
+}
+
+void func1_showText(SkPaint& paint, SkCanvas* canvas) {
+  sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
+  sk_sp<SkTypeface> face = mgr->matchFamilyStyle("Microsoft YaHei", SkFontStyle());
+  if (!face) {
+    printf("Cannot open typeface\n");
+  }
+
+  SkFont font(face, 14);
+  paint.setColor(SK_ColorGREEN);
+
+  std::string str = toUtf8("中文测试：一二三四，123456");
+  canvas->drawString(str.c_str(), 10, 25, font, paint);
+}
+
+void func2_showCircle(SkPaint& paint, SkCanvas* canvas) {
+  paint.setColor(SK_ColorBLACK);
+  canvas->drawCircle({ 100,100 }, 20, paint);
+}
+
+struct imginfo {
+  int x = 0;
+  int y = 0;
+  int width;
+  int height;
+};
+
+void func3_loadImage(SkPaint& paint, SkCanvas* canvas, std::string imgpath, imginfo info) {
+  sk_sp<SkData> encoded(SkData::MakeFromFileName(imgpath.c_str()));
+  sk_sp<SkImage> img(SkImages::DeferredFromEncodedData(encoded));
+  canvas->drawImageRect(img, SkRect::MakeXYWH(info.x, info.y, info.width, info.height),
+    SkSamplingOptions({ 1.0f / 3, 1.0f / 3 }));
+}
 
 int main(int argc, char** argv) {
   SkFILEWStream output("output.png");
@@ -24,43 +75,23 @@ int main(int argc, char** argv) {
   }
   sk_sp<SkSurface> surface = SkSurfaces::Raster(SkImageInfo::MakeN32(800, 600, kOpaque_SkAlphaType));
   SkCanvas* canvas = surface->getCanvas();
-  sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
 
-  sk_sp<SkTypeface> face = mgr->matchFamilyStyle("Microsoft YaHei", SkFontStyle());
-  if (!face) {
-    printf("Cannot open typeface\n");
-    return 1;
-  }
-
-  SkFont font(face, 14);
   SkPaint paint;
-  paint.setColor(SK_ColorGREEN);
+  paint.setAntiAlias(true);
   canvas->clear(SK_ColorYELLOW);
-  auto Gb2312_2_UTF8 = [](const char* gb2312)
-    {
-      int len = MultiByteToWideChar(CP_ACP, 0, gb2312, -1, NULL, 0);
-      wchar_t* wstr = new wchar_t[len + 1];
-      memset(wstr, 0, len + 1);
-      MultiByteToWideChar(CP_ACP, 0, gb2312, -1, wstr, len);
-      len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-      char* str = new char[len + 1];
-      memset(str, 0, len + 1);
-      WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
-      if (wstr) delete[] wstr;
-      std::string strUtf8 = str;
-      if (str) delete[] str;
-      return strUtf8;
-    };
-  std::string str = Gb2312_2_UTF8("中文测试：一二三四，1234");
-  canvas->drawString(str.c_str(), 10, 25, font, paint);
+
+  func1_showText(paint, canvas);
+  func2_showCircle(paint, canvas);
+  func3_loadImage(paint, canvas, "pic2.png", { 200, 100, 100 ,100 });
+  func3_loadImage(paint, canvas, "pic1.jpeg", { 100, 200, 200 ,100 });
+
   SkPixmap pixmap;
   if (surface->peekPixels(&pixmap)) {
     if (!SkPngEncoder::Encode(&output, pixmap, {})) {
       printf("Cannot write output\n");
       return 1;
     }
-  }
-  else {
+  } else {
     printf("Cannot readback on surface\n");
     return 1;
   }
