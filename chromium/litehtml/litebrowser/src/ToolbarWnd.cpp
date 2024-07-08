@@ -224,12 +224,24 @@ void CToolbarWnd::OnCreate()
 #include "include/core/SkPaint.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkImageInfo.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/core/SkStream.h"
+#include "include/core/SkBitmap.h"
+#include <TxDIB.h>
 
+static int count = 0;
 void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw) {
 	if (m_doc) {
 		// 创建Skia绘图表面
-		SkImageInfo info = SkImageInfo::MakeN32Premul(dib->width(), dib->height());
-		sk_sp<SkSurface> surface = SkSurfaces::Raster(SkImageInfo::MakeN32(dib->width(), dib->height(), kOpaque_SkAlphaType));
+    int width = dib->width();
+    int height = dib->height();
+    unsigned char* bits = (unsigned char*)dib->bits();
+
+    // 创建 SkImageInfo 和 SkSurface
+    SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
+    SkPixmap pixmap(info, bits, width * 4);
+    sk_sp<SkSurface> surface = SkSurfaces::Raster(SkImageInfo::MakeN32(width, height, kOpaque_SkAlphaType));
+		surface->writePixels(pixmap, 0, 0);
 
 		if (surface) {
 			SkCanvas* canvas = surface->getCanvas();
@@ -241,17 +253,33 @@ void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw) {
 				canvas->translate(-pt.x, -pt.y);
 			}
 
-			// 填充背景为白色
 			SkPaint paint;
-			paint.setColor(SK_ColorWHITE);
-			canvas->drawRect(SkRect::MakeWH(dib->width(), dib->height()), paint);
+			paint.setColor(SK_ColorYELLOW);
+      canvas->drawRect(SkRect::MakeWH(width, height), paint);
 
-			// 设置剪辑区域
 			litehtml::position clip(rcDraw->left, rcDraw->top, rcDraw->right - rcDraw->left, rcDraw->bottom - rcDraw->top);
 
-			// 绘制文档内容
+      std::string path = std::string("test/pre_toolbar_test_output_") + std::to_string(count) + ".png";
+      SkFILEWStream output(path.c_str());
+      SkPixmap pixmap;
+
+      if (surface->peekPixels(&pixmap)) {
+        if (!SkPngEncoder::Encode(&output, pixmap, {})) {
+          printf("en code error!");
+        }
+      }
+
 			m_doc->draw((litehtml::uint_ptr)canvas, 0, 0, &clip);
 
+			path = std::string("test/end_toolbar_test_output_") + std::to_string(count) + ".png";
+			SkFILEWStream output2(path.c_str());
+      count++;
+
+			if (surface->peekPixels(&pixmap)) {
+				if (!SkPngEncoder::Encode(&output2, pixmap, {})) {
+					printf("en code error!");
+				}
+			}
 			// 释放Skia表面
 			surface->unref();
 		}
@@ -304,6 +332,16 @@ cairo_surface_t* CToolbarWnd::get_image(const std::string& url)
 	}
 
 	return nullptr;
+}
+
+CTxDIB* CToolbarWnd::get_image_ctxdib(const std::string& url) {
+  CTxDIB* img = new CTxDIB;
+  if (img->load(FindResource(m_hInst, url.c_str(), RT_HTML), m_hInst))
+  {
+    return img;
+  }
+
+  return nullptr;
 }
 
 void CToolbarWnd::set_caption( const char* caption )

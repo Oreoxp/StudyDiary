@@ -89,14 +89,19 @@ void container_cairo::get_image_size(const std::string& src, const std::string& 
 	}
 }
 
-#include "windows.h"
+#include <windows.h>
+#include <prsht.h>
+#include <TxDIB.h>
 #include "include/core/SkCanvas.h"
+#include "include/core/SkRRect.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkSurface.h"
-#include "include/core/SkRRect.h"
 #include "include/core/SkData.h"
+#include "include/core/SkBitmap.h"
 #include "include/effects/SkImageFilters.h"
-#include "TxDIB.h"
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bgvec) {
 	SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
@@ -122,7 +127,7 @@ void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<
 		paint.setColor(SkColorSetARGB(bg.color.alpha, bg.color.red, bg.color.green, bg.color.blue));
 		canvas->drawPaint(paint);
 	}
-
+	
 	// 绘制背景图像
 	for (int i = static_cast<int>(bgvec.size()) - 1; i >= 0; --i)
 	{
@@ -140,43 +145,47 @@ void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<
 		make_url(bg.image.c_str(), bg.baseurl.c_str(), url);
 
 		sk_sp<SkImage> image;
-		CTxDIB img;
-		if (img.load(url.c_str())) {
-			int width = img.getWidth();
-			int height = img.getHeight();
+
+		CTxDIB* img = get_image_ctxdib(url);
+		if (img) {
+			int width = img->getWidth();
+			int height = img->getHeight();
 			int rowBytes = width * 4;  // 假设每个像素是4字节（RGBA）
 
 			// 从 CTxDIB 获取像素数据
-			const void* pixels = img.getBits();
+			LPRGBQUAD pixels = img->getBits();
 
-			// 创建 SkImage
-			SkImageInfo info = SkImageInfo::Make(width, height, kN32_SkColorType, kPremul_SkAlphaType);
-			sk_sp<SkData> data = SkData::MakeWithoutCopy(pixels, height * rowBytes);
-			image = SkImages::DeferredFromEncodedData(data);
+      SkBitmap bitmap;
+      SkImageInfo imageInfo = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType, kOpaque_SkAlphaType);
+      bitmap.allocPixels(imageInfo);
+
+      for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+          RGBQUAD pixel = pixels[y * width + x];
+          *bitmap.getAddr32(x, y) = SkColorSetARGB(255, pixel.rgbRed, pixel.rgbGreen, pixel.rgbBlue);
+        }
+      }
+
+			image = bitmap.asImage();
+			delete img;
 		}
 
 		if (image) {
-			if (bg.image_size.width != image->width() || bg.image_size.height != image->height()) {
-				//sk_sp<SkImage> new_image = image->resize(bg.image_size.width, bg.image_size.height);
-				//image = new_image;
-			}
-
 			SkMatrix matrix;
 			matrix.setTranslate(-bg.position_x, -bg.position_y);
 
 			SkPaint paint;
 			paint.setShader(image->makeShader(SkTileMode::kRepeat, SkTileMode::kRepeat, SkSamplingOptions(), &matrix));
-
-			switch (bg.repeat)
-			{
+			SkSamplingOptions sampling;
+			switch (bg.repeat) {
 			case litehtml::background_repeat_no_repeat:
-				canvas->drawImage(image.get(), bg.position_x, bg.position_y);
+				canvas->drawImage(image.get(), bg.position_x, bg.position_y, sampling, &paint);
 				break;
 			case litehtml::background_repeat_repeat_x:
-				canvas->drawRect(SkRect::MakeXYWH(bg.clip_box.left(), bg.position_y, bg.clip_box.width, image->height()), paint);
+				canvas->drawRect(SkRect::MakeXYWH(bg.clip_box.left(), bg.position_y, bg.clip_box.width, bg.image_size.height), paint);
 				break;
 			case litehtml::background_repeat_repeat_y:
-				canvas->drawRect(SkRect::MakeXYWH(bg.position_x, bg.clip_box.top(), image->width(), bg.clip_box.height), paint);
+				canvas->drawRect(SkRect::MakeXYWH(bg.position_x, bg.clip_box.top(), bg.image_size.width, bg.clip_box.height), paint);
 				break;
 			case litehtml::background_repeat_repeat:
 				canvas->drawRect(SkRect::MakeXYWH(bg.clip_box.left(), bg.clip_box.top(), bg.clip_box.width, bg.clip_box.height), paint);

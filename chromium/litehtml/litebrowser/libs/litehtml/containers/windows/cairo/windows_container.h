@@ -32,7 +32,8 @@ public:
 	void						draw_text(litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos) override;
     litehtml::string			resolve_color(const litehtml::string& color) const override;
 
-	cairo_surface_t* get_image(const std::string& url)  override;
+  cairo_surface_t* get_image(const std::string& url)  override;
+  CTxDIB* get_image_ctxdib(const std::string& url) override;
 	double get_screen_dpi() const override;
 	int get_screen_width() const override;
 	int get_screen_height() const override;

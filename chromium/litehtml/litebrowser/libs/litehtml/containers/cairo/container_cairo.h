@@ -29,6 +29,8 @@ struct cairo_clip_box
 	}
 };
 
+class CTxDIB;
+
 class container_cairo : public litehtml::document_container
 {
 protected:
@@ -58,6 +60,7 @@ public:
 
 	virtual void make_url(const std::string& url, std::string basepath, litehtml::string& out);
 	virtual cairo_surface_t* get_image(const std::string& url) = 0;
+	virtual CTxDIB* get_image_ctxdib(const std::string& url) = 0;
 	virtual double get_screen_dpi() const = 0;
 	virtual int get_screen_width() const = 0;
 	virtual int get_screen_height() const = 0;

@@ -39,8 +39,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "e:/alinet/来自：快传/2资料/08-FFmpeg解封装+解码实战/07-01-ffmpeg-demux",
-      "program": "e:/alinet/来自：快传/2资料/08-FFmpeg解封装+解码实战/07-01-ffmpeg-demux/build/Debug/outDebug",
+      "cwd": "d:/github/StudyDiary/chromium/litehtml/litebrowser/libs/litehtml/containers/windows/gdiplus",
+      "program": "d:/github/StudyDiary/chromium/litehtml/litebrowser/libs/litehtml/containers/windows/gdiplus/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

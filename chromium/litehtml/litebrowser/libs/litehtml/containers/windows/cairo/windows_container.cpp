@@ -170,6 +170,11 @@ cairo_surface_t* windows_container::get_image(const std::string& url)
 	return nullptr;
 }
 
+CTxDIB* windows_container::get_image_ctxdib(const std::string& url)
+{
+  return nullptr;
+}
+
 double windows_container::get_screen_dpi() const
 {
 	HDC hdc = GetDC(NULL);

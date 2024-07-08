@@ -1,7 +1,7 @@
 {
   "configurations": [
     {
-      "name": "windows-gcc-x86",
+      "name": "windows-gcc-x64",
       "includePath": [
         "${workspaceFolder}/**"
       ],
@@ -9,10 +9,10 @@
       "macFrameworkPath": [
         "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks"
       ],
-      "compilerPath": "C:/MinGW/bin/gcc.exe",
+      "compilerPath": "C:/msys64/mingw64/bin/gcc.exe",
       "cStandard": "${default}",
       "cppStandard": "${default}",
-      "intelliSenseMode": "windows-gcc-x86",
+      "intelliSenseMode": "windows-gcc-x64",
       "compileCommands": "${workspaceFolder}/代码库及其解析/C++多线程服务端编程/code/muduo/build/release-cpp11/compile_commands.json"
     },
     {

@@ -34,7 +34,8 @@ public:
 	void on_page_loaded(LPCSTR url);
 
 	// cairo_container members
-	cairo_surface_t* get_image(const std::string& url) override;
+  cairo_surface_t* get_image(const std::string& url) override;
+	CTxDIB* get_image_ctxdib(const std::string& url) override;
 
 	// litehtml::document_container members
 	virtual	void	set_caption(const char* caption);
