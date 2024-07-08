@@ -179,7 +179,7 @@ void CHTMLViewWnd::OnPaint( simpledib::dib* dib, LPRECT rcDraw )
 	{
 
 		litehtml::position clip(rcDraw->left, rcDraw->top, rcDraw->right - rcDraw->left, rcDraw->bottom - rcDraw->top);
-		page->m_doc->draw((litehtml::uint_ptr) cr, -m_left, -m_top, &clip);
+		//page->m_doc->draw((litehtml::uint_ptr) cr, -m_left, -m_top, &clip);
 
 		page->release();
 	}

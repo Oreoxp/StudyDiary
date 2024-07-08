@@ -105,7 +105,7 @@ void container_cairo::get_image_size(const std::string& src, const std::string& 
 
 void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bgvec) {
 	SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
-	//canvas->save();
+	canvas->save();
 
 	// ¥¶¿Ì±≥æ∞
 	const auto& bg = bgvec.back();

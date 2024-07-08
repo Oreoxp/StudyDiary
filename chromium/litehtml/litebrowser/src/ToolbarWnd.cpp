@@ -4,6 +4,18 @@
 #include "BrowserWnd.h"
 #include "el_omnibox.h"
 
+#include "include/core/SkCanvas.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkSurface.h"
+#include "include/core/SkImageInfo.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/core/SkStream.h"
+#include "include/core/SkBitmap.h"
+#include <TxDIB.h>
+
+static int count = 0;
+static int dib_count = 0;
+
 CToolbarWnd::CToolbarWnd( HINSTANCE hInst, CBrowserWnd* parent )
 {
 	m_inCapture = FALSE;
@@ -36,6 +48,41 @@ CToolbarWnd::~CToolbarWnd(void)
 	{
 		m_omnibox = nullptr;
 	}
+}
+
+void SaveDIBToPNG(simpledib::dib* dib, const char* filename) {
+	if (!dib) {
+		printf("Invalid DIB pointer.\n");
+		return;
+	}
+
+	int width = dib->width();
+	int height = dib->height();
+	unsigned char* pixels = (unsigned char*)dib->bits();
+
+	if (!pixels) {
+		printf("Failed to get DIB bits.\n");
+		return;
+	}
+
+	// Create SkImageInfo and SkPixmap
+	SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
+	SkPixmap pixmap(info, pixels, width * 4);
+
+	// Encode to PNG using SkPngEncoder
+	SkFILEWStream output(filename);
+	if (!output.isValid()) {
+		printf("Failed to create output stream.\n");
+		return;
+	}
+
+	SkPngEncoder::Options options;
+	if (!SkPngEncoder::Encode(&output, pixmap, options)) {
+		printf("Failed to encode PNG.\n");
+		return;
+	}
+
+	printf("Saved DIB to %s successfully.\n", filename);
 }
 
 LRESULT CALLBACK CToolbarWnd::WndProc( HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam )
@@ -109,7 +156,12 @@ LRESULT CALLBACK CToolbarWnd::WndProc( HWND hWnd, UINT uMessage, WPARAM wParam, 
 				simpledib::dib dib;
 
 				dib.beginPaint(hdc, &ps.rcPaint);
-				pThis->OnPaint(&dib, &ps.rcPaint);
+				pThis->OnPaint(&dib, &ps.rcPaint, hWnd);
+				dib.draw(hdc, 0, 0);
+
+				std::string str = "test/11_" + std::to_string(dib_count) + ".png";
+				SaveDIBToPNG(&dib, str.c_str());
+				dib_count++;
 				dib.endPaint();
 
 				EndPaint(hWnd, &ps);
@@ -220,17 +272,7 @@ void CToolbarWnd::OnCreate()
 
 }
 
-#include "include/core/SkCanvas.h"
-#include "include/core/SkPaint.h"
-#include "include/core/SkSurface.h"
-#include "include/core/SkImageInfo.h"
-#include "include/encode/SkPngEncoder.h"
-#include "include/core/SkStream.h"
-#include "include/core/SkBitmap.h"
-#include <TxDIB.h>
-
-static int count = 0;
-void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw) {
+void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw, HWND hWnd) {
 	if (m_doc) {
 		// 创建Skia绘图表面
     int width = dib->width();
@@ -240,8 +282,7 @@ void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw) {
     // 创建 SkImageInfo 和 SkSurface
     SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
     SkPixmap pixmap(info, bits, width * 4);
-    sk_sp<SkSurface> surface = SkSurfaces::Raster(SkImageInfo::MakeN32(width, height, kOpaque_SkAlphaType));
-		surface->writePixels(pixmap, 0, 0);
+    sk_sp<SkSurface> surface = SkSurfaces::WrapPixels(info, bits, sizeof(uint32_t) * width);
 
 		if (surface) {
 			SkCanvas* canvas = surface->getCanvas();
@@ -261,16 +302,27 @@ void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw) {
 
       std::string path = std::string("test/pre_toolbar_test_output_") + std::to_string(count) + ".png";
       SkFILEWStream output(path.c_str());
-      SkPixmap pixmap;
 
+			std::string dibpath = "test/11_" + std::to_string(dib_count) + ".png";
+			dib_count++;
+			SaveDIBToPNG(dib, dibpath.c_str());
       if (surface->peekPixels(&pixmap)) {
         if (!SkPngEncoder::Encode(&output, pixmap, {})) {
           printf("en code error!");
         }
       }
 
+			canvas->scale(1, -1);
+			canvas->translate(0, -height);
+			canvas->save();
 			m_doc->draw((litehtml::uint_ptr)canvas, 0, 0, &clip);
+			canvas->restore();
 
+			surface->readPixels(pixmap, 0, 0);
+
+			std::string dibpath2 = "test/11_" + std::to_string(dib_count) + ".png";
+			dib_count++;
+			SaveDIBToPNG(dib, dibpath2.c_str());
 			path = std::string("test/end_toolbar_test_output_") + std::to_string(count) + ".png";
 			SkFILEWStream output2(path.c_str());
       count++;
@@ -282,6 +334,7 @@ void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw) {
 			}
 			// 释放Skia表面
 			surface->unref();
+
 		}
 	}
 }

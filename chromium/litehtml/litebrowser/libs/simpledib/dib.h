@@ -27,7 +27,7 @@ namespace simpledib
 		HBITMAP		bmp()		const	{ return m_bmp;		}
 		LPRGBQUAD	bits()		const	{ return m_bits;	}
 		
-		bool		create(int width, int height, bool topdowndib = false);
+		bool		create(int width, int height, bool topdowndib = true);
 		bool		create(HDC hdc, HBITMAP bmp, LPRGBQUAD bits, int width, int height);
 
 		void		clear();

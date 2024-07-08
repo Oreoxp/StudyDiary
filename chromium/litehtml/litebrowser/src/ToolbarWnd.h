@@ -50,7 +50,7 @@ public:
 
 protected:
 	virtual void	OnCreate();
-	virtual void	OnPaint(simpledib::dib* dib, LPRECT rcDraw);
+	virtual void	OnPaint(simpledib::dib* dib, LPRECT rcDraw, HWND hWnd);
 	virtual void	OnSize(int width, int height);
 	virtual void	OnDestroy();
 	virtual void	OnMouseMove(int x, int y);
