@@ -312,8 +312,6 @@ void CToolbarWnd::OnPaint(simpledib::dib* dib, LPRECT rcDraw, HWND hWnd) {
         }
       }
 
-			canvas->scale(1, -1);
-			canvas->translate(0, -height);
 			canvas->save();
 			m_doc->draw((litehtml::uint_ptr)canvas, 0, 0, &clip);
 			canvas->restore();

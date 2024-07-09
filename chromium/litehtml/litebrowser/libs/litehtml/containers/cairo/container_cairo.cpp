@@ -99,6 +99,8 @@ void container_cairo::get_image_size(const std::string& src, const std::string& 
 #include "include/core/SkData.h"
 #include "include/core/SkBitmap.h"
 #include "include/effects/SkImageFilters.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/core/SkStream.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -124,17 +126,15 @@ void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<
 	if (bg.color.alpha)
 	{
 		SkPaint paint;
-		paint.setColor(SkColorSetARGB(bg.color.alpha, bg.color.red, bg.color.green, bg.color.blue));
-		canvas->drawPaint(paint);
+    paint.setColor(SkColorSetARGB(bg.color.alpha, bg.color.red, bg.color.green, bg.color.blue));
+    canvas->drawRect(SkRect::MakeXYWH(bg.border_box.x, bg.border_box.y, bg.border_box.width, bg.border_box.height), paint);
 	}
 	
 	// 绘制背景图像
-	for (int i = static_cast<int>(bgvec.size()) - 1; i >= 0; --i)
-	{
+	for (int i = static_cast<int>(bgvec.size()) - 1; i >= 0; --i) {
 		const auto& bg = bgvec[i];
 
-		if (bg.image_size.width == 0 || bg.image_size.height == 0)
-		{
+		if (bg.image_size.width == 0 || bg.image_size.height == 0) {
 			continue;
 		}
 
@@ -151,22 +151,20 @@ void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<
 			int width = img->getWidth();
 			int height = img->getHeight();
 			int rowBytes = width * 4;  // 假设每个像素是4字节（RGBA）
+      unsigned char* bits = (unsigned char*)img->getBits();
 
-			// 从 CTxDIB 获取像素数据
-			LPRGBQUAD pixels = img->getBits();
+      // 创建一个临时缓冲区来存储翻转后的图像数据
+      std::vector<uint8_t> flippedBits(height * rowBytes);
 
-      SkBitmap bitmap;
-      SkImageInfo imageInfo = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType, kOpaque_SkAlphaType);
-      bitmap.allocPixels(imageInfo);
-
+      // 翻转图像数据
       for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-          RGBQUAD pixel = pixels[y * width + x];
-          *bitmap.getAddr32(x, y) = SkColorSetARGB(255, pixel.rgbRed, pixel.rgbGreen, pixel.rgbBlue);
-        }
+        memcpy(&flippedBits[y * rowBytes], &bits[(height - 1 - y) * rowBytes], rowBytes);
       }
 
-			image = bitmap.asImage();
+      // 创建 SkPixmap 并从翻转的数据创建 SkImage
+      SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
+      SkPixmap pixmap(info, flippedBits.data(), rowBytes);
+      image = SkImages::RasterFromPixmap(pixmap, nullptr, nullptr);
 			delete img;
 		}
 
@@ -177,6 +175,7 @@ void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<
 			SkPaint paint;
 			paint.setShader(image->makeShader(SkTileMode::kRepeat, SkTileMode::kRepeat, SkSamplingOptions(), &matrix));
 			SkSamplingOptions sampling;
+
 			switch (bg.repeat) {
 			case litehtml::background_repeat_no_repeat:
 				canvas->drawImage(image.get(), bg.position_x, bg.position_y, sampling, &paint);

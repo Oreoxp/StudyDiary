@@ -34,7 +34,7 @@ void el_omnibox::draw(litehtml::uint_ptr hdc, int x, int y, const litehtml::posi
 {
 	litehtml::html_tag::draw(hdc, x, y, clip, ri);
 
-	m_edit.draw((cairo_t*)hdc);
+	m_edit.draw(hdc);
 }
 
 void el_omnibox::compute_styles(bool recursive)

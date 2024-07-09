@@ -1,6 +1,14 @@
 #include "globals.h"
 #include "sl_edit.h"
 #include "ctrl_container.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkSurface.h"
+#include "include/core/SkImageInfo.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/core/SkStream.h"
+#include "include/core/SkTypeface.h"
+#include "include/core/SkFont.h"
 
 CSingleLineEditCtrl::CSingleLineEditCtrl(HWND parent, windows_container* container) : m_textColor(0, 0, 0)
 {
@@ -319,10 +327,11 @@ void CSingleLineEditCtrl::setRect(LPRECT rcText)
 	//createCaret();
 }
 
-void CSingleLineEditCtrl::draw(cairo_t* cr)
+void CSingleLineEditCtrl::draw(litehtml::uint_ptr hdc)
 {
 	int selStart	= std::min(m_selStart, m_selEnd);
-	int selEnd		= std::max(m_selStart, m_selEnd);
+	int selEnd		= std::max(m_selStart, m_selEnd); 
+	SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
 
 	RECT rcText = m_rcText;
 
@@ -342,7 +351,7 @@ void CSingleLineEditCtrl::draw(cairo_t* cr)
 				rcText.left = m_rcText.left + left;
 				SIZE sz = {0, 0};
 				getTextExtentPoint(m_text.c_str() + m_leftPos, selStart - m_leftPos, &sz);
-				drawText(cr, m_text.c_str() + m_leftPos, selStart - m_leftPos, &rcText, m_textColor);
+				drawText(canvas, m_text.c_str() + m_leftPos, selStart - m_leftPos, &rcText, m_textColor);
 				left += sz.cx;
 			}
 		}
@@ -361,7 +370,7 @@ void CSingleLineEditCtrl::draw(cairo_t* cr)
 			{
 				rcFill.right = m_rcText.right;
 			}
-			fillSelRect(cr, &rcFill);
+			//fillSelRect(hdc, &rcFill);
 
 			rcText.left		= m_rcText.left + left;
 			rcText.right	= rcText.left + sz.cx;
@@ -370,7 +379,7 @@ void CSingleLineEditCtrl::draw(cairo_t* cr)
 				rcText.right = m_rcText.right;
 			}
 			COLORREF clr = GetSysColor(COLOR_HIGHLIGHTTEXT);
-			drawText(cr, m_text.c_str() + selStart, selEnd - selStart, &rcText, litehtml::web_color(GetRValue(clr), GetGValue(clr), GetBValue(clr)));
+			drawText(canvas, m_text.c_str() + selStart, selEnd - selStart, &rcText, litehtml::web_color(GetRValue(clr), GetGValue(clr), GetBValue(clr)));
 
 			left += sz.cx;
 		}
@@ -381,14 +390,14 @@ void CSingleLineEditCtrl::draw(cairo_t* cr)
 			rcText.right	= m_rcText.right;
 			if(rcText.left < rcText.right)
 			{
-				drawText(cr, m_text.c_str() + selEnd, -1, &rcText, m_textColor);
-			}
+				drawText(canvas, m_text.c_str() + selEnd, -1, &rcText, m_textColor);
+			} 
 		}
 	} else
 	{
-		drawText(cr, m_text.c_str() + m_leftPos, -1, &rcText, m_textColor);
+		drawText(canvas, m_text.c_str() + m_leftPos, -1, &rcText, m_textColor);
 	}
-
+	/*
 	if(m_showCaret && m_caretIsCreated)
 	{
 		cairo_save(cr);
@@ -402,7 +411,7 @@ void CSingleLineEditCtrl::draw(cairo_t* cr)
 		cairo_fill(cr);
 
 		cairo_restore(cr);
-	}
+	}*/
 }
 
 void CSingleLineEditCtrl::setFont(cairo_font* font, litehtml::web_color& color)
@@ -578,15 +587,12 @@ void CSingleLineEditCtrl::setText( LPCSTR text )
 	UpdateControl();
 }
 
-void CSingleLineEditCtrl::drawText(cairo_t* cr, LPCSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor)
+void CSingleLineEditCtrl::drawText(SkCanvas* canvas, LPCSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor)
 {
 	std::string str;
-	if (cbText < 0)
-	{
+	if (cbText < 0) {
 		str = text;
-	}
-	else
-	{
+	} else {
 		str.append(text, cbText);
 	}
 
@@ -596,7 +602,7 @@ void CSingleLineEditCtrl::drawText(cairo_t* cr, LPCSTR text, int cbText, LPRECT 
 	pos.width = rcText->right - rcText->left;
 	pos.height = rcText->bottom - rcText->top;
 
-	m_container->draw_text((litehtml::uint_ptr) cr, str.c_str(), (litehtml::uint_ptr)m_hFont, textColor, pos);
+	m_container->draw_text((litehtml::uint_ptr)canvas, str.c_str(), (litehtml::uint_ptr)m_hFont, textColor, pos);
 }
 
 void CSingleLineEditCtrl::getTextExtentPoint( LPCSTR text, int cbText, LPSIZE sz )

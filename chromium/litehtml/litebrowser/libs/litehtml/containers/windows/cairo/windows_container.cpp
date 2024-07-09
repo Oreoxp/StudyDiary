@@ -3,6 +3,16 @@
 #include <math.h>
 #include "cairo_font.h"
 #include <strsafe.h>
+#include "include/core/SkCanvas.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkSurface.h"
+#include "include/core/SkImageInfo.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/core/SkStream.h"
+#include "include/core/SkTypeface.h"
+#include "include/core/SkFont.h"
+#include "include/core/SkFontMgr.h"
+#include "include/ports/SKTypeface_win.h"
 
 windows_container::windows_container(void)
 {
@@ -93,10 +103,12 @@ int windows_container::text_width( const char* text, litehtml::uint_ptr hFont )
 	return ret;
 }
 
+
+
 void windows_container::draw_text( litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos )
 {
 	if(hFont)
-	{
+	{/*
 		cairo_font* fnt = (cairo_font*) hFont;
 		cairo_t* cr		= (cairo_t*) hdc;
 		cairo_save(cr);
@@ -109,7 +121,33 @@ void windows_container::draw_text( litehtml::uint_ptr hdc, const char* text, lit
 		set_color(cr, color);
 		fnt->show_text(cr, x, y, text);
 
-		cairo_restore(cr);
+    cairo_restore(cr);*/
+    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
+    sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
+    sk_sp<SkTypeface> typeface = mgr->matchFamilyStyle("Microsoft YaHei", SkFontStyle());
+		//sk_sp<SkTypeface> typeface = SkTypeface::MakeEmpty();
+
+    canvas->save();
+
+    // 设置剪裁区域
+    SkRect clipRect = SkRect::MakeXYWH(pos.left(), pos.top(), pos.width, pos.height);
+    canvas->clipRect(clipRect, true);
+
+    int x = pos.left();
+    int y = pos.bottom();
+
+    // 设置文本颜色
+    SkPaint paint;
+    paint.setColor(SkColorSetARGB(color.alpha, color.red, color.green, color.blue));
+    paint.setAntiAlias(true);
+
+    SkFont font(typeface);
+    font.setSize(14);
+
+    // 绘制文本
+    canvas->drawString(text, x, y, font, paint);
+
+    canvas->restore();
 	}
 }
 

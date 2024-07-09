@@ -8,6 +8,8 @@
 #define WM_EDIT_ACTIONKEY	(WM_USER + 2003)
 #define WM_EDIT_CAPTURE		(WM_USER + 2004)
 
+class SkCanvas;
+
 class CSingleLineEditCtrl : public CTxThread
 {
 private:
@@ -45,7 +47,7 @@ public:
 	void	setText(LPCSTR text);
 	LPCSTR getText()	{ return m_text.c_str(); }
 	void	setFont(cairo_font* font, litehtml::web_color& color);
-	void	draw(cairo_t* cr);
+	void	draw(litehtml::uint_ptr hdc);
 	void	setSelection(int start, int end);
 	void	replaceSel(LPCSTR text);
 	void	hideCaret();
@@ -67,7 +69,9 @@ private:
 	void	fillSelRect(cairo_t* cr, LPRECT rcFill);
 	int		getCaretPosXY(int x, int y);
 
-	void	drawText(cairo_t* cr, LPCSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor);
+	void	drawText(SkCanvas* canvas, LPCSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor);
 	void	getTextExtentPoint(LPCSTR text, int cbText, LPSIZE sz);
-	void	set_color(cairo_t* cr, litehtml::web_color color)	{ cairo_set_source_rgba(cr, color.red / 255.0, color.green / 255.0, color.blue / 255.0, color.alpha / 255.0); }
+	void	set_color(SkCanvas* canvas, litehtml::web_color color)	{ 
+		//cairo_set_source_rgba(cr, color.red / 255.0, color.green / 255.0, color.blue / 255.0, color.alpha / 255.0); 
+	}
 };
