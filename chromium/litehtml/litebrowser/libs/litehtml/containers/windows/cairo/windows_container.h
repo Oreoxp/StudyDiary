@@ -15,13 +15,17 @@
 #include <dib.h>
 #include <txdib.h>
 #include "../../libs/litehtml/containers/cairo/container_cairo.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkSurface.h"
 
 class windows_container :	public container_cairo
 {
 protected:
 	cairo_surface_t*			m_temp_surface;
-	cairo_t*					m_temp_cr;
+	cairo_t*					    m_temp_cr;
 	IMLangFontLink2*			m_font_link;
+	SkCanvas*             m_temp_canvas;
+	sk_sp<SkSurface>      m_surface;
 public:
 	windows_container(void);
 	virtual ~windows_container(void);

@@ -1,4 +1,8 @@
 #include "cairo_font.h"
+#include "include/core/SkTypeface.h"
+#include "include/core/SkFont.h"
+#include "include/core/SkFontMetrics.h"
+#include "include/core/SkFontTypes.h"
 
 cairo_font::cairo_font(IMLangFontLink2* fl, HFONT hFont, int size )
 {
@@ -17,8 +21,7 @@ cairo_font::cairo_font(IMLangFontLink2* fl, LPCSTR facename, int size, int weigh
 	init();
 	m_size = size;
 	m_font_link = fl;
-	if(m_font_link)
-	{
+	if(m_font_link) {
 		m_font_link->AddRef();
 	}
 
@@ -62,7 +65,7 @@ cairo_font::~cairo_font()
 {
 	if(m_font_face)
 	{
-		cairo_font_face_destroy(m_font_face);
+		//cairo_font_face_destroy(m_font_face);
 	}
 	for(size_t i = 0; i < m_linked_fonts.size(); i++)
 	{
@@ -72,7 +75,7 @@ cairo_font::~cairo_font()
 		}
 		if(m_linked_fonts[i]->font_face)
 		{
-			cairo_font_face_destroy(m_linked_fonts[i]->font_face);
+			//cairo_font_face_destroy(m_linked_fonts[i]->font_face);
 		}
 	}
 	m_linked_fonts.clear();
@@ -86,51 +89,56 @@ cairo_font::~cairo_font()
 	}
 }
 
-void cairo_font::show_text( cairo_t* cr, int x, int y, const char* str )
+#include "include/core/SkPaint.h"
+#include "include/core/SkTextBlob.h"
+
+void cairo_font::show_text(SkCanvas* canvas, int x, int y, const char* str )
 {
 	lock();
 	text_chunk::vector chunks;
 	split_text(str, chunks);
-	cairo_set_font_size(cr, m_size);
-	cairo_move_to(cr, x, y);
-	for(size_t i = 0; i < chunks.size(); i++)
-	{
-		if(chunks[i]->font)
-		{
-			cairo_set_font_face(cr, chunks[i]->font->font_face);
-		} else
-		{
-			cairo_set_font_face(cr, m_font_face);
-		}
-		cairo_show_text(cr, chunks[i]->text);
+
+	SkPaint paint;
+	paint.setAntiAlias(true);
+	paint.setColor(SK_ColorBLACK);
+	SkScalar xPos = static_cast<SkScalar>(x);
+	SkScalar yPos = static_cast<SkScalar>(y);
+
+	for(size_t i = 0; i < chunks.size(); i++) {
+		sk_sp<SkTypeface> typeface = (chunks[i]->font) ? chunks[i]->font->font_face : m_font_face;
+		SkFont font(typeface, m_size);
+		font.setEdging(SkFont::Edging::kAntiAlias);
+		font.setSubpixel(true);
+
+		// 创建 SkTextBlob
+		auto blob = SkTextBlob::MakeFromString(chunks[i]->text, font);
+		canvas->drawTextBlob(blob, xPos, yPos, paint);
 	}
 	unlock();
 
 	if(m_bUnderline)
 	{
-		int tw = text_width(cr, chunks);
+		int tw = text_width(canvas, chunks);
 
 		lock();
-		cairo_set_line_width(cr, 1);
-		cairo_move_to(cr, x, y + 1.5);
-		cairo_line_to(cr, x + tw, y + 1.5);
-		cairo_stroke(cr);
+		paint.setStyle(SkPaint::kStroke_Style);
+		paint.setStrokeWidth(1);
+		canvas->drawLine(xPos, yPos + 1.5f, xPos + static_cast<SkScalar>(tw), yPos + 1.5f, paint);
 		unlock();
 	}
 	if(m_bStrikeOut)
 	{
-		int tw = text_width(cr, chunks);
+		int tw = text_width(canvas, chunks);
 
 		cairo_font_metrics fm;
-		get_metrics(cr, &fm);
+		get_metrics(canvas, &fm);
 
 		int ln_y = y - fm.x_height / 2;
 
 		lock();
-		cairo_set_line_width(cr, 1);
-		cairo_move_to(cr, x, (double) ln_y - 0.5);
-		cairo_line_to(cr, x + tw, (double) ln_y - 0.5);
-		cairo_stroke(cr);
+		paint.setStyle(SkPaint::kStroke_Style);
+		paint.setStrokeWidth(1);
+		canvas->drawLine(xPos, static_cast<SkScalar>(ln_y) - 0.5f, xPos + static_cast<SkScalar>(tw), static_cast<SkScalar>(ln_y) - 0.5f, paint);
 		unlock();
 	}
 
@@ -232,74 +240,101 @@ void cairo_font::free_text_chunks( text_chunk::vector& chunks )
 	chunks.clear();
 }
 
-cairo_font_face_t* cairo_font::create_font_face( HFONT fnt )
+#include "include/core/SkTypeface.h"
+#include "include/ports/SKTypeface_win.h"
+#include "include/core/SkFontMgr.h"
+
+sk_sp<SkTypeface> cairo_font::create_font_face( HFONT fnt )
 {
-	LOGFONTW lf;
-	GetObject(fnt, sizeof(LOGFONTW), &lf);
-	return cairo_win32_font_face_create_for_logfontw(&lf);
+	LOGFONT lf;
+	GetObject(fnt, sizeof(LOGFONT), &lf);
+
+	sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
+	SkString familyName(lf.lfFaceName);
+
+	SkFontStyle fontStyle;
+	if (lf.lfWeight >= FW_BOLD) {
+		if (lf.lfItalic) {
+			fontStyle = SkFontStyle::BoldItalic();
+		} else {
+			fontStyle = SkFontStyle::Bold();
+		}
+	} else {
+		if (lf.lfItalic) {
+			fontStyle = SkFontStyle::Italic();
+		} else {
+			fontStyle = SkFontStyle::Normal();
+		}
+	}
+
+	// 创建 SkTypeface
+	sk_sp<SkTypeface> typeface = mgr->matchFamilyStyle(familyName.c_str(), fontStyle);
+
+	return typeface;
 }
 
-int cairo_font::text_width( cairo_t* cr, const char* str )
+int cairo_font::text_width(SkCanvas* canvas, const char* str )
 {
 	text_chunk::vector chunks;
 	split_text(str, chunks);
 
-	int ret = text_width(cr, chunks);
+	int ret = text_width(canvas, chunks);
 
 	free_text_chunks(chunks);
 
 	return (int) ret;
 }
 
-int cairo_font::text_width( cairo_t* cr, text_chunk::vector& chunks )
+int cairo_font::text_width(SkCanvas* canvas, text_chunk::vector& chunks )
 {
 	lock();
-	cairo_set_font_size(cr, m_size);
+
+	SkFont font(m_font_face, m_size);
 	double ret = 0;
-	for(size_t i = 0; i < chunks.size(); i++)
-	{
-		if(chunks[i]->font)
-		{
-			cairo_set_font_face(cr, chunks[i]->font->font_face);
-		} else
-		{
-			cairo_set_font_face(cr, m_font_face);
-		}
-		cairo_text_extents_t ext;
-		cairo_text_extents(cr, chunks[i]->text, &ext);
-		ret += ext.x_advance;
+
+	for (size_t i = 0; i < chunks.size(); ++i) {
+		sk_sp<SkTypeface> typeface = (chunks[i]->font) ? chunks[i]->font->font_face : m_font_face;
+		font.setTypeface(typeface);
+
+		SkRect bounds;
+		font.measureText(chunks[i]->text, strlen(chunks[i]->text), SkTextEncoding::kUTF8, &bounds);
+		ret += bounds.width();
 	}
+
 	unlock();
 
-	return (int) ret;
+	return static_cast<int>(ret);
 }
 
-void cairo_font::get_metrics(cairo_t* cr, cairo_font_metrics* fm )
+void cairo_font::get_metrics(SkCanvas* canvas, cairo_font_metrics* fm )
 {
 	lock();
-	cairo_set_font_face(cr, m_font_face);
-	cairo_set_font_size(cr, m_size);
-	cairo_font_extents_t ext;
-	cairo_font_extents(cr, &ext);
+	SkFont font(m_font_face, m_size);
+	font.setEdging(SkFont::Edging::kAntiAlias);
+	font.setSubpixel(true);
 
-	cairo_text_extents_t tex;
-	cairo_text_extents(cr, "x", &tex);
+	SkFontMetrics metrics;
+	font.getMetrics(&metrics);
 
-	fm->ascent		= (int) ext.ascent;
-	fm->descent		= (int) ext.descent;
-	fm->height		= (int) (ext.ascent + ext.descent);
-	fm->x_height	= (int) tex.height;
+	fm->ascent = static_cast<int>(-metrics.fAscent);
+	fm->descent = static_cast<int>(metrics.fDescent);
+	fm->height = static_cast<int>(-metrics.fAscent + metrics.fDescent + metrics.fLeading);
+
+	SkRect bounds;
+	font.measureText("x", 1, SkTextEncoding::kUTF8, &bounds);
+	fm->x_height = static_cast<int>(bounds.height());
+
 	unlock();
 }
 
-void cairo_font::set_font( HFONT hFont )
-{
+
+void cairo_font::set_font(HFONT hFont) {
 	clear();
 
-	m_hFont				= hFont;
-	m_font_face			= create_font_face(m_hFont);
-	m_font_code_pages	= 0;
-	if(m_font_link)
+	m_hFont = hFont;
+	m_font_face = create_font_face(m_hFont);
+	m_font_code_pages = 0;
+	if (m_font_link)
 	{
 		HDC hdc = GetDC(NULL);
 		SelectObject(hdc, m_hFont);
@@ -308,15 +343,15 @@ void cairo_font::set_font( HFONT hFont )
 	}
 	LOGFONT lf;
 	GetObject(m_hFont, sizeof(LOGFONT), &lf);
-	m_bUnderline	= lf.lfUnderline;
-	m_bStrikeOut	= lf.lfStrikeOut;
+	m_bUnderline = lf.lfUnderline;
+	m_bStrikeOut = lf.lfStrikeOut;
 }
 
 void cairo_font::clear()
 {
 	if(m_font_face)
 	{
-		cairo_font_face_destroy(m_font_face);
+		//cairo_font_face_destroy(m_font_face);
 		m_font_face = NULL;
 	}
 	for(size_t i = 0; i < m_linked_fonts.size(); i++)
@@ -327,7 +362,7 @@ void cairo_font::clear()
 		}
 		if(m_linked_fonts[i]->font_face)
 		{
-			cairo_font_face_destroy(m_linked_fonts[i]->font_face);
+			//cairo_font_face_destroy(m_linked_fonts[i]->font_face);
 		}
 	}
 	m_linked_fonts.clear();

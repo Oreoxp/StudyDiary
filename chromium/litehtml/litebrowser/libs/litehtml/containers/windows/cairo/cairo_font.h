@@ -13,6 +13,8 @@
 #include <cairo.h>
 #include <cairo-win32.h>
 #include <litehtml.h>
+#include "include/core/SkTypeface.h"
+#include "include/core/SkCanvas.h"
 
 struct linked_font
 {
@@ -20,7 +22,7 @@ struct linked_font
 
 	DWORD				code_pages;
 	HFONT				hFont;
-	cairo_font_face_t*	font_face;
+	sk_sp<SkTypeface>	font_face;
 };
 
 struct text_chunk
@@ -51,7 +53,7 @@ struct cairo_font_metrics
 class cairo_font
 {
 	HFONT				m_hFont;
-	cairo_font_face_t*	m_font_face;
+	sk_sp<SkTypeface>	m_font_face;
 	IMLangFontLink2*	m_font_link;
 	DWORD				m_font_code_pages;
 	linked_font::vector	m_linked_fonts;
@@ -70,23 +72,23 @@ public:
 	void init();
 	~cairo_font();
 
-	void				show_text(cairo_t* cr, int x, int y, const char*);
-	int					text_width(cairo_t* cr, const char* str);
-	void				load_metrics(cairo_t* cr);
+	void				show_text(SkCanvas* canvas, int x, int y, const char*);
+	int					text_width(SkCanvas* canvas, const char* str);
+	void				load_metrics(SkCanvas* canvas);
 	cairo_font_metrics&	metrics();
 	static std::wstring	utf8_to_wchar(const std::string& src);
 	static std::string	wchar_to_utf8(const std::wstring& src);
 private:
 	void				split_text(const char* str, text_chunk::vector& chunks);
 	void				free_text_chunks(text_chunk::vector& chunks);
-	cairo_font_face_t*	create_font_face(HFONT fnt);
+	sk_sp<SkTypeface>	create_font_face(HFONT fnt);
 	void				set_font(HFONT hFont);
 	void				clear();
-	int					text_width(cairo_t* cr, text_chunk::vector& chunks);
+	int					text_width(SkCanvas* canvas, text_chunk::vector& chunks);
 	void				lock();
 	void				unlock();
 	int					round_d(double val);
-	void				get_metrics(cairo_t* cr, cairo_font_metrics* fm);
+	void				get_metrics(SkCanvas* canvas, cairo_font_metrics* fm);
 };
 
 inline void cairo_font::lock()
@@ -114,7 +116,7 @@ inline cairo_font_metrics& cairo_font::metrics()
 	return m_metrics; 
 }
 
-inline void cairo_font::load_metrics(cairo_t* cr)
+inline void cairo_font::load_metrics(SkCanvas* canvas)
 {
-	get_metrics(cr, &m_metrics);
+	get_metrics(canvas, &m_metrics);
 }

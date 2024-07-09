@@ -18,6 +18,10 @@ windows_container::windows_container(void)
 {
 	m_temp_surface	= cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 2, 2);
 	m_temp_cr		= cairo_create(m_temp_surface);
+
+	m_surface = SkSurfaces::Raster(SkImageInfo::MakeN32(2, 2, kOpaque_SkAlphaType));
+	m_temp_canvas = m_surface->getCanvas();
+	m_temp_canvas->clear(SK_ColorYELLOW);
 	m_font_link		= NULL;
 	CoCreateInstance(CLSID_CMultiLanguage, NULL, CLSCTX_ALL, IID_IMLangFontLink2, (void**) &m_font_link);
 }
@@ -32,8 +36,63 @@ windows_container::~windows_container(void)
 	cairo_surface_destroy(m_temp_surface);
 	cairo_destroy(m_temp_cr);
 }
+/*
+#include "include/core/SkTypeface.h"
+#include "include/core/SkFont.h"
+#include "include/core/SkFontMetrics.h"
 
-litehtml::uint_ptr windows_container::create_font( const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm )
+litehtml::uint_ptr windows_container::create_font(const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm) {
+	std::string fnt_name = "sans-serif";
+
+	litehtml::string_vector fonts;
+	litehtml::split_string(faceName, fonts, ",");
+	if (!fonts.empty()) {
+		litehtml::trim(fonts[0]);
+		fnt_name = fonts[0];
+		if (fnt_name.front() == '"' || fnt_name.front() == '\'') {
+			fnt_name.erase(0, 1);
+		}
+		if (fnt_name.back() == '"' || fnt_name.back() == '\'') {
+			fnt_name.erase(fnt_name.length() - 1, 1);
+		}
+	}
+
+	SkFontStyle fontStyle(weight, SkFontStyle::kNormal_Width, (italic == litehtml::font_style_italic) ? SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant);
+
+
+	sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
+	sk_sp<SkTypeface> typeface = mgr->matchFamilyStyle(fnt_name.c_str(), fontStyle);
+
+	if (!typeface) {
+		typeface = mgr->matchFamilyStyle("Microsoft YaHei", fontStyle);
+	}
+
+	SkFont* skFont = new SkFont(typeface, static_cast<SkScalar>(size));
+	skFont->setEdging(SkFont::Edging::kAntiAlias);
+	skFont->setSubpixel(true);
+
+	if (fm) {
+		SkFontMetrics metrics;
+		skFont->getMetrics(&metrics);
+
+		fm->ascent = metrics.fAscent;
+		fm->descent = metrics.fDescent;
+		fm->height = metrics.fDescent - metrics.fAscent + metrics.fLeading;
+		fm->x_height = skFont->measureText("x", 1, SkTextEncoding::kUTF8, nullptr);
+
+		if (italic == litehtml::font_style_italic || decoration) {
+			fm->draw_spaces = true;
+		}
+		else {
+			fm->draw_spaces = false;
+		}
+	}
+
+	return reinterpret_cast<litehtml::uint_ptr>(skFont);
+}
+*/
+
+litehtml::uint_ptr windows_container::create_font(const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm)
 {
 	std::string fnt_name = "sans-serif";
 
@@ -54,15 +113,15 @@ litehtml::uint_ptr windows_container::create_font( const char* faceName, int siz
 	}
 
 	cairo_font* fnt = new cairo_font(	m_font_link,
-										fnt_name.c_str(), 
-										size, 
-										weight, 
-										(italic == litehtml::font_style_italic) ? TRUE : FALSE,
-										(decoration & litehtml::font_decoration_linethrough) ? TRUE : FALSE,
-										(decoration & litehtml::font_decoration_underline) ? TRUE : FALSE);
+		fnt_name.c_str(),
+		size,
+		weight,
+		(italic == litehtml::font_style_italic) ? TRUE : FALSE,
+		(decoration & litehtml::font_decoration_linethrough) ? TRUE : FALSE,
+		(decoration & litehtml::font_decoration_underline) ? TRUE : FALSE);
 
-	cairo_save(m_temp_cr);
-	fnt->load_metrics(m_temp_cr);
+	m_temp_canvas->save();
+	fnt->load_metrics(m_temp_canvas);
 
 	if(fm)
 	{
@@ -79,7 +138,7 @@ litehtml::uint_ptr windows_container::create_font( const char* faceName, int siz
 		}
 	}
 
-	cairo_restore(m_temp_cr);
+	m_temp_canvas->restore();
 
 	return (litehtml::uint_ptr) fnt;
 }
@@ -97,9 +156,9 @@ int windows_container::text_width( const char* text, litehtml::uint_ptr hFont )
 {
 	cairo_font* fnt = (cairo_font*) hFont;
 	
-	cairo_save(m_temp_cr);
-	int ret = fnt->text_width(m_temp_cr, text);
-	cairo_restore(m_temp_cr);
+	m_temp_canvas->save();
+	int ret = fnt->text_width(m_temp_canvas, text);
+	m_temp_canvas->restore();
 	return ret;
 }
 
@@ -108,21 +167,20 @@ int windows_container::text_width( const char* text, litehtml::uint_ptr hFont )
 void windows_container::draw_text( litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos )
 {
 	if(hFont)
-	{/*
+	{
+		SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
 		cairo_font* fnt = (cairo_font*) hFont;
-		cairo_t* cr		= (cairo_t*) hdc;
-		cairo_save(cr);
+		canvas->save();
 
-		apply_clip(cr);
+		SkRect clipRect = SkRect::MakeXYWH(pos.left(), pos.top(), pos.width, pos.height);
+		canvas->clipRect(clipRect, true);
 
 		int x = pos.left();
 		int y = pos.bottom() - fnt->metrics().descent;
 
-		set_color(cr, color);
-		fnt->show_text(cr, x, y, text);
-
-    cairo_restore(cr);*/
-    SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
+		//canvas->clear(SkColorSetARGB(color.alpha, color.red, color.green, color.blue));
+		fnt->show_text(canvas, x, y, text);
+		/*
     sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
     sk_sp<SkTypeface> typeface = mgr->matchFamilyStyle("Microsoft YaHei", SkFontStyle());
 		//sk_sp<SkTypeface> typeface = SkTypeface::MakeEmpty();
@@ -141,11 +199,13 @@ void windows_container::draw_text( litehtml::uint_ptr hdc, const char* text, lit
     paint.setColor(SkColorSetARGB(color.alpha, color.red, color.green, color.blue));
     paint.setAntiAlias(true);
 
-    SkFont font(typeface);
-    font.setSize(14);
+    //SkFont font(typeface);
+    //font.setSize(14);
+
+		SkFont* font = reinterpret_cast<SkFont*>(hFont->m_font_face);
 
     // »æÖÆÎÄ±¾
-    canvas->drawString(text, x, y, font, paint);
+    canvas->drawString(text, x, y, *font, paint);*/
 
     canvas->restore();
 	}
