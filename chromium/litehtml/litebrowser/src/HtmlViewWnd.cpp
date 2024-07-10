@@ -162,32 +162,39 @@ void CHTMLViewWnd::OnCreate()
 
 void CHTMLViewWnd::OnPaint( simpledib::dib* dib, LPRECT rcDraw )
 {
-	cairo_surface_t* surface = cairo_image_surface_create_for_data((unsigned char*) dib->bits(), CAIRO_FORMAT_ARGB32, dib->width(), dib->height(), dib->width() * 4);
-	cairo_t* cr = cairo_create(surface);
+	int width = dib->width();
+	int height = dib->height();
+	unsigned char* bits = (unsigned char*)dib->bits();
 
-	cairo_rectangle(cr, rcDraw->left, rcDraw->top, rcDraw->right - rcDraw->left, rcDraw->bottom - rcDraw->top);
-	cairo_clip(cr);
+	// 创建 SkImageInfo 和 SkSurface
+	SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
+	SkPixmap pixmap(info, bits, width * 4);
+	sk_sp<SkSurface> surface = SkSurfaces::WrapPixels(info, bits, sizeof(uint32_t) * width);
 
-	cairo_set_source_rgb(cr, 1, 1, 1);
-	cairo_paint(cr);
+	SkCanvas* canvas = surface->getCanvas();
+
+	// 设置剪裁区域
+	SkRect clipRect = SkRect::MakeLTRB(rcDraw->left, rcDraw->top, rcDraw->right, rcDraw->bottom);
+	canvas->clipRect(clipRect, true);
+
+
+	// 填充白色背景
+	SkPaint paint;
+	paint.setColor(SK_ColorWHITE);
+	canvas->drawRect(clipRect, paint);
 
 	lock();
 
 	web_page* page = get_page(false);
 
-	if(page)
-	{
-
+	if (page) {
 		litehtml::position clip(rcDraw->left, rcDraw->top, rcDraw->right - rcDraw->left, rcDraw->bottom - rcDraw->top);
-		//page->m_doc->draw((litehtml::uint_ptr) cr, -m_left, -m_top, &clip);
+		page->m_doc->draw(reinterpret_cast<litehtml::uint_ptr>(canvas), -m_left, -m_top, &clip);
 
 		page->release();
 	}
 
 	unlock();
-
-	cairo_destroy(cr);
-	cairo_surface_destroy(surface);
 }
 
 void CHTMLViewWnd::OnSize( int width, int height )

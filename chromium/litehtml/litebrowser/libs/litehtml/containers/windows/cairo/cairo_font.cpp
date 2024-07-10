@@ -91,6 +91,7 @@ cairo_font::~cairo_font()
 
 #include "include/core/SkPaint.h"
 #include "include/core/SkTextBlob.h"
+#include "include/core/SkPixmap.h"
 
 void cairo_font::show_text(SkCanvas* canvas, int x, int y, const char* str )
 {
@@ -110,9 +111,16 @@ void cairo_font::show_text(SkCanvas* canvas, int x, int y, const char* str )
 		font.setEdging(SkFont::Edging::kAntiAlias);
 		font.setSubpixel(true);
 
+		// 测量文本宽度
+		SkRect bounds;
+		float  width = font.measureText(chunks[i]->text, strlen(chunks[i]->text), SkTextEncoding::kUTF8, &bounds);
+
 		// 创建 SkTextBlob
 		auto blob = SkTextBlob::MakeFromString(chunks[i]->text, font);
 		canvas->drawTextBlob(blob, xPos, yPos, paint);
+
+		// 更新 xPos 以处理空格
+		xPos += width;
 	}
 	unlock();
 
@@ -297,8 +305,8 @@ int cairo_font::text_width(SkCanvas* canvas, text_chunk::vector& chunks )
 		font.setTypeface(typeface);
 
 		SkRect bounds;
-		font.measureText(chunks[i]->text, strlen(chunks[i]->text), SkTextEncoding::kUTF8, &bounds);
-		ret += bounds.width();
+		int width = font.measureText(chunks[i]->text, strlen(chunks[i]->text), SkTextEncoding::kUTF8, &bounds);
+		ret += width;//bounds.width();
 	}
 
 	unlock();
@@ -321,8 +329,8 @@ void cairo_font::get_metrics(SkCanvas* canvas, cairo_font_metrics* fm )
 	fm->height = static_cast<int>(-metrics.fAscent + metrics.fDescent + metrics.fLeading);
 
 	SkRect bounds;
-	font.measureText("x", 1, SkTextEncoding::kUTF8, &bounds);
-	fm->x_height = static_cast<int>(bounds.height());
+	int width = font.measureText("x", 1, SkTextEncoding::kUTF8, &bounds);
+	fm->x_height = width;
 
 	unlock();
 }

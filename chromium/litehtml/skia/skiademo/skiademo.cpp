@@ -16,6 +16,7 @@
 #include "include/ports/SKTypeface_win.h"
 #include "include/codec/SkJpegDecoder.h"
 #include "include/core/SkBitmap.h"
+#include "include/core/SkTextBlob.h"
 
 #include <Windows.h>
 
@@ -46,6 +47,28 @@ void func1_showText(SkPaint& paint, SkCanvas* canvas) {
 
   std::string str = toUtf8("中文测试：一二三四，123456");
   canvas->drawString(str.c_str(), 10, 25, font, paint);
+}
+
+int func1_showText2(SkPaint& paint, SkCanvas* canvas, int x, int y, std::string txt) {
+  sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
+  sk_sp<SkTypeface> face = mgr->matchFamilyStyle("Georgia", SkFontStyle());
+  if (!face) {
+    printf("Cannot open typeface\n");
+  }
+
+  SkFont font(face, 14);
+  paint.setColor(SK_ColorGREEN);
+
+  std::string str = toUtf8(txt.c_str());
+
+
+  SkRect bounds;
+  float width = font.measureText(str.c_str(), str.size(), SkTextEncoding::kUTF8, &bounds);
+
+  // 创建 SkTextBlob
+  auto blob = SkTextBlob::MakeFromString(str.c_str(), font);
+  canvas->drawTextBlob(blob, x, y, paint);
+  return width;
 }
 
 void func2_showCircle(SkPaint& paint, SkCanvas* canvas) {
@@ -84,6 +107,13 @@ int main(int argc, char** argv) {
   func2_showCircle(paint, canvas);
   func3_loadImage(paint, canvas, "pic2.png", { 200, 100, 100 ,100 });
   func3_loadImage(paint, canvas, "pic1.jpeg", { 100, 200, 200 ,100 });
+
+  int x = 0;
+  x += func1_showText2(paint, canvas, x, 400, "abc");
+  x += func1_showText2(paint, canvas, x, 400, " ");
+  x += func1_showText2(paint, canvas, x, 400, "def");
+  x += func1_showText2(paint, canvas, x, 400, " ");
+  x += func1_showText2(paint, canvas, x, 400, "ghi");
 
   SkPixmap pixmap;
   if (surface->peekPixels(&pixmap)) {
