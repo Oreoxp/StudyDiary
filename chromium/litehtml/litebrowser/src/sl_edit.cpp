@@ -370,7 +370,7 @@ void CSingleLineEditCtrl::draw(litehtml::uint_ptr hdc)
 			{
 				rcFill.right = m_rcText.right;
 			}
-			//fillSelRect(hdc, &rcFill);
+			fillSelRect(hdc, &rcFill);
 
 			rcText.left		= m_rcText.left + left;
 			rcText.right	= rcText.left + sz.cx;
@@ -397,6 +397,23 @@ void CSingleLineEditCtrl::draw(litehtml::uint_ptr hdc)
 	{
 		drawText(canvas, m_text.c_str() + m_leftPos, -1, &rcText, m_textColor);
 	}
+  // Skia implementation for drawing the caret
+  if (m_showCaret && m_caretIsCreated) {
+    canvas->save();
+
+    int caretWidth = GetSystemMetrics(SM_CXBORDER);
+    int caretHeight = m_lineHeight;
+    int top = m_rcText.top + (m_rcText.bottom - m_rcText.top) / 2 - caretHeight / 2;
+
+    SkPaint paint;
+    paint.setColor(SkColorSetARGB(m_textColor.alpha, m_textColor.red, m_textColor.green, m_textColor.blue));
+    paint.setStyle(SkPaint::kFill_Style);
+
+    SkRect caretRect = SkRect::MakeXYWH(m_rcText.left + m_caretX, top, caretWidth, caretHeight);
+    canvas->drawRect(caretRect, paint);
+
+    canvas->restore();
+  }
 	/*
 	if(m_showCaret && m_caretIsCreated)
 	{
@@ -522,18 +539,28 @@ void CSingleLineEditCtrl::setCaretPos( int pos )
 	UpdateCarret();
 }
 
-void CSingleLineEditCtrl::fillSelRect(cairo_t* cr, LPRECT rcFill)
-{
-	cairo_save(cr);
+void CSingleLineEditCtrl::fillSelRect(litehtml::uint_ptr hdc, LPRECT rcFill) {
+  SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);
 
-	COLORREF clr = GetSysColor(COLOR_HIGHLIGHT);
-	litehtml::web_color color(GetRValue(clr), GetGValue(clr), GetBValue(clr));
+  // 获取系统高亮颜色
+  COLORREF clr = GetSysColor(COLOR_HIGHLIGHT);
+  litehtml::web_color color(GetRValue(clr), GetGValue(clr), GetBValue(clr));
 
-	cairo_set_source_rgba(cr, color.red / 255.0, color.green / 255.0, color.blue / 255.0, color.alpha / 255.0);
-	cairo_rectangle(cr, rcFill->left, rcFill->top, rcFill->right - rcFill->left, rcFill->bottom - rcFill->top);
-	cairo_fill(cr);
+  // 设置画笔属性
+  SkPaint paint;
+  paint.setColor(SkColorSetARGB(255, color.red, color.green, color.blue));  // 设置不透明颜色
+  paint.setStyle(SkPaint::kFill_Style);
+  paint.setAntiAlias(true);  // 启用抗锯齿
 
-	cairo_restore(cr);
+  // 保存画布状态
+  canvas->save();
+
+  // 绘制矩形
+  SkRect rect = SkRect::MakeLTRB(rcFill->left, rcFill->top, rcFill->right, rcFill->bottom);
+  canvas->drawRect(rect, paint);
+
+  // 恢复画布状态
+  canvas->restore();
 }
 
 int CSingleLineEditCtrl::getCaretPosXY( int x, int y )

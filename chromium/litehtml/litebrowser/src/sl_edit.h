@@ -66,7 +66,7 @@ private:
 	void	createCaret();
 	void	destroyCaret();
 	void	setCaretPos(int pos);
-	void	fillSelRect(cairo_t* cr, LPRECT rcFill);
+	void	fillSelRect(litehtml::uint_ptr hdc, LPRECT rcFill);
 	int		getCaretPosXY(int x, int y);
 
 	void	drawText(SkCanvas* canvas, LPCSTR text, int cbText, LPRECT rcText, litehtml::web_color textColor);
