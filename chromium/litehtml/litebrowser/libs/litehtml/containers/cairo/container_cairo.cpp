@@ -1,6 +1,21 @@
 #include "container_cairo.h"
 #include "cairo_borders.h"
 #include <cmath>
+#include <windows.h>
+#include <prsht.h>
+#include <TxDIB.h>
+#include "include/core/SkCanvas.h"
+#include "include/core/SkRRect.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkSurface.h"
+#include "include/core/SkData.h"
+#include "include/core/SkBitmap.h"
+#include "include/effects/SkImageFilters.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/core/SkStream.h"
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 #ifndef M_PI
 #       define M_PI    3.14159265358979323846
@@ -88,22 +103,6 @@ void container_cairo::get_image_size(const std::string& src, const std::string& 
 		sz.height	= 0;
 	}
 }
-
-#include <windows.h>
-#include <prsht.h>
-#include <TxDIB.h>
-#include "include/core/SkCanvas.h"
-#include "include/core/SkRRect.h"
-#include "include/core/SkPaint.h"
-#include "include/core/SkSurface.h"
-#include "include/core/SkData.h"
-#include "include/core/SkBitmap.h"
-#include "include/effects/SkImageFilters.h"
-#include "include/encode/SkPngEncoder.h"
-#include "include/core/SkStream.h"
-#include <iostream>
-#include <fstream>
-#include <iomanip>
 
 void container_cairo::draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bgvec) {
 	SkCanvas* canvas = reinterpret_cast<SkCanvas*>(hdc);

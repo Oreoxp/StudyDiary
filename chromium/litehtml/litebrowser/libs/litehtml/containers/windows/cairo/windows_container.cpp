@@ -179,7 +179,7 @@ void windows_container::draw_text( litehtml::uint_ptr hdc, const char* text, lit
 		int y = pos.bottom() - fnt->metrics().descent;
 
 		//canvas->clear(SkColorSetARGB(color.alpha, color.red, color.green, color.blue));
-		fnt->show_text(canvas, x, y, text);
+		fnt->show_text(canvas, x, y, text,color);
 		/*
     sk_sp<SkFontMgr> mgr = SkFontMgr_New_DirectWrite();
     sk_sp<SkTypeface> typeface = mgr->matchFamilyStyle("Microsoft YaHei", SkFontStyle());

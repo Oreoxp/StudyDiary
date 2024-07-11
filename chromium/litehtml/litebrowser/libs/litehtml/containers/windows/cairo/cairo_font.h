@@ -72,7 +72,7 @@ public:
 	void init();
 	~cairo_font();
 
-	void				show_text(SkCanvas* canvas, int x, int y, const char*);
+	void				show_text(SkCanvas* canvas, int x, int y, const char*, litehtml::web_color color);
 	int					text_width(SkCanvas* canvas, const char* str);
 	void				load_metrics(SkCanvas* canvas);
 	cairo_font_metrics&	metrics();

@@ -93,15 +93,15 @@ cairo_font::~cairo_font()
 #include "include/core/SkTextBlob.h"
 #include "include/core/SkPixmap.h"
 
-void cairo_font::show_text(SkCanvas* canvas, int x, int y, const char* str )
+void cairo_font::show_text(SkCanvas* canvas, int x, int y, const char* str ,litehtml::web_color color)
 {
 	lock();
 	text_chunk::vector chunks;
 	split_text(str, chunks);
 
 	SkPaint paint;
-	paint.setAntiAlias(true);
-	paint.setColor(SK_ColorBLACK);
+  paint.setAntiAlias(true);
+  paint.setColor(SkColorSetARGB(color.alpha, color.red, color.green, color.blue));
 	SkScalar xPos = static_cast<SkScalar>(x);
 	SkScalar yPos = static_cast<SkScalar>(y);
 
@@ -111,16 +111,10 @@ void cairo_font::show_text(SkCanvas* canvas, int x, int y, const char* str )
 		font.setEdging(SkFont::Edging::kAntiAlias);
 		font.setSubpixel(true);
 
-		// 测量文本宽度
-		SkRect bounds;
-		float  width = font.measureText(chunks[i]->text, strlen(chunks[i]->text), SkTextEncoding::kUTF8, &bounds);
-
 		// 创建 SkTextBlob
-		auto blob = SkTextBlob::MakeFromString(chunks[i]->text, font);
-		canvas->drawTextBlob(blob, xPos, yPos, paint);
-
-		// 更新 xPos 以处理空格
-		//xPos += width;
+		//auto blob = SkTextBlob::MakeFromString(chunks[i]->text, font);
+		//canvas->drawTextBlob(blob, xPos, yPos, paint);
+		canvas->drawString(chunks[i]->text, xPos, yPos, font, paint);
 	}
 	unlock();
 
