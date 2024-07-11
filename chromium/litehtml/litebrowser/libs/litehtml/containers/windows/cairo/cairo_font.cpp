@@ -120,7 +120,7 @@ void cairo_font::show_text(SkCanvas* canvas, int x, int y, const char* str )
 		canvas->drawTextBlob(blob, xPos, yPos, paint);
 
 		// 更新 xPos 以处理空格
-		xPos += width;
+		//xPos += width;
 	}
 	unlock();
 
