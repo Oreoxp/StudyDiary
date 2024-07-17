@@ -431,7 +431,7 @@ void CSingleLineEditCtrl::draw(litehtml::uint_ptr hdc)
 	}*/
 }
 
-void CSingleLineEditCtrl::setFont(cairo_font* font, litehtml::web_color& color)
+void CSingleLineEditCtrl::setFont(cairo_font* font, litehtml::web_color color)
 {
 	m_hFont = font;
 	m_textColor = color;

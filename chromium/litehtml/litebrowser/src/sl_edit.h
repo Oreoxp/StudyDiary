@@ -46,7 +46,7 @@ public:
 	void	setRect(LPRECT rcText);
 	void	setText(LPCSTR text);
 	LPCSTR getText()	{ return m_text.c_str(); }
-	void	setFont(cairo_font* font, litehtml::web_color& color);
+	void	setFont(cairo_font* font, litehtml::web_color color);
 	void	draw(litehtml::uint_ptr hdc);
 	void	setSelection(int start, int end);
 	void	replaceSel(LPCSTR text);
