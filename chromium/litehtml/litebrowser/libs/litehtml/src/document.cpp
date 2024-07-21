@@ -34,6 +34,7 @@ namespace litehtml
 document::document(document_container* container)
 {
 	m_container	= container;
+	m_v8.Init("");
 }
 
 document::~document()
@@ -137,6 +138,8 @@ document::ptr document::createFromString(
 		// Finally initialize elements
 		// init() returns pointer to the render_init element because it can change its type
 		doc->m_root_render = doc->m_root_render->init();
+
+		//doc->executeScript("document.onload();");
 	}
 
 	return doc;
@@ -250,6 +253,10 @@ GumboOutput* document::parse_html(estring str)
 	}
 
 	return output;
+}
+
+void document::executeScript(const std::string& script) {
+	m_v8.ExecuteScript(script);
 }
 
 void document::create_node(void* gnode, elements_list& elements, bool parseTextNode)

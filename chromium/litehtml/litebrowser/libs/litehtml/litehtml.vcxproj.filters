@@ -221,6 +221,9 @@
     <ClCompile Include="src\encodings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Lite_V8.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\litehtml\background.h">
@@ -422,6 +425,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\litehtml\encodings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\litehtml\Lite_V8.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

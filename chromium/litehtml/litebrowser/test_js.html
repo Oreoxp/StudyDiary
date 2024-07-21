@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V8 Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Document is fully loaded');
+            document.getElementById('output').innerText = 'Document is loaded';
+        });
+
+        function onButtonClick() {
+            console.log('Button clicked');
+            document.getElementById('output').innerText = 'Button clicked';
+        }
+    </script>
+</head>
+<body>
+    <h1>V8 Integration Test</h1>
+    <button onclick="onButtonClick()">Click Me</button>
+    <div id="output"></div>
+</body>
+</html>

@@ -149,17 +149,17 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/MP  /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;V8_COMPRESS_POINTERS;V8_ENABLE_SANDBOX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>./src/gumbo/visualc/include;./src/gumbo/include/gumbo;./src/gumbo/include;./include/litehtml</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./src/gumbo/visualc/include;./src/gumbo/include/gumbo;./src/gumbo/include;./include/litehtml;../../libs/v8/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Lib>
@@ -214,6 +214,7 @@
     <ClCompile Include="src\html_tag.cpp" />
     <ClCompile Include="src\iterators.cpp" />
     <ClCompile Include="src\line_box.cpp" />
+    <ClCompile Include="src\Lite_V8.cpp" />
     <ClCompile Include="src\media_query.cpp" />
     <ClCompile Include="src\num_cvt.cpp" />
     <ClCompile Include="src\render_block.cpp" />
@@ -269,6 +270,7 @@
     <ClInclude Include="include\litehtml\encodings.h" />
     <ClInclude Include="include\litehtml\flex_item.h" />
     <ClInclude Include="include\litehtml\flex_line.h" />
+    <ClInclude Include="include\litehtml\Lite_V8.h" />
     <ClInclude Include="include\litehtml\master_css.h" />
     <ClInclude Include="include\litehtml\num_cvt.h" />
     <ClInclude Include="include\litehtml\string_id.h" />

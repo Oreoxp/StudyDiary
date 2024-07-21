@@ -5,6 +5,8 @@
 #include "types.h"
 #include "master_css.h"
 #include "encodings.h"
+#include "Lite_V8.h"
+
 typedef struct GumboInternalOutput GumboOutput;
 
 namespace litehtml
@@ -73,10 +75,12 @@ namespace litehtml
 		string								m_lang;
 		string								m_culture;
 		string								m_text;
+		Lite_V8                m_v8;
 	public:
 		document(document_container* objContainer);
 		virtual ~document();
 
+		void executeScript(const std::string& script);
 		document_container*				container()	{ return m_container; }
 		uint_ptr						get_font(const char* name, int size, const char* weight, const char* style, const char* decoration, font_metrics* fm);
 		int								render(int max_width, render_type rt = render_all);
