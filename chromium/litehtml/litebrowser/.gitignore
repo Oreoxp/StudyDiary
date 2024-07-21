@@ -183,4 +183,4 @@ art
 distrib
 rendering-tests
 test
-libs
+libs/v8

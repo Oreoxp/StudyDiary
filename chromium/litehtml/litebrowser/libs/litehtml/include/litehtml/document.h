@@ -76,11 +76,14 @@ namespace litehtml
 		string								m_culture;
 		string								m_text;
 		Lite_V8                m_v8;
+		std::vector<std::string> scripts;
 	public:
-		document(document_container* objContainer);
+		document(document_container* objContainer, int type);
 		virtual ~document();
 
-		void executeScript(const std::string& script);
+		void addScript(const std::string& script);
+		void executeScript(const std::string& script); 
+		void executePreScripts();
 		document_container*				container()	{ return m_container; }
 		uint_ptr						get_font(const char* name, int size, const char* weight, const char* style, const char* decoration, font_metrics* fm);
 		int								render(int max_width, render_type rt = render_all);
@@ -117,7 +120,8 @@ namespace litehtml
 			const estring&       str,
 			document_container*  container,
 			const string&        master_styles = litehtml::master_css,
-			const string&        user_styles = "");
+			const string&        user_styles = "",
+			int type = 0);
 	
 	private:
 		uint_ptr	add_font(const char* name, int size, const char* weight, const char* style, const char* decoration, font_metrics* fm);
