@@ -22,14 +22,14 @@
         }
     </style>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Document is fully loaded');
-            document.getElementById('output').innerText = 'Document is loaded';
+        dom.addEventListener('DOMContentLoaded', function() {
+            console.log('dom is fully loaded');
+            dom.getElementById('output').innerText = 'Document is loaded';
         });
 
         function onButtonClick() {
             console.log('Button clicked');
-            document.getElementById('output').innerText = 'Button clicked';
+            dom.getElementById('output').innerText = 'Button clicked';
         }
     </script>
 </head>

@@ -9,6 +9,7 @@ public:
   std::string innerText;
 
   DomElement(const std::string& id) : id(id) {}
+  DomElement(){}
 };
 
 class DomInterface {

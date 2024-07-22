@@ -89,9 +89,10 @@ void Lite_V8::Init(const std::string& path, int type) {
 }
 
 void Lite_V8::ExecuteScript(std::string script) {
+
   script = R"(
-        dom.setInnerText('output', 'Document is loaded');
-        console.log(dom.getElementById('output').innerText);
+        console.log('dom is fully loaded');
+        dom.getElementById('output').innerText = 'Document is loaded';
     )";
 
   v8::Isolate::Scope isolate_scope(isolate);
