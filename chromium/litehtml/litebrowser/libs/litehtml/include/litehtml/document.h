@@ -48,7 +48,7 @@ namespace litehtml
     };
 
 	class html_tag;
-    class render_item;
+  class render_item;
 
 	class document : public std::enable_shared_from_this<document>
 	{

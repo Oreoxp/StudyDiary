@@ -96,7 +96,13 @@
     "csignal": "cpp",
     "unordered_set": "cpp",
     "regex": "cpp",
-    "thread": "cpp"
+    "thread": "cpp",
+    "hash_map": "cpp",
+    "hash_set": "cpp",
+    "cinttypes": "cpp",
+    "forward_list": "cpp",
+    "any": "cpp",
+    "valarray": "cpp"
   },
   "code-runner.clearPreviousOutput": true,
   "code-runner.saveAllFilesBeforeRun": true,

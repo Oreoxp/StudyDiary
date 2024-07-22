@@ -3,6 +3,7 @@
 
 #include "style.h"
 #include "media_query.h"
+#include "string_id.h"
 
 namespace litehtml
 {
@@ -179,7 +180,7 @@ namespace litehtml
 	};
 
 	//////////////////////////////////////////////////////////////////////////
-
+	class style;
 	class css_selector
 	{
 	public:
@@ -190,7 +191,7 @@ namespace litehtml
 		css_element_selector	m_right;
 		css_selector::ptr		m_left;
 		css_combinator			m_combinator;
-		style::ptr				m_style;
+		std::shared_ptr<style>	m_style;
 		int						m_order;
 		media_query_list::ptr	m_media_query;
 	public:

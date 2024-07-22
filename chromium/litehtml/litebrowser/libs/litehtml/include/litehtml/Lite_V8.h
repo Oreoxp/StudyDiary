@@ -2,22 +2,18 @@
 #include <string>
 #include "v8.h"
 #include "libplatform/libplatform.h"
+#include "types.h"
+#include "html_tag.h"
 
-class DomElement {
-public:
-  std::string id;
-  std::string innerText;
-
-  DomElement(const std::string& id) : id(id) {}
-  DomElement(){}
-};
+namespace litehtml{
 
 class DomInterface {
 private:
-  std::unordered_map<std::string, DomElement> elements;
-
+  std::weak_ptr<html_tag> html_root_;
+  
 public:
-  DomElement* getElementById(const std::string& id);
+  void setRoot(std::weak_ptr<html_tag>);
+  litehtml::html_tag* getElementById(const std::string& id);
   void setInnerText(const std::string& id, const std::string& text);
 };
 
@@ -31,10 +27,15 @@ public:
   void Init(const std::string& path, int type);
   void ExecuteScript(std::string script);
 
+  void setHtmlRoot(std::weak_ptr<html_tag> ptr);
+
 private:
   std::unique_ptr<v8::Platform> platform;
   v8::Isolate* isolate;
   v8::Global<v8::Context> context;
   std::vector<std::string> scripts;
   DomInterface dom_;
+  std::weak_ptr<element> root_;
 };
+
+}

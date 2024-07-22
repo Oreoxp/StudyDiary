@@ -104,6 +104,8 @@ namespace litehtml
 
 		string				dump_get_name() override;
 
+		element::ptr		get_element(string_id name);
+
 	protected:
 		void				init_background_paint(position pos, std::vector<background_paint>& bg_paint, const background* bg, const std::shared_ptr<render_item>& ri);
 		void				init_one_background_paint(int i, position pos, background_paint& bg_paint, const background* bg, const std::shared_ptr<render_item>& ri);

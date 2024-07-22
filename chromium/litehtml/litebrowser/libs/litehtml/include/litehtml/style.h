@@ -1,6 +1,11 @@
 #ifndef LH_STYLE_H
 #define LH_STYLE_H
 #include <variant>
+#include "css_length.h"
+#include "web_color.h"
+#include "css_selector.h"
+#include "css_position.h"
+#include "background.h"
 
 namespace litehtml
 {

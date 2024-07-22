@@ -1468,6 +1468,19 @@ litehtml::element::ptr litehtml::html_tag::get_element_before(const style& style
 	return nullptr;
 }
 
+litehtml::element::ptr litehtml::html_tag::get_element(string_id name){
+	if(!m_children.empty()) {
+		for (auto& el : m_children) {
+			if(el->tag() != name)
+			{
+				return el;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 litehtml::element::ptr litehtml::html_tag::get_element_after(const style& style, bool create)
 {
 	if(!m_children.empty())

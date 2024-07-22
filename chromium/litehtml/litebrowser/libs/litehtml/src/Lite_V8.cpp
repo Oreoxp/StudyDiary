@@ -1,15 +1,28 @@
 #include "lite_v8.h"
 
-DomElement* DomInterface::getElementById(const std::string& id) {
-  if (elements.find(id) == elements.end()) {
-    elements[id] = DomElement(id);
+namespace litehtml {
+
+void DomInterface::setRoot(std::weak_ptr<element> ptr) {
+  html_root_ = ptr;
+}
+
+litehtml::html_tag* DomInterface::getElementById(const std::string& id) {
+  auto sp = html_root_.lock();
+  litehtml::html_tag* tag;
+  if (sp) {
+    tag = sp->get_element(id);
   }
-  return &elements[id];
+  return tag;
 }
 
 void DomInterface::setInnerText(const std::string& id, const std::string& text) {
   if (elements.find(id) != elements.end()) {
-    elements[id].innerText = text;
+    elements[id].set_attr("innerText", text.c_str());
+  }
+  auto sp = html_root_.lock();
+  litehtml::html_tag* tag;
+  if (sp) {
+    tag = sp->get_element(id);
   }
 }
 
@@ -21,7 +34,7 @@ void GetElementById(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::String::Utf8Value utf8(isolate, args[0]);
   std::string id(*utf8);
 
-  DomElement* element = dom->getElementById(id);
+  litehtml::html_tag* element = dom->getElementById(id);
   v8::Local<v8::Object> result = v8::Object::New(isolate);
   result->Set(isolate->GetCurrentContext(), v8::String::NewFromUtf8(isolate, "id").ToLocalChecked(), args[0]);
   result->Set(isolate->GetCurrentContext(), v8::String::NewFromUtf8(isolate, "innerText").ToLocalChecked(), v8::String::NewFromUtf8(isolate, element->innerText.c_str()).ToLocalChecked());
@@ -30,6 +43,20 @@ void GetElementById(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 void SetInnerText(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  DomInterface* dom = static_cast<DomInterface*>(args.Data().As<v8::External>()->Value());
+  v8::String::Utf8Value utf8_id(isolate, args[0]);
+  std::string id(*utf8_id);
+
+  v8::String::Utf8Value utf8_text(isolate, args[1]);
+  std::string text(*utf8_text);
+
+  dom->setInnerText(id, text);
+}
+
+void GetInnerText(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -88,12 +115,17 @@ void Lite_V8::Init(const std::string& path, int type) {
   context.Reset(isolate, local_context);
 }
 
-void Lite_V8::ExecuteScript(std::string script) {
+void Lite_V8::setHtmlRoot(std::weak_ptr<element> ptr) {
+  root_ = ptr;
+  dom_.setRoot(ptr);
+}
 
+void Lite_V8::ExecuteScript(std::string script) {
   script = R"(
-        console.log('dom is fully loaded');
-        dom.getElementById('output').innerText = 'Document is loaded';
-    )";
+      dom.getElementById('output').innerText = 'Document is loade2d';
+      //console.log(dom.getElementById('output').innerText);
+      //console.log('123');
+  )";
 
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
@@ -110,4 +142,6 @@ void Lite_V8::ExecuteScript(std::string script) {
   }
   v8::Local<v8::Value> result = compiled_script->Run(local_context).ToLocalChecked();
   v8::String::Utf8Value utf8(isolate, result);
+}
+
 }

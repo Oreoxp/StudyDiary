@@ -68,6 +68,7 @@ document::ptr document::createFromString(
 	{
 		doc->m_root = root_elements.back();
 	}
+	doc->m_v8.setHtmlRoot(doc->m_root);
 	// Destroy GumboOutput
 	gumbo_destroy_output(&kGumboDefaultOptions, output);
 
