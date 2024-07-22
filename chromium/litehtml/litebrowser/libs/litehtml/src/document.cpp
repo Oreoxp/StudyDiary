@@ -31,10 +31,10 @@
 namespace litehtml
 {
 
-document::document(document_container* container)
+document::document(document_container* container, int type)
 {
 	m_container	= container;
-	m_v8.Init("");
+	m_v8.Init("", type);
 }
 
 document::~document()
@@ -53,10 +53,10 @@ document::ptr document::createFromString(
 	const estring& str, 
 	document_container* container, 
 	const string& master_styles, 
-	const string& user_styles )
+	const string& user_styles ,int type)
 {
 	// Create litehtml::document
-	document::ptr doc = make_shared<document>(container);
+	document::ptr doc = make_shared<document>(container, type);
 
 	// Parse document into GumboOutput
 	GumboOutput* output = doc->parse_html(str);
@@ -139,7 +139,7 @@ document::ptr document::createFromString(
 		// init() returns pointer to the render_init element because it can change its type
 		doc->m_root_render = doc->m_root_render->init();
 
-		//doc->executeScript("document.onload();");
+		doc->executePreScripts();
 	}
 
 	return doc;
@@ -259,6 +259,17 @@ void document::executeScript(const std::string& script) {
 	m_v8.ExecuteScript(script);
 }
 
+void document::addScript(const std::string& script) {
+	scripts.push_back(script);
+}
+
+void document::executePreScripts() {
+	for (const auto& script : scripts) {
+		m_v8.ExecuteScript(script);
+	}
+	scripts.clear();
+}
+
 void document::create_node(void* gnode, elements_list& elements, bool parseTextNode)
 {
 	auto* node = (GumboNode*)gnode;
@@ -277,6 +288,17 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 
 		element::ptr ret;
 		const char* tag = gumbo_normalized_tagname(node->v.element.tag);
+
+		if (node->v.element.tag == GUMBO_TAG_SCRIPT) {
+			GumboVector* children = &node->v.element.children;
+			if (children->length == 1) {
+				GumboNode* script_node = static_cast<GumboNode*>(children->data[0]);
+				if (script_node->type == GUMBO_NODE_TEXT) {
+					std::string script_content(script_node->v.text.text);
+					addScript(script_content);
+				}
+			}
+		}
 		if (tag[0])
 		{
 			ret = create_element(tag, attrs);

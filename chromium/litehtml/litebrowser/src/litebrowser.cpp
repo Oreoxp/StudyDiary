@@ -33,7 +33,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			wnd.open(lpCmdLine);
 		} else
 		{
-			wnd.open("D:/github/StudyDiary/chromium/litehtml/litebrowser/test_js.html"); 
+			//wnd.open("D:/github/StudyDiary/chromium/litehtml/litebrowser/test_js.html");
+			wnd.open("h:/code/StudyDiary/chromium/litehtml/litebrowser/test_js.html");
 			//wnd.open("http://www.litehtml.com/");
 		}
 

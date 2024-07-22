@@ -368,7 +368,7 @@ void CToolbarWnd::create( int x, int y, int width, HWND parent )
 	}
 	m_hWnd = CreateWindow(TOOLBARWND_CLASS, "toolbar", WS_CHILD | WS_VISIBLE, x, y, width, 1, parent, NULL, m_hInst, (LPVOID) this);
 
-	m_doc = litehtml::document::createFromString(html, this, "html,div,body { display: block; } head,style { display: none; }");
+	m_doc = litehtml::document::createFromString(html, this, "html,div,body { display: block; } head,style { display: none; }", "", 1);
 	delete html;
 	render_toolbar(width);
 	MoveWindow(m_hWnd, x, y, width, m_doc->height(), TRUE);
