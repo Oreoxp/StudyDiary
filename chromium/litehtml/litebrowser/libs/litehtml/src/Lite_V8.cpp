@@ -6,23 +6,19 @@ void DomInterface::setRoot(std::weak_ptr<element> ptr) {
   html_root_ = ptr;
 }
 
-litehtml::html_tag* DomInterface::getElementById(const std::string& id) {
+std::shared_ptr<litehtml::element> DomInterface::getElementById(const std::string& id) {
   auto sp = html_root_.lock();
-  litehtml::html_tag* tag;
+  std::shared_ptr<litehtml::element> tag;
   if (sp) {
-    tag = sp->get_element(id);
+    tag = sp->find_children(id);
   }
   return tag;
 }
 
 void DomInterface::setInnerText(const std::string& id, const std::string& text) {
-  if (elements.find(id) != elements.end()) {
-    elements[id].set_attr("innerText", text.c_str());
-  }
-  auto sp = html_root_.lock();
-  litehtml::html_tag* tag;
+  auto sp = getElementById(id);
   if (sp) {
-    tag = sp->get_element(id);
+    sp->set_attr("innerText", text.c_str());
   }
 }
 
@@ -34,10 +30,10 @@ void GetElementById(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::String::Utf8Value utf8(isolate, args[0]);
   std::string id(*utf8);
 
-  litehtml::html_tag* element = dom->getElementById(id);
+  auto element = dom->getElementById(id);
   v8::Local<v8::Object> result = v8::Object::New(isolate);
   result->Set(isolate->GetCurrentContext(), v8::String::NewFromUtf8(isolate, "id").ToLocalChecked(), args[0]);
-  result->Set(isolate->GetCurrentContext(), v8::String::NewFromUtf8(isolate, "innerText").ToLocalChecked(), v8::String::NewFromUtf8(isolate, element->innerText.c_str()).ToLocalChecked());
+  //result->Set(isolate->GetCurrentContext(), v8::String::NewFromUtf8(isolate, "innerText").ToLocalChecked(), v8::String::NewFromUtf8(isolate, element->get_text()).ToLocalChecked());
 
   args.GetReturnValue().Set(result);
 }

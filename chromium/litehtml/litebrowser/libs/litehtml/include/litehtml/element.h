@@ -63,6 +63,7 @@ namespace litehtml
 
 		std::shared_ptr<document>	get_document() const;
 		const std::list<std::shared_ptr<element>>& children() const;
+		std::shared_ptr<element> find_children(std::string);
 
 		virtual elements_list		select_all(const string& selector);
 		virtual elements_list		select_all(const css_selector& selector);
@@ -143,6 +144,7 @@ namespace litehtml
 		void				reset_counter(const string_id& counter_name_id, const int value = 0);
 
 	private:
+		std::shared_ptr<element> seach_children(std::shared_ptr<element> el, std::string name);
 		std::vector<element::ptr> get_siblings_before() const;
 		bool				find_counter(const string_id& counter_name_id, std::map<string_id, int>::iterator& map_iterator);
 		void				parse_counter_tokens(const string_vector& tokens, const int default_value, std::function<void(const string_id&, const int)> handler) const;
@@ -218,6 +220,7 @@ namespace litehtml
 	{
 		return m_children;
 	}
+
 }
 
 #endif  // LH_ELEMENT_H

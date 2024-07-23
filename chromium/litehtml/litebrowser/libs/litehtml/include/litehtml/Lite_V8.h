@@ -9,11 +9,11 @@ namespace litehtml{
 
 class DomInterface {
 private:
-  std::weak_ptr<html_tag> html_root_;
+  std::weak_ptr<element> html_root_;
   
 public:
-  void setRoot(std::weak_ptr<html_tag>);
-  litehtml::html_tag* getElementById(const std::string& id);
+  void setRoot(std::weak_ptr<element>);
+  std::shared_ptr<litehtml::element> getElementById(const std::string& id);
   void setInnerText(const std::string& id, const std::string& text);
 };
 
@@ -27,7 +27,7 @@ public:
   void Init(const std::string& path, int type);
   void ExecuteScript(std::string script);
 
-  void setHtmlRoot(std::weak_ptr<html_tag> ptr);
+  void setHtmlRoot(std::weak_ptr<element> ptr);
 
 private:
   std::unique_ptr<v8::Platform> platform;

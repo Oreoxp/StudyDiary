@@ -415,6 +415,31 @@ void litehtml::element::reset_counter(const string_id& counter_name_id, const in
 	m_counter_values[counter_name_id] = value;
 }
 
+
+std::shared_ptr<element> litehtml::element::seach_children(std::shared_ptr<element> el, std::string name) {
+  if (!el) {
+    return nullptr;
+  }
+	std::string elname(el->get_attr("id", "none"));
+  if (elname == name) {
+		std::string a;
+		el->get_text(a);
+    return el;
+  }
+  // 遍历所有子节点
+  for (auto& child : el->m_children) {
+    auto found = seach_children(child, name);
+    if (found != nullptr) {
+      return found;
+    }
+  }
+  return nullptr;
+}
+
+std::shared_ptr<element> litehtml::element::find_children(std::string name) {
+	return seach_children(shared_from_this(), name);
+}
+
 const background* element::get_background(bool /*own_only*/)						LITEHTML_RETURN_FUNC(nullptr)
 void element::add_style( const style& /*style*/)	        						LITEHTML_EMPTY_FUNC
 void element::select_all(const css_selector& /*selector*/, elements_list& /*res*/)	LITEHTML_EMPTY_FUNC
