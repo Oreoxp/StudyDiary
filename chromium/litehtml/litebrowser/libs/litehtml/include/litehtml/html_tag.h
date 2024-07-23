@@ -31,6 +31,7 @@ namespace litehtml
 		litehtml::style			m_style;
 		string_map				m_attrs;
 		std::vector<string_id>	m_pseudo_classes;
+		std::string			m_innertext;
 
 		void			select_all(const css_selector& selector, elements_list& res) override;
 
@@ -47,6 +48,8 @@ namespace litehtml
 		const char*			get_tagName() const override;
 		void				set_tagName(const char* tag) override;
 		void				set_data(const char* data) override;
+		void				set_innerText(const char* text) override;
+		const char* get_innerText();
 
 		void				set_attr(const char* name, const char* val) override;
 		const char*			get_attr(const char* name, const char* def = nullptr) const override;

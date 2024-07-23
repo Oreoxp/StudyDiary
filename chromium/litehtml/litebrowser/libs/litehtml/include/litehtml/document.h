@@ -101,7 +101,7 @@ namespace litehtml
 		bool							on_lbutton_down(int x, int y, int client_x, int client_y, position::vector& redraw_boxes);
 		bool							on_lbutton_up(int x, int y, int client_x, int client_y, position::vector& redraw_boxes);
 		bool							on_mouse_leave(position::vector& redraw_boxes);
-		element::ptr					create_element(const char* tag_name, const string_map& attributes);
+		element::ptr					create_element(const char* tag_name, const string_map& attributes, const char* inner_text);
 		element::ptr					root();
 		void							get_fixed_boxes(position::vector& fixed_boxes);
 		void							add_fixed_box(const position& pos);

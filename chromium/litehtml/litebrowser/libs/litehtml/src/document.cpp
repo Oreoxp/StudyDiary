@@ -271,6 +271,18 @@ void document::executePreScripts() {
 	scripts.clear();
 }
 
+void get_inner_text(const GumboNode* node, std::string& text) {
+	if (node->type == GUMBO_NODE_TEXT) {
+		text.append(node->v.text.text);
+	}
+	else if (node->type == GUMBO_NODE_ELEMENT || node->type == GUMBO_NODE_DOCUMENT) {
+		const GumboVector* children = &node->v.element.children;
+		for (unsigned int i = 0; i < children->length; ++i) {
+			get_inner_text(static_cast<GumboNode*>(children->data[i]), text);
+		}
+	}
+}
+
 void document::create_node(void* gnode, elements_list& elements, bool parseTextNode)
 {
 	auto* node = (GumboNode*)gnode;
@@ -300,9 +312,11 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 				}
 			}
 		}
+		std::string inner_text;
+		get_inner_text(node, inner_text);
 		if (tag[0])
 		{
-			ret = create_element(tag, attrs);
+			ret = create_element(tag, attrs, inner_text.c_str());
 		}
 		else
 		{
@@ -311,7 +325,7 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 				string str;
 				gumbo_tag_from_original_text(&node->v.element.original_tag);
 				str.append(node->v.element.original_tag.data, node->v.element.original_tag.length);
-				ret = create_element(str.c_str(), attrs);
+				ret = create_element(str.c_str(), attrs, inner_text.c_str());
 			}
 		}
 		if (!strcmp(tag, "script"))
@@ -378,7 +392,7 @@ void document::create_node(void* gnode, elements_list& elements, bool parseTextN
 	}
 }
 
-element::ptr document::create_element(const char* tag_name, const string_map& attributes)
+element::ptr document::create_element(const char* tag_name, const string_map& attributes, const char* inner_text)
 {
 	element::ptr newTag;
 	document::ptr this_doc = shared_from_this();
@@ -457,6 +471,7 @@ element::ptr document::create_element(const char* tag_name, const string_map& at
 	if (newTag)
 	{
 		newTag->set_tagName(tag_name);
+		newTag->set_innerText(inner_text);
 		for (const auto& attribute : attributes)
 		{
 			newTag->set_attr(attribute.first.c_str(), attribute.second.c_str());

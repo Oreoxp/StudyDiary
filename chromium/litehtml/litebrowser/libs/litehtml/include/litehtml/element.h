@@ -26,8 +26,6 @@ namespace litehtml
 		typedef std::shared_ptr<const element>	const_ptr;
 		typedef std::weak_ptr<element>			weak_ptr;
 
-	public:
-		std::string m_text;
 	protected:
 		std::weak_ptr<element>					m_parent;
 		std::weak_ptr<document>					m_doc;
@@ -82,6 +80,8 @@ namespace litehtml
 		virtual string_id			tag() const;
 		virtual const char*			get_tagName() const;
 		virtual void				set_tagName(const char* tag);
+		virtual void				set_innerText(const char* text); 
+		virtual const char* get_innerText() const;
 		virtual void				set_data(const char* data);
 
 		virtual void				set_attr(const char* name, const char* val);

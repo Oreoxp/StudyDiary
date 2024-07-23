@@ -740,6 +740,14 @@ void litehtml::html_tag::set_data( const char* /*data*/ )
 
 }
 
+void litehtml::html_tag::set_innerText(const char* text) {
+	m_innertext = text;
+}
+
+const char* litehtml::html_tag::get_innerText() {
+	return m_innertext.c_str();
+}
+
 bool litehtml::html_tag::on_mouse_over()
 {
 	bool ret = false;

@@ -460,6 +460,8 @@ void element::clearRecursive()										LITEHTML_EMPTY_FUNC
 string_id element::id() const										LITEHTML_RETURN_FUNC(empty_id)
 string_id element::tag() const										LITEHTML_RETURN_FUNC(empty_id)
 const char* element::get_tagName() const							LITEHTML_RETURN_FUNC("")
+void element::set_innerText(const char* text)								LITEHTML_EMPTY_FUNC
+const char* element::get_innerText() const									LITEHTML_RETURN_FUNC("")
 void element::set_tagName( const char* /*tag*/ )						LITEHTML_EMPTY_FUNC
 void element::set_data( const char* /*data*/ )							LITEHTML_EMPTY_FUNC
 void element::set_attr( const char* /*name*/, const char* /*val*/ )			LITEHTML_EMPTY_FUNC
