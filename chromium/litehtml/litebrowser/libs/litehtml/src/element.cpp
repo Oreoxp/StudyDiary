@@ -15,6 +15,7 @@ namespace litehtml
 
 element::element(const document::ptr& doc) : m_doc(doc)
 {
+	int a = 1;
 }
 
 position element::get_placement() const

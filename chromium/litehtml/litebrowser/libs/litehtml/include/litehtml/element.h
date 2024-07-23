@@ -25,6 +25,9 @@ namespace litehtml
 		typedef std::shared_ptr<element>		ptr;
 		typedef std::shared_ptr<const element>	const_ptr;
 		typedef std::weak_ptr<element>			weak_ptr;
+
+	public:
+		std::string m_text;
 	protected:
 		std::weak_ptr<element>					m_parent;
 		std::weak_ptr<document>					m_doc;
