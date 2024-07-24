@@ -744,7 +744,7 @@ void litehtml::html_tag::set_innerText(const char* text) {
 	m_innertext = text;
 }
 
-const char* litehtml::html_tag::get_innerText() {
+const char* litehtml::html_tag::get_innerText()const {
 	return m_innertext.c_str();
 }
 

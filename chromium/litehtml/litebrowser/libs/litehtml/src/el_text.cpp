@@ -2,7 +2,7 @@
 #include "el_text.h"
 #include "render_item.h"
 
-litehtml::el_text::el_text(const char* text, const document::ptr& doc) : element(doc)
+litehtml::el_text::el_text(const char* text, const document::ptr& doc) : html_tag(doc)
 {
 	if(text)
 	{
@@ -11,6 +11,25 @@ litehtml::el_text::el_text(const char* text, const document::ptr& doc) : element
 	m_use_transformed	= false;
 	m_draw_spaces		= true;
     css_w().set_display(display_inline_text);
+}
+
+void litehtml::el_text::set_innerText(const char* text) {
+	m_text = text;
+
+	font_metrics fm;
+	uint_ptr font = 0;
+	element::ptr el_parent = parent();
+	if (el_parent)
+	{
+		font = el_parent->css().get_font();
+		fm = el_parent->css().get_font_metrics();
+	}
+	m_size.height = fm.height;
+	m_size.width = get_document()->container()->text_width(m_use_transformed ? m_transformed_text.c_str() : m_text.c_str(), font);
+}
+
+const char* litehtml::el_text::get_innerText() const {
+	return m_text.c_str();
 }
 
 void litehtml::el_text::get_content_size( size& sz, int /*max_width*/ )
@@ -122,7 +141,9 @@ void litehtml::el_text::draw(uint_ptr hdc, int x, int y, const position *clip, c
 			if(font)
 			{
 				web_color color = el_parent->css().get_color();
-				doc->container()->draw_text(hdc, m_use_transformed ? m_transformed_text.c_str() : m_text.c_str(), font,
+				auto ss = el_parent->get_attr("id");
+				auto sss2 = el_parent->get_innerText();
+				doc->container()->draw_text(hdc, m_use_transformed ? m_transformed_text.c_str() : sss2, font,
 											color, pos);
 			}
 		}

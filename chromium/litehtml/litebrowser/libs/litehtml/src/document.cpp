@@ -49,6 +49,29 @@ document::~document()
 	}
 }
 
+// 独立函数来生成树结构的字符串描述
+std::string dumpChildren(std::shared_ptr<element> node, int level = 0) {
+	if (node == nullptr) {
+		return ""; // 处理空节点
+	}
+
+	std::string output;
+	output += std::to_string(level) + ":"; // 为当前节点添加缩进
+	output += std::string(node->get_innerText()) + "\n"; // 添加当前节点的值
+
+	// 递归地为每个子节点调用 dumpChildren
+	for (auto child : node->children()) {
+		output += dumpChildren(child, level + 1); // 增加层次深度
+	}
+
+	return output;
+}
+
+std::string dumpElement(std::shared_ptr<element> el) {
+	auto ss = dumpChildren(el);
+	return ss;
+}
+
 document::ptr document::createFromString(
 	const estring& str, 
 	document_container* container, 
@@ -141,6 +164,7 @@ document::ptr document::createFromString(
 		doc->m_root_render = doc->m_root_render->init();
 
 		doc->executePreScripts();
+		//dumpElement(doc->m_root);
 	}
 
 	return doc;

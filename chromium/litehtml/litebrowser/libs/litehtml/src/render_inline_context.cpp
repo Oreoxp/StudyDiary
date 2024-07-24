@@ -343,7 +343,8 @@ void litehtml::render_item_inline_context::place_inline(std::unique_ptr<line_box
             }
         }
     }
-
+  auto s =  item->get_el();
+  auto ss = s->width();
 	m_line_boxes.back()->add_item(std::move(item));
 }
 
