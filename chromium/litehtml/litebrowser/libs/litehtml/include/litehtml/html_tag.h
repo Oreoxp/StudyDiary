@@ -49,6 +49,7 @@ namespace litehtml
 		void				set_tagName(const char* tag) override;
 		void				set_data(const char* data) override;
 		void				set_innerText(const char* text) override;
+		void				update_innerText(const char* text) override;
 		const char* get_innerText() const override;
 
 		void				set_attr(const char* name, const char* val) override;

@@ -20,7 +20,7 @@ std::shared_ptr<litehtml::element> DomInterface::getElementById(const std::strin
 void DomInterface::setInnerText(const std::string& id, const std::string& text) {
   auto sp = getElementById(id);
   if (sp) {
-    sp->set_innerText(text.c_str());
+    sp->update_innerText(text.c_str());
   }
 }
 
@@ -51,7 +51,7 @@ void SetInnerText(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::String::Utf8Value newValue(isolate, args[0]);
   v8::Local<v8::External> external = v8::Local<v8::External>::Cast(args.Holder()->GetInternalField(0));
   DomInterface* element = static_cast<DomInterface*>(external->Value());
-  element->setInnerText("output", * newValue);
+  element->setInnerText("textid", * newValue);
 }
 
 void GetInnerText(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -147,9 +147,7 @@ void Lite_V8::setHtmlRoot(std::weak_ptr<element> ptr) {
 
 void Lite_V8::ExecuteScript(std::string script) {
   script = R"(
-      dom.getElementById('output').innerText = 'Document is loade2d';
-      //console.log(dom.getElementById('output').innerText);
-      //console.log('123');
+      dom.getElementById('textid').innerText = 'Document is loade2d';
   )";
 
   v8::Isolate::Scope isolate_scope(isolate);
@@ -171,7 +169,7 @@ void Lite_V8::ExecuteScript(std::string script) {
   auto sp = root_.lock();
   std::shared_ptr<litehtml::element> tag;
   if (sp) {
-    tag = sp->find_children("output");
+    tag = sp->find_children("textid");
     std::string str(tag->get_innerText());
   }
 }

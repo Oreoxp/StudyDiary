@@ -80,7 +80,8 @@ namespace litehtml
 		virtual string_id			tag() const;
 		virtual const char*			get_tagName() const;
 		virtual void				set_tagName(const char* tag);
-		virtual void				set_innerText(const char* text); 
+		virtual void				set_innerText(const char* text);
+		virtual void				update_innerText(const char* text);
 		virtual const char* get_innerText() const;
 		virtual void				set_data(const char* data);
 

@@ -143,7 +143,7 @@ void litehtml::el_text::draw(uint_ptr hdc, int x, int y, const position *clip, c
 				web_color color = el_parent->css().get_color();
 				auto ss = el_parent->get_attr("id");
 				auto sss2 = el_parent->get_innerText();
-				doc->container()->draw_text(hdc, m_use_transformed ? m_transformed_text.c_str() : sss2, font,
+				doc->container()->draw_text(hdc, m_use_transformed ? m_transformed_text.c_str() : m_text.c_str(), font,
 											color, pos);
 			}
 		}

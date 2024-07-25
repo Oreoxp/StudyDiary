@@ -744,6 +744,12 @@ void litehtml::html_tag::set_innerText(const char* text) {
 	m_innertext = text;
 }
 
+void litehtml::html_tag::update_innerText(const char* text) {
+	m_innertext = text;
+	clearRecursive();
+	get_document()->append_children_from_string(*this, m_innertext.c_str());
+}
+
 const char* litehtml::html_tag::get_innerText()const {
 	return m_innertext.c_str();
 }
