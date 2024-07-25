@@ -117,7 +117,9 @@ document::ptr document::createFromString(
 		doc->m_root->apply_stylesheet(doc->m_master_css);
 
 		// parse elements attributes
-		doc->m_root->parse_attributes();
+    doc->m_root->parse_attributes();
+
+    doc->executePreScripts();
 
 		// parse style sheets linked in document
 		media_query_list::ptr media;
@@ -151,6 +153,7 @@ document::ptr document::createFromString(
 		// Initialize m_css
 		doc->m_root->compute_styles();
 
+
 		// Create rendering tree
 		doc->m_root_render = doc->m_root->create_render_item(nullptr);
 
@@ -163,7 +166,6 @@ document::ptr document::createFromString(
 		// init() returns pointer to the render_init element because it can change its type
 		doc->m_root_render = doc->m_root_render->init();
 
-		doc->executePreScripts();
 		//dumpElement(doc->m_root);
 	}
 

@@ -135,7 +135,7 @@ void Lite_V8::Init(const std::string& path, int type) {
   v8::Local<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
   global->Set(isolate, "dom", CreateDomTemplate(isolate, &dom_));
   v8::Local<v8::Context> local_context = v8::Context::New(isolate, nullptr, global);
-
+    
   // Store the context in the global handle.
   context.Reset(isolate, local_context);
 }
