@@ -15,7 +15,9 @@ public:
   void setRoot(std::weak_ptr<element>);
   std::shared_ptr<litehtml::element> getElementById(const std::string& id);
   void setInnerText(const std::string& id, const std::string& text);
-  void getInnerText(const std::string& id, std::string& text);
+  void getInnerText(const std::string& id, std::string& text); 
+  void setStyle(const std::string& id, const std::string& text);
+  void getStyle(const std::string& id, std::string& text);
 };
 
 v8::Local<v8::ObjectTemplate> CreateDomTemplate(v8::Isolate* isolate, DomInterface* dom);

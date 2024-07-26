@@ -188,6 +188,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <BasicRuntimeChecks>StackFrameRuntimeCheck</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <AdditionalDependencies>uxtheme.lib;skia.lib;v8_monolith.lib;winmm.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>

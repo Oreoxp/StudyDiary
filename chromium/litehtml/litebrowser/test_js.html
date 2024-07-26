@@ -22,10 +22,8 @@
         }
     </style>
     <script>
-        dom.addEventListener('DOMContentLoaded', function() {
-            console.log('dom is fully loaded');
-            dom.getElementById('output').innerText = 'Document is loaded';
-        });
+        dom.getElementById('textid').innerText = 'Document is loade2d';
+        dom.getElementById('textid').style = 'color: red;';
 
         function onButtonClick() {
             console.log('Button clicked');
@@ -36,6 +34,6 @@
 <body>
     <h1>V8 Integration Test</h1>
     <button onclick="onButtonClick()">Click Me</button>
-    <div id="textid">123456  ha</div>
+    <div id="textid" style="color: blue;">123456  ha</div>
 </body>
 </html>

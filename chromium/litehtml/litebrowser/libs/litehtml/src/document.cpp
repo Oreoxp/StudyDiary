@@ -90,10 +90,12 @@ document::ptr document::createFromString(
 	if (!root_elements.empty())
 	{
 		doc->m_root = root_elements.back();
+		auto ss = doc->m_root->find_children("textid");
 	}
 	doc->m_v8.setHtmlRoot(doc->m_root);
 	// Destroy GumboOutput
-	gumbo_destroy_output(&kGumboDefaultOptions, output);
+  gumbo_destroy_output(&kGumboDefaultOptions, output);
+
 
 	if (master_styles != "")
 	{
@@ -120,7 +122,6 @@ document::ptr document::createFromString(
     doc->m_root->parse_attributes();
 
     doc->executePreScripts();
-
 		// parse style sheets linked in document
 		media_query_list::ptr media;
 		for (const auto& css : doc->m_css)

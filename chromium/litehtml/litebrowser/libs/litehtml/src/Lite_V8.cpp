@@ -31,20 +31,43 @@ void DomInterface::getInnerText(const std::string& id, std::string& text) {
   }
 }
 
-void SetInnerText(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  /*v8::Isolate* isolate = args.GetIsolate();
+void DomInterface::setStyle(const std::string& id, const std::string& text) {
+  auto sp = getElementById(id);
+  if (sp) {
+    sp->update_innerText(text.c_str());
+  }
+}
+
+void DomInterface::getStyle(const std::string& id, std::string& text) {
+  auto sp = getElementById(id);
+  if (sp) {
+    text = std::string(sp->get_innerText());
+  }
+}
+
+void SetStyle(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
+  v8::String::Utf8Value newValue(isolate, args[0]);
+  v8::Local<v8::External> external = v8::Local<v8::External>::Cast(args.Holder()->GetInternalField(0));
+  DomInterface* element = static_cast<DomInterface*>(external->Value());
+  element->setStyle("textid", *newValue);
+}
+
+void GetStyle(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::External> external = v8::Local<v8::External>::Cast(args.Holder()->GetInternalField(0));
   DomInterface* dom = static_cast<DomInterface*>(args.Data().As<v8::External>()->Value());
   v8::String::Utf8Value utf8_id(isolate, args[0]);
   std::string id(*utf8_id);
+  std::string str;
+  dom->getStyle(id, str);
+  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, str.c_str(), v8::NewStringType::kNormal).ToLocalChecked());
+}
 
-  v8::String::Utf8Value utf8_text(isolate, args[1]);
-  std::string text(*utf8_text);
-
-  dom->setInnerText(id, text);*/
-
-
+void SetInnerText(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -75,13 +98,6 @@ void GetElementById(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string id(*utf8);
 
   auto element = dom->getElementById(id);
-  /*v8::Local<v8::Object> result = v8::Object::New(isolate);
-  v8::Local<v8::FunctionTemplate> getter = v8::FunctionTemplate::New(isolate, GetInnerText);
-  v8::Local<v8::FunctionTemplate> setter = v8::FunctionTemplate::New(isolate, SetInnerText);
-  result->SetAccessorProperty(v8::String::NewFromUtf8(isolate, "innerText").ToLocalChecked(), getter, setter);*/
-
-  //result->Set(isolate->GetCurrentContext(), v8::String::NewFromUtf8(isolate, "id").ToLocalChecked(), args[0]);
-  //result->Set(isolate->GetCurrentContext(), v8::String::NewFromUtf8(isolate, "innerText").ToLocalChecked(), v8::String::NewFromUtf8(isolate, str.c_str()).ToLocalChecked());
 
   v8::Local<v8::ObjectTemplate> domTemplate = v8::ObjectTemplate::New(isolate);
   domTemplate->SetInternalFieldCount(1);  // Îª´æ´¢ DOMElement Ö¸ÕëÔ¤Áô¿Õ¼ä
@@ -90,6 +106,10 @@ void GetElementById(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Local<v8::FunctionTemplate> getter = v8::FunctionTemplate::New(isolate, GetInnerText);
   v8::Local<v8::FunctionTemplate> setter = v8::FunctionTemplate::New(isolate, SetInnerText);
   domTemplate->SetAccessorProperty(v8::String::NewFromUtf8(isolate, "innerText").ToLocalChecked(), getter, setter);
+
+  v8::Local<v8::FunctionTemplate> style_getter = v8::FunctionTemplate::New(isolate, GetStyle);
+  v8::Local<v8::FunctionTemplate> style_setter = v8::FunctionTemplate::New(isolate, SetStyle);
+  domTemplate->SetAccessorProperty(v8::String::NewFromUtf8(isolate, "style").ToLocalChecked(), style_getter, style_setter);
 
   v8::Local<v8::Object> domObject = domTemplate->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
   domObject->SetInternalField(0, v8::External::New(isolate, dom));
@@ -146,10 +166,6 @@ void Lite_V8::setHtmlRoot(std::weak_ptr<element> ptr) {
 }
 
 void Lite_V8::ExecuteScript(std::string script) {
-  script = R"(
-      dom.getElementById('textid').innerText = 'Document is loade2d';
-  )";
-
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> local_context = context.Get(isolate);
