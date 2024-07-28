@@ -2,8 +2,6 @@
 
 namespace litehtml {
 
-  static std::string str="123";
-
 void DomInterface::setRoot(std::weak_ptr<element> ptr) {
   html_root_ = ptr;
 }
@@ -122,11 +120,11 @@ v8::Local<v8::ObjectTemplate> CreateDomTemplate(v8::Isolate* isolate, DomInterfa
   return dom_template;
 }
 
-Lite_V8::Lite_V8() : isolate(nullptr) {}
+Lite_V8::Lite_V8() : isolate_(nullptr) {}
 
 Lite_V8::~Lite_V8() {
-  if (isolate) {
-    isolate->Dispose();
+  if (isolate_) {
+    isolate_->Dispose();
     v8::V8::Dispose();
   }
 }
@@ -145,19 +143,19 @@ void Lite_V8::Init(const std::string& path, int type) {
   // Create a new Isolate and make it the current one.
   v8::Isolate::CreateParams create_params;
   create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-  isolate = v8::Isolate::New(create_params);
+  isolate_ = v8::Isolate::New(create_params);
 
   // Create a stack-allocated handle scope.
-  v8::Isolate::Scope isolate_scope(isolate);
-  v8::HandleScope handle_scope(isolate);
+  v8::Isolate::Scope isolate_scope(isolate_);
+  v8::HandleScope handle_scope(isolate_);
 
   // Create a new context.
-  v8::Local<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
-  global->Set(isolate, "dom", CreateDomTemplate(isolate, &dom_));
-  v8::Local<v8::Context> local_context = v8::Context::New(isolate, nullptr, global);
+  v8::Local<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate_);
+  global->Set(isolate_, "dom", CreateDomTemplate(isolate_, &dom_));
+  v8::Local<v8::Context> local_context = v8::Context::New(isolate_, nullptr, global);
     
   // Store the context in the global handle.
-  context.Reset(isolate, local_context);
+  context_.Reset(isolate_, local_context);
 }
 
 void Lite_V8::setHtmlRoot(std::weak_ptr<element> ptr) {
@@ -166,21 +164,21 @@ void Lite_V8::setHtmlRoot(std::weak_ptr<element> ptr) {
 }
 
 void Lite_V8::ExecuteScript(std::string script) {
-  v8::Isolate::Scope isolate_scope(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> local_context = context.Get(isolate);
+  v8::Isolate::Scope isolate_scope(isolate_);
+  v8::HandleScope handle_scope(isolate_);
+  v8::Local<v8::Context> local_context = context_.Get(isolate_);
   v8::Context::Scope context_scope(local_context);
 
   // Compile and run the script.
-  v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, script.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
+  v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate_, script.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
   v8::Local<v8::Script> compiled_script;
 
-  if (!v8::Script::Compile(local_context, source).ToLocal(&compiled_script)) {
+  if (!v8::Script::Compile(v8::Isolate::GetCurrent()->GetCurrentContext(), source).ToLocal(&compiled_script)) {
     fprintf(stderr, "Failed to compile script\n");
     return;
   }
-  v8::Local<v8::Value> result = compiled_script->Run(local_context).ToLocalChecked();
-  v8::String::Utf8Value utf8(isolate, result);
+  v8::Local<v8::Value> result = compiled_script->Run(v8::Isolate::GetCurrent()->GetCurrentContext()).ToLocalChecked();
+  v8::String::Utf8Value utf8(isolate_, result);
 
   auto sp = root_.lock();
   std::shared_ptr<litehtml::element> tag;

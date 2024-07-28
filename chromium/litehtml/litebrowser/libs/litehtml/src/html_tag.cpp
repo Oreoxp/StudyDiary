@@ -748,6 +748,13 @@ void litehtml::html_tag::update_innerText(const char* text) {
 	m_innertext = text;
 	clearRecursive();
 	get_document()->append_children_from_string(*this, m_innertext.c_str());
+	/*if (m_renders.size() > 0) {
+		auto sp = m_renders.front().lock();
+		sp->clear_child();
+		auto ret = create_render_item(sp->parent());
+		sp->parent()->add_child(ret);
+	}*/
+	refresh_styles();
 }
 
 const char* litehtml::html_tag::get_innerText()const {
@@ -832,11 +839,16 @@ void litehtml::html_tag::on_click()
 {
 	if (!is_root())
 	{
-		element::ptr el_parent = parent();
+		std::string onclick_value = get_attr("onclick");
+		if (!onclick_value.empty()) {
+			element::get_document()->executeScript(onclick_value);
+		}
+
+		/*element::ptr el_parent = parent();
 		if (el_parent)
 		{
 			el_parent->on_click();
-		}
+		}*/
 	}
 }
 
@@ -1604,7 +1616,7 @@ void litehtml::html_tag::refresh_styles()
 				} else
 				{
 					add_style(*usel->m_selector->m_style);
-					usel->m_used = true;
+					usel->m_used = false;
 				}
 			}
 		}

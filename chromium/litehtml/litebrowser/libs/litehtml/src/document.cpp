@@ -1259,6 +1259,39 @@ void document::append_children_from_string(element& parent, const char* str)
 		// Finally initialize elements
 		//child->init();
 	}
+
+	if (parent.m_renders.size() > 0) {
+		auto sp = parent.m_renders.front().lock();
+		sp->clear_child();
+		auto ret = parent.create_render_item(sp->parent());
+		sp->parent()->add_child(ret);
+	}
+	parent.apply_stylesheet(m_master_css);
+	parent.parse_attributes();
+	parent.apply_stylesheet(m_styles);
+	parent.apply_stylesheet(m_user_css);
+	parent.compute_styles();
+	fix_tables_layout();
+
+	if (m_root_render) {
+		m_root_render = m_root_render->init();
+	}
+	/*
+	
+	if (parent.m_renders.size() > 0) {
+		auto sp = parent.m_renders.front().lock();
+		auto ret = parent.create_render_item(sp);
+		auto ripa = sp->parent()->parent();
+		ripa->clear_child();
+		ripa->add_child(ret);
+		parent.m_renders.clear();
+		parent.m_renders.push_back(ret);
+	}
+	if (m_root_render) {
+		m_root_render = m_root->create_render_item(nullptr);
+		fix_tables_layout();
+		m_root_render = m_root_render->init();
+	}*/
 }
 
 void document::dump(dumper& cout)

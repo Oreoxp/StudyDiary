@@ -34,8 +34,8 @@ public:
 
 private:
   std::unique_ptr<v8::Platform> platform;
-  v8::Isolate* isolate;
-  v8::Global<v8::Context> context;
+  v8::Isolate* isolate_;
+  v8::Global<v8::Context> context_;
   std::vector<std::string> scripts;
   DomInterface dom_;
   std::weak_ptr<element> root_;

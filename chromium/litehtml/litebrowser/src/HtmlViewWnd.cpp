@@ -691,8 +691,9 @@ void CHTMLViewWnd::OnLButtonUp( int x, int y )
 				rcRedraw.right	= box->right();
 				rcRedraw.top	= box->top();
 				rcRedraw.bottom	= box->bottom();
-				redraw(&rcRedraw, FALSE);
+				redraw(&rcRedraw, TRUE);
 			}
+			render();
 			UpdateWindow(m_hWnd);
 		}
 

@@ -164,6 +164,10 @@ namespace litehtml
             return m_padding;
         }
 
+        void clear_child() {
+          m_children.clear();
+        }
+
 		void set_paddings(const margins& val)
 		{
 			m_padding = val;
