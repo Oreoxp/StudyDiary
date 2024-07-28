@@ -151,7 +151,7 @@ void Lite_V8::Init(const std::string& path, int type) {
 
   // Create a new context.
   v8::Local<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate_);
-  global->Set(isolate_, "dom", CreateDomTemplate(isolate_, &dom_));
+  global->Set(isolate_, "document", CreateDomTemplate(isolate_, &dom_));
   v8::Local<v8::Context> local_context = v8::Context::New(isolate_, nullptr, global);
     
   // Store the context in the global handle.
@@ -179,13 +179,6 @@ void Lite_V8::ExecuteScript(std::string script) {
   }
   v8::Local<v8::Value> result = compiled_script->Run(v8::Isolate::GetCurrent()->GetCurrentContext()).ToLocalChecked();
   v8::String::Utf8Value utf8(isolate_, result);
-
-  auto sp = root_.lock();
-  std::shared_ptr<litehtml::element> tag;
-  if (sp) {
-    tag = sp->find_children("textid");
-    std::string str(tag->get_innerText());
-  }
 }
 
 }
