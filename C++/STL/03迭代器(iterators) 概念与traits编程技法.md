@@ -162,11 +162,104 @@ struct iterator_traits<T*>{  // traits 意为 “特性”
 
 ![image-20240118113847706](markdownimage/image-20240118113847706.png)
 
+根据移动特性与施行操作，迭代器被分为5类
+
+- input iterator: 这种迭代器所指的对象，不允许外界改变。只读(read only)
+- output Iterator: 唯写(write only)
+- Forward Iterator: 允许“写入型”算法(如replace())在此种迭代器所形成的区间上进行读写操作。
+- Bidirectional Iterator: 可以双向移动。某些算法需要逆向走访某个迭代器区间(例如逆向拷贝某范围内的元素)，可以使用Bidirectional Iterators。
+- Random Access Iterator:  前四中迭代器都只提供一部分指针算术能力，第五种则涵盖所有指针和算术能力，包括p+n,p-n,p[n],p1-p2,p1小于p2。
+
+![迭代器的分类和从属关系](markdownimage/2019-07-27-16-43-29.png);
+
+## 3.5 std::iterator的保证
+
+STL 提供了一个 iterator class 。每个新设计的迭代器都继承自它，可以保证STL所需之规范
+
+```c++
+template <
+      class Category,
+      class T,
+      class Distance=ptrdiff_t,
+      class Pointer=T*,
+      class Reference=T&
+          >
+struct iterator
+{
+  typedef Category iterator_category;
+  typedef T value_type;
+  typedef Distance difference_type;
+  typedef Pointer pointer;
+  typedef Reference reference;
+  
+};
+
+//使用
+
+std::iterator<std::forward_iterator_tag,Item> 
+```
+
+纯粹的接口类型类，因此没有额外的负担。
+
+总结：traits编程技法大量用于STL实现品中，利用“内嵌型别”的编程技巧与编译器的template参数推导功能,增强了c++的类型推导能力。
 
 
 
+## 3.6 iterator源码完整重列
 
+```c++
+//源自 <stl_iterator.h>
 
+struct input_iterator_tag{};
+struct output_iterator_tag{};
+struct forward_iterator_tag:public input_iterator_tag{};
+struct bidirectional_iterator_tag:public forward_iterator_tag{};
+struct random_access_iterator_tag:public bidirectional_iterator_tag{};
+//迭代器封装类
+
+template <
+      class Category,
+      class T,
+      class Distance=ptrdiff_t,
+      class Pointer=T*,
+      class Reference=T&
+          >
+struct iterator
+{
+  typedef Category iterator_category;
+  typedef T value_type;
+  typedef Distance difference_type;
+  typedef Pointer pointer;
+  typedef Reference reference;
+  
+};
+//traits
+
+template <class Iterator>
+struct iterator_traits{
+  typedef typename Iterator::iterator_category iterator_category;
+  typedef typename Iterator::value_type value_type;
+  typedef typename Iterator::difference_type difference_type;
+  typedef typename Iterator::pointer pointer;
+  typedef typename Iterator::reference reference;
+}
+//为原生指针而设计的traits偏特化版
+
+template <class T>
+struct iteraror_traits<T*>
+{
+    typedef random_access_iterator_tag iterator_category;
+    typedef T value_type;
+    typedef ptrdiff_t difference_type;
+    typedef T* pointer;
+    typedef T& reference;
+};
+...
+```
+
+## SGI STL的私房菜 __type_traits
+
+iterator_traits负责萃取迭代器的特性，__type_traits则负责萃取型别(type)的特性。它提供了一种机制，允许针对不同的型别属性，在编译时期完成函数派送决定。
 
 
 
