@@ -3,7 +3,7 @@
 STL提供六大组件彼此此可以组合套用：
 
 **1、容器**
-　　容器就是各种数据结构，我就不多说，看看下面这张图回忆一下就好了，从实现角度看，STL容器是一种class template。
+　　容器就是各种数据结构，从实现角度看，STL容器是一种class template。
 
  ![img](markdownimage/2516826-20210826101917007-1500060762.png)
 
@@ -116,9 +116,7 @@ STL提供六大组件彼此此可以组合套用：
 
 时间复杂度：O(nlgn)
 
-[![复制代码](markdownimage/copycode.gif)](javascript:void(0);)
-
-```
+```c++
 void List::sort(){
 　　List carry;
 
@@ -165,9 +163,7 @@ void List::sort(){
 }
 ```
 
-[![复制代码](markdownimage/copycode.gif)](javascript:void(0);)
 
- 
 
 
 **十、deque与vector的区别。**
