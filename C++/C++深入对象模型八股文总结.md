@@ -231,4 +231,98 @@ za.rotate();        // 调用ZooAnimal中的函数
 
 ## 第2章 构造函数语意学
 
-[![img](markdownimage/构造函数.png)](https://github.com/zfengzhen/Blog/blob/master/img/构造函数.png) [![img](markdownimage/复制构造函数.png)](https://github.com/zfengzhen/Blog/blob/master/img/复制构造函数.png)
+![img](markdownimage/构造函数.png)[![img](markdownimage/复制构造函数.png)](https://github.com/zfengzhen/Blog/blob/master/img/复制构造函数.png)
+
+
+
+## 第3章 Data语意学
+
+- 1、类对象大小受三个因素影响
+
+  - a、virtual base 和 virtual function 带来的 vptr 影响
+  - b、**EBO**（Empty Base class Optimize）空基类优化处理，**EBC**（Empty Base Class）占用一个字节，其他含有数据成员的从EBC 派生的派生类，只会算自己数据成员的大小，不受 EBC 一字节的影响
+  - c、alignment 字节对齐
+
+- 2、Nonstatic data members 在 class object 中的排列顺序将和其被声明顺序一样，**任何中间介入的 static data members 都不会被放进布局之中**。
+
+- 3、静态成员变量 static data members
+
+  - a、存放在程序的 data segment 之中
+  - b、通过指针和对象来存取 member，完全一样，不管继承或者是虚拟继承得来，**全局也只存在唯一一个实例**
+  - c、静态常量成员可以在类定义时直接初始化，而**普通静态常量成员只能在.o编译单元的全局范围内初始化**
+
+- 4、非静态成员变量 nonstatic data members
+
+  - a、每一个 nonstatic data member 的偏移量在编译时即可获知，不管其有多么复杂的派生，都是一样的。通过对象存取一个nonstatic data member，其效率和存取一个 C struct member 是一样的。
+  - b、从对象存取 obj.x 和指针存取 pt->x 有和差异？
+    - 当继承链中有虚基类时，查找虚基类的成员变量时延迟到了执行期，根据 **virtual class offset** 查找到虚基类的部分，效率稍低(成员变量的数据存取并没有 this 指针的变化）
+
+- 5、成员变量具体分布 （代码引用陈皓 C++ 对象的内存布局
+
+   
+
+  http://blog.csdn.net/haoel/article/details/3081328
+
+   
+
+  http://blog.csdn.net/haoel/article/details/3081385
+
+   
+
+  分析环境：linux 2.6 gcc）
+
+  - [![单一继承的一般继承](markdownimage/单一继承的一般继承.png)](https://github.com/zfengzhen/Blog/blob/master/img/单一继承的一般继承.png)
+  - [![多重继承](markdownimage/多重继承.png)](https://github.com/zfengzhen/Blog/blob/master/img/多重继承.png)
+  - [![重复继承](markdownimage/重复继承.png)](https://github.com/zfengzhen/Blog/blob/master/img/重复继承.png)
+  - [![钻石型多重继承](markdownimage/钻石型多重继承.png)](https://github.com/zfengzhen/Blog/blob/master/img/钻石型多重继承.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
