@@ -39,8 +39,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "d:/github/StudyDiary/chromium/litehtml/litebrowser/libs/litehtml/containers/windows/gdiplus",
-      "program": "d:/github/StudyDiary/chromium/litehtml/litebrowser/libs/litehtml/containers/windows/gdiplus/build/Debug/outDebug",
+      "cwd": "d:/github/StudyDiary/音视频/code/ffmpeg_codec",
+      "program": "d:/github/StudyDiary/音视频/code/ffmpeg_codec/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
