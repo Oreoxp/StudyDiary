@@ -43,7 +43,7 @@
 								fetch(filePath)
 									.then(response => response.text())
 									.then(data => {
-										const htmlContent = marked(data); // 将 Markdown 转换为 HTML
+										const htmlContent = marked.parse(data); // 将 Markdown 转换为 HTML
 										document.getElementById('content').innerHTML = htmlContent;
 									})
 									.catch(error => console.error('加载 Markdown 文件失败:', error));
